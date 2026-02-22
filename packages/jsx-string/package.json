@@ -1,0 +1,65 @@
+{
+  "name": "@cjean-fr/jsx-string",
+  "version": "1.0.0",
+  "description": "The small, safe way to render JSX into HTML strings. Zero dependencies. Fully typed.",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/jsx-string"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "jsx",
+    "html",
+    "string",
+    "tiny",
+    "ssg",
+    "security",
+    "xss-prevention"
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./jsx-runtime": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./jsx-dev-runtime": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bunup src/index.ts --format esm --minify",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/bun": "catalog:",
+    "bunup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

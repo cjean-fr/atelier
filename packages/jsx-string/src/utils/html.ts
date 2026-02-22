@@ -1,0 +1,245 @@
+import type {
+  CSSProperties,
+  JSXChild,
+  StandardAttributes,
+} from "../core/types.js";
+import {
+  escape,
+  isSafeUrl,
+  isValidAttrName,
+  sanitize,
+  URL_ATTRIBUTES,
+} from "./escape.js";
+import { VOID_ELEMENTS } from "./void-elements.js";
+
+const REGEX_CAMEL_TO_KEBAB = /[A-Z]/g;
+const INTERNAL_PROPS = new Set([
+  "children",
+  "dangerouslySetInnerHTML",
+  "key",
+  "ref",
+]);
+
+const hasPromise = (v: unknown): boolean => {
+  if (v instanceof Promise) return true;
+  if (Array.isArray(v)) {
+    for (let i = 0; i < v.length; i++) {
+      if (hasPromise(v[i])) return true;
+    }
+  }
+  return false;
+};
+
+export class SafeString {
+  readonly value: string;
+  constructor(value: string) {
+    this.value = value;
+  }
+  toString(): string {
+    return this.value;
+  }
+}
+
+export type RenderResult = SafeString | Promise<SafeString>;
+
+/**
+ * Convert a props object into an HTML attribute string.
+ *
+ * @param props - Attributes object to render; if `null` or `undefined` an empty string is produced
+ * @returns The HTML attribute string
+ */
+export function renderAttributes(
+  props: StandardAttributes | null | undefined,
+): string | Promise<string> {
+  if (!props) return "";
+
+  const keys = Object.keys(props);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (key && hasPromise((props as any)[key])) {
+      return Promise.all(
+        keys.map(async (k) => [k, await (props as any)[k]]),
+      ).then((e) => renderAttributesSync(Object.fromEntries(e)));
+    }
+  }
+
+  return renderAttributesSync(props);
+}
+
+/**
+ * Render HTML attributes from a props object into a single attribute string.
+ *
+ * Skips internal props (e.g., children, key, ref), omits null/undefined/false values, merges `class`/`className` values, serializes `style` objects, renders boolean `true` attributes without a value, and sanitizes attribute names and URL-valued attributes.
+ *
+ * @param props - The props object to convert into HTML attributes
+ * @returns A string containing the rendered HTML attributes (prefixed with a space for each attribute), or an empty string if no attributes are produced
+ */
+function renderAttributesSync(props: StandardAttributes): string {
+  let attrs = "";
+  const classes = new Set<string>();
+
+  const keys = Object.keys(props);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (!key) continue;
+    const value = (props as any)[key];
+    if (INTERNAL_PROPS.has(key) || value === false || value == null) continue;
+
+    if (key === "class" || key === "className") {
+      if (typeof value === "string") {
+        for (const c of value.split(/\s+/)) if (c) classes.add(c);
+      }
+      continue;
+    }
+
+    let name =
+      key.length > 20 || !/^[a-z]+$/.test(key)
+        ? sanitize(key.toLowerCase())
+        : key;
+    if (!isValidAttrName(name)) continue;
+
+    if (name === "style") {
+      const style =
+        typeof value === "object"
+          ? renderStyle(value as CSSProperties)
+          : String(value);
+      attrs += ` style="${escape(style, "attr")}"`;
+    } else if (value === true) {
+      attrs += ` ${name}`;
+    } else {
+      let str = String(value);
+      if (URL_ATTRIBUTES.has(name) && !isSafeUrl(str)) str = "#blocked";
+      attrs += ` ${name}="${escape(str, "attr")}"`;
+    }
+  }
+
+  if (classes.size > 0) {
+    attrs = ` class="${escape([...classes].join(" "), "attr")}"` + attrs;
+  }
+
+  return attrs;
+}
+
+/**
+ * Serialize a CSS properties object into an inline CSS declaration string.
+ *
+ * Converts camelCase property names to kebab-case, preserves CSS custom properties
+ * (keys starting with `--`) as-is, and omits entries whose values are `null` or `undefined`.
+ *
+ * @param style - An object mapping CSS property names to values
+ * @returns A semicolon-delimited CSS declaration string (e.g., `color:red;margin-top:1px`)
+ */
+export function renderStyle(style: CSSProperties): string {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(style)) {
+    if (value == null) continue;
+    const prop = key.startsWith("--")
+      ? key
+      : key.replace(REGEX_CAMEL_TO_KEBAB, "-$&").toLowerCase();
+    parts.push(`${prop}:${value}`);
+  }
+  return parts.join(";");
+}
+
+/**
+ * Convert a JSX child (primitive, SafeString, array, or Promise) into HTML-safe rendered content.
+ *
+ * @param child - The JSX child to render; may be null, boolean, a SafeString, a Promise, an array of children, or any primitive value.
+ * @returns A `string`, `SafeString`, or `Promise<SafeString>`: `string` for simple primitive values, `SafeString` for synchronously rendered content, or `Promise<SafeString>` when any nested child is asynchronous.
+ */
+export function renderChild(
+  child: JSXChild,
+): string | SafeString | Promise<SafeString> {
+  if (child == null || child === true || child === false) return "";
+  if (child instanceof SafeString) return child;
+  if (child instanceof Promise)
+    return child
+      .then(renderChild)
+      .then((r) =>
+        r instanceof SafeString ? r : new SafeString(escape(String(r))),
+      );
+
+  if (Array.isArray(child)) {
+    const len = child.length;
+    const rendered: (string | SafeString | Promise<SafeString>)[] = new Array(
+      len,
+    );
+    let hasAsync = false;
+
+    for (let i = 0; i < len; i++) {
+      const r = renderChild(child[i]);
+      rendered[i] = r;
+      if (r instanceof Promise) hasAsync = true;
+    }
+
+    if (!hasAsync) {
+      let out = "";
+      for (let i = 0; i < len; i++) {
+        const r = rendered[i] as string | SafeString;
+        out += r instanceof SafeString ? r.value : escape(String(r));
+      }
+      return new SafeString(out);
+    }
+
+    return Promise.all(rendered).then((items) => {
+      let out = "";
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        out += item instanceof SafeString ? item.value : escape(String(item));
+      }
+      return new SafeString(out);
+    });
+  }
+
+  return String(child);
+}
+
+/**
+ * Render a JSX element into an HTML string.
+ *
+ * When `props.dangerouslySetInnerHTML` is provided, its `__html` is used as the element content;
+ * otherwise the provided children are rendered. Attributes and children may be asynchronous; in that case
+ * the function returns a Promise resolving to the same SafeString result.
+ *
+ * @param tag - The element tag name
+ * @param props - Element attributes and special props (e.g., `className`, `style`, `dangerouslySetInnerHTML`)
+ * @param children - Child nodes to render inside the element
+ * @returns A SafeString containing the rendered element HTML
+ */
+export function renderElement(
+  tag: string,
+  props: StandardAttributes,
+  children: JSXChild[],
+): RenderResult {
+  const attrsResult = renderAttributes(props);
+  const contentResult = props.dangerouslySetInnerHTML
+    ? new SafeString(props.dangerouslySetInnerHTML.__html)
+    : renderChild(children);
+
+  if (attrsResult instanceof Promise || contentResult instanceof Promise) {
+    return Promise.all([attrsResult, contentResult]).then(([attrs, content]) =>
+      toSafeElement(tag, attrs, content),
+    );
+  }
+
+  return toSafeElement(tag, attrsResult, contentResult);
+}
+
+/**
+ * Create a SafeString containing an HTML element built from a tag, pre-rendered attributes, and content.
+ *
+ * @param tag - The element tag name (e.g., "div", "img"); void elements will not receive a closing tag.
+ * @param attrs - Pre-rendered attribute string (leading space if attributes are present), inserted into the opening tag.
+ * @param content - Inner content for the element; a `SafeString` value is used verbatim, otherwise the value is escaped.
+ * @returns A SafeString holding the final HTML for the element. For void elements the result is the opening tag only.
+ */
+function toSafeElement(
+  tag: string,
+  attrs: string,
+  content: string | SafeString,
+): SafeString {
+  if (VOID_ELEMENTS.has(tag)) return new SafeString(`<${tag}${attrs}>`);
+  const inner =
+    content instanceof SafeString ? content.value : escape(String(content));
+  return new SafeString(`<${tag}${attrs}>${inner}</${tag}>`);
+}

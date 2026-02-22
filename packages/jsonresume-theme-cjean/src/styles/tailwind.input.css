@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: var(--theme-primary);
+  --color-header-from: var(--theme-header-from);
+  --color-header-to: var(--theme-header-to);
+  --color-footer-from: var(--theme-footer-from);
+  --color-footer-to: var(--theme-footer-to);
+  --text-smaller: smaller;
+  --font-size-smaller: smaller;
+  --min-width-30: 7.5rem;
+}
+
+:where(.dark) {
+  /* Lower lightness and chroma (saturation) for a softer look on dark backgrounds */
+  --color-primary: oklch(
+    from var(--theme-primary) calc(l * 0.9) calc(c * 0.7) h
+  );
+}
+
+@utility kerning-* {
+  font-kerning: --value("auto", "none", "normal");
+}
+
+@utility bg-svg-tiles {
+  --gradient-angle: 16deg;
+  background-image:
+    var(--theme-bg-tiles),
+    linear-gradient(
+      var(--gradient-angle),
+      var(--tw-gradient-from, transparent),
+      var(--tw-gradient-to, transparent)
+    );
+}
+
+@layer components {
+  .portrait-card {
+    @apply relative size-48 shrink-0 cursor-pointer transition-all duration-200 select-none transform-3d md:size-32;
+    @apply hover:scale-105 active:scale-95;
+
+    &.rotate-y-180 {
+      @apply scale-125;
+    }
+  }
+
+  .portrait-card__side {
+    @apply absolute inset-0 border-4 border-white shadow-lg transition-transform duration-700 backface-hidden dark:border-slate-800;
+  }
+
+  .portrait-card__front {
+    @apply rounded-full object-cover;
+  }
+
+  .portrait-card__back {
+    @apply flex rotate-y-180 items-center justify-center rounded-xl bg-white p-0.5 print:hidden;
+
+    img {
+      @apply size-full object-contain;
+    }
+  }
+}
+
+@media print {
+  .portrait-card {
+    @apply scale-100 transform-none;
+  }
+  .portrait-card__side {
+    @apply shadow-none transition-none;
+  }
+}

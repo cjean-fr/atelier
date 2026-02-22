@@ -1,0 +1,57 @@
+{
+  "name": "jsonresume-theme-cjean",
+  "version": "1.0.0",
+  "description": "A clean, professional, and print-optimized JSON Resume theme built with Tailwind CSS and TypeScript.",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/jsonresume-theme-cjean"
+  },
+  "keywords": [
+    "jsonresume-theme",
+    "resume",
+    "cv",
+    "tailwind",
+    "typescript",
+    "print-optimized"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "devDependencies": {
+    "@cjean-fr/i18n-tiny": "workspace:",
+    "@cjean-fr/jsx-string": "workspace:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/react": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "zod": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "resume:export": "bunx resume-cli export output.html -t .",
+    "resume:serve": "bunx resume-cli serve -t ."
+  },
+  "type": "module"
+}

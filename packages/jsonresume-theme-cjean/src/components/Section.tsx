@@ -1,0 +1,18 @@
+import type { StandardAttributes } from "@cjean/jsx-string";
+
+interface SectionProps extends StandardAttributes {
+  name?: string;
+}
+
+export default function Section({ name, children, ...props }: SectionProps) {
+  return (
+    <section {...props}>
+      {name && (
+        <h2 className="before:bg-primary relative mt-4 mb-4 text-2xl before:absolute before:-bottom-1 before:left-0 before:h-1 before:w-[3ch] before:rounded-[0_0.25rem_0.25rem_0] before:print:[print-color-adjust:exact]">
+          {name}
+        </h2>
+      )}
+      {children}
+    </section>
+  );
+}

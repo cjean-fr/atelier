@@ -1,0 +1,53 @@
+{
+  "name": "@cjean-fr/i18n-tiny",
+  "version": "1.0.0",
+  "description": "Zero-dependency, type-safe, minimalist internationalization library.",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/i18n-tiny#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/i18n-tiny"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "i18n",
+    "internationalization",
+    "translation",
+    "tiny",
+    "typescript",
+    "type-safe",
+    "inference",
+    "zero-dependency"
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bunup --minify",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "bunup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

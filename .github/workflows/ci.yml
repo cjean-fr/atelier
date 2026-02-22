@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Type check jsx-string
+        run: bun run check
+        working-directory: packages/jsx-string
+
+      - name: Test jsx-string
+        run: bun test
+        working-directory: packages/jsx-string
+
+      - name: Build jsx-string
+        run: bun run build
+        working-directory: packages/jsx-string
+
+      - name: Verify build artifacts
+        run: |
+          test -f dist/index.js || exit 1
+          test -f dist/index.d.ts || exit 1
+          echo "✅ Build artifacts verified"
+        working-directory: packages/jsx-string

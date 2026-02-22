@@ -1,0 +1,11 @@
+{
+  "extends": "../typescript-config/base.json",
+  "compilerOptions": {
+    "types": ["vite/client", "react"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "@cjean/jsx-string",
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"]
+}
