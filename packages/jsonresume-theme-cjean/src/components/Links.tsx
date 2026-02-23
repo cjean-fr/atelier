@@ -7,8 +7,6 @@ function buildMapsUri(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
-interface BasicsItemProps extends StandardAttributes {}
-
 function getProfileIcon(network: string) {
   try {
     return getIcon(`tabler:brand-${network.toLowerCase()}`);
@@ -17,23 +15,20 @@ function getProfileIcon(network: string) {
   }
 }
 
-const BasicsItem = ({ children, ...props }: BasicsItemProps) => (
+const BasicsItem = ({ children, ...props }: StandardAttributes) => (
   <li className="inline-flex items-center gap-x-1" {...props}>
     {children}
   </li>
 );
 
-export default function Contact({
+export default function Links({
   basics,
-  themeConfig,
+  list = ["phone", "email", "location", "profiles"],
 }: {
   basics: Resume["basics"];
-  themeConfig: Resume["meta"]["themeConfig"];
+  list: Resume["meta"]["themeConfig"]["ui"]["links"];
 }) {
   const { phone, email, location, profiles = [] } = basics;
-  const { contactLinks = ["phone", "email", "location", "profiles"] } =
-    themeConfig.ui;
-
   const displayedProfiles = new Set<string>();
 
   const renderLink = (link: string) => {
@@ -130,7 +125,7 @@ export default function Contact({
       className="my-3 inline-flex flex-wrap gap-x-[2ch] gap-y-2"
       aria-label={t("contact_info")}
     >
-      {contactLinks.map(renderLink)}
+      {list.map(renderLink)}
     </ul>
   );
 }

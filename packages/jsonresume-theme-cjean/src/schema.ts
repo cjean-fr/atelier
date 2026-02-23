@@ -9,7 +9,7 @@ export const ThemeConfigSchema = z.object({
       footerFrom: z._default(z.string(), "#463932"),
       footerTo: z._default(z.string(), "#7fbdbc"),
       backgroundTilesSeed: z._default(z.number(), 1),
-      showFavicons: z._default(z.boolean(), true),
+      showLogos: z._default(z.boolean(), true),
       cta: z.optional(
         z.object({
           text: z.string(),
@@ -20,7 +20,7 @@ export const ThemeConfigSchema = z.object({
           ),
         }),
       ),
-      contactLinks: z._default(z.array(z.string()), [
+      links: z._default(z.array(z.string()), [
         "phone",
         "email",
         "location",
@@ -54,6 +54,7 @@ export const WorkSchema = z.pipe(
       description: z.optional(z.string()),
       position: z.optional(z.string()),
       url: z.optional(z.url()),
+      website: z.optional(z.url()),
       startDate: z.string(),
       endDate: z.optional(z.string()),
       summary: z.optional(z.string()),
@@ -66,10 +67,13 @@ export const WorkSchema = z.pipe(
         message: "Either 'name' or 'company' must be provided.",
       }),
     ),
-  z.transform(({ company, name, ...rest }) => ({
-    ...rest,
-    name: name ?? company,
-  })),
+  z.transform(({ company, name, url, website, ...rest }) => {
+    return {
+      ...rest,
+      name: name ?? company,
+      ...(url || website ? { url: url ?? website } : {}),
+    };
+  }),
 );
 
 export const ProfileSchema = z.looseObject({

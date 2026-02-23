@@ -2,11 +2,11 @@ import { t } from "../lib/i18n.js";
 import { generateTriangulation } from "../lib/trianglify.js";
 import type { Resume } from "../schema.js";
 import Banner from "./Banner.js";
-import Contact from "./Contact.js";
 import Education from "./Education.js";
 import FloatingButton from "./FloatingButton.js";
 import Footer from "./Footer.js";
 import Header from "./Header.js";
+import Links from "./Links.js";
 import { ProfilePageJsonLd } from "./ProfilePageJsonLd.js";
 import { Base, OpenGraph, Twitter, splitName } from "./SEO.js";
 import Skills from "./Skills.js";
@@ -97,7 +97,7 @@ export default ({ resume, css, ...props }: LayoutProps) => {
           <article>
             <Banner name={basics.name} label={basics.label} />
 
-            <Contact basics={basics} themeConfig={meta.themeConfig} />
+            <Links basics={basics} list={meta.themeConfig.ui.links} />
 
             <div className="flex break-inside-avoid flex-wrap justify-center gap-4 sm:flex-nowrap">
               <div className="relative inline-block">
@@ -112,7 +112,7 @@ export default ({ resume, css, ...props }: LayoutProps) => {
               <p className="text-lg print:text-base">{basics.summary}</p>
             </div>
 
-            <WorkExperience works={works} showFavicons={ui.showFavicons} />
+            <WorkExperience works={works} showLogos={ui.showLogos} />
             <Education education={education} certificates={certificates} />
             <Skills skills={skills} />
           </article>

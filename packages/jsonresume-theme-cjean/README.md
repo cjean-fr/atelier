@@ -74,25 +74,29 @@ You can customize the theme by adding a `meta` object to your `resume.json`.
 
 #### UI Options (`ui`)
 
-| Option                | Description                                           | Default                                      |
-| :-------------------- | :---------------------------------------------------- | :------------------------------------------- |
-| `primary`             | Primary theme color                                   | `#c80044`                                    |
-| `headerFrom`          | Gradient start color for header                       | `#0271bf`                                    |
-| `headerTo`            | Gradient end color for header                         | `#c80044`                                    |
-| `footerFrom`          | Gradient start color for footer                       | `#0271bf`                                    |
-| `footerTo`            | Gradient end color for footer                         | `#003d68`                                    |
-| `backgroundTilesSeed` | Seed for the geometric background patterns            | `188`                                        |
-| `contactLinks`        | Order and choice of contact links (phone, email, ...) | `["phone", "email", "location", "profiles"]` |
+| Option                | Description                                                                  | Default                                      |
+| :-------------------- | :--------------------------------------------------------------------------- | :------------------------------------------- |
+| `primary`             | Primary theme color                                                          | `#255b8f`                                    |
+| `headerFrom`          | Gradient start color for header                                              | `#ccc074`                                    |
+| `headerTo`            | Gradient end color for header                                                | `#4971af`                                    |
+| `footerFrom`          | Gradient start color for footer                                              | `#463932`                                    |
+| `footerTo`            | Gradient end color for footer                                                | `#7fbdbc`                                    |
+| `backgroundTilesSeed` | Seed for the geometric background patterns                                   | `1`                                          |
+| `links`               | Order and choice of contact links (phone, email, ...)                        | `["phone", "email", "location", "profiles"]` |
+| `showLogos`           | Show work experiences logos taken from `work.logo or from `work.url` favicon | true                                         |
+| `cta`                 | Add a Floating Action Button on the bottom right                             | -                                            |
+| `cta.text`            | The button text                                                              | -                                            |
+| `cta.url`             | The button target url                                                        | -                                            |
+| `cta.icon`            | The button icon                                                              | -                                            |
 
 **Note on `contactLinks`**:
 
 - The order in the array determines the order of appearance.
-- **Special keywords**: `phone`, `email`, `location`.
+- **Special keywords**: `phone`, `email`, `location`, `profiles`
 - **`profiles` keyword**: A "catch-all" that renders all social networks not explicitly mentioned.
 - **Specific networks**: You can use the name of a network (e.g., `"LinkedIn"`, `"GitHub"`) to place it exactly where you want.
 - _Example_: `["LinkedIn", "email", "location"]` will show only these three, in that order.
 - _Example_: `["phone", "profiles", "email"]` will show the phone, then ALL social profiles, then the email.
-  | `cta` | Call to Action FAB (`text`, `url`, `icon`) | - |
 
 **Icons & Social Networks**:
 The theme uses [Iconify](https://icon-sets.iconify.design/) to dynamically fetch icons.
@@ -148,7 +152,6 @@ To add a new locale (e.g., Spanish `es`):
       es,
     };
     ```
-5.  Update the `Locale` type if necessary (though it's usually inferred).
 
 ## License
 

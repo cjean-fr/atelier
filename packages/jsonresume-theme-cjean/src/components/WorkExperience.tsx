@@ -2,15 +2,16 @@ import { t, dateFormatter } from "../lib/i18n.js";
 import { type Resume } from "../schema.js";
 import DateTime from "./DateTime.js";
 import Section from "./Section.js";
+import type { StandardAttributes } from "@cjean/jsx-string/jsx-runtime";
 
-interface WorkExperienceProps {
+interface WorkExperienceProps extends StandardAttributes {
   works: Resume["work"];
-  showFavicons?: boolean;
+  showLogos?: boolean;
 }
 
 export default function WorkExperience({
   works,
-  showFavicons,
+  showLogos,
 }: WorkExperienceProps) {
   if (!works || works.length === 0) return null;
 
@@ -37,9 +38,9 @@ export default function WorkExperience({
             </div>
             <article>
               <header
-                className={`grid grid-cols-[auto_1fr] ${showFavicons && work.logo ? "gap-x-3" : ""}`}
+                className={`grid grid-cols-[auto_1fr] ${showLogos && work.logo ? "gap-x-3" : ""}`}
               >
-                {showFavicons && work.logo ? (
+                {showLogos && work.logo ? (
                   <img
                     src={work.logo}
                     alt={work.name}

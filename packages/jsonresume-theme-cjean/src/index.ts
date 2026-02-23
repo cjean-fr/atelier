@@ -16,11 +16,13 @@ export async function render(resumeData: unknown): Promise<string> {
   init(resume.meta.lang);
 
   // Fetch favicons if enabled
-  if (resume.meta.themeConfig.ui.showFavicons) {
+  if (resume.meta.themeConfig.ui.showLogos) {
     await Promise.all(
-      resume.work.map(async (work) => {
-        work.logo = await getOptimizedBase64Image(work.url);
-      }),
+      resume.work
+        .filter((work) => !work.logo)
+        .map(async (work) => {
+          work.logo = await getOptimizedBase64Image(work.url);
+        }),
     );
   }
 
