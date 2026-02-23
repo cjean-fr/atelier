@@ -23,7 +23,7 @@
     }
   },
   "devDependencies": {
-    "@changesets/cli": "latest",
+    "@changesets/cli": "0.0.0-pr1845.8583df5",
     "@trivago/prettier-plugin-sort-imports": "latest",
     "bun": "latest",
     "prettier": "latest",
