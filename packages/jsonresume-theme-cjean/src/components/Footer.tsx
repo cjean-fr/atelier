@@ -5,16 +5,24 @@ import { type StandardAttributes } from "@cjean/jsx-string";
 
 interface FooterProps extends StandardAttributes {
   meta: Resume["meta"];
+  bgTiles: string;
 }
 
-export default function Footer({ meta, ...props }: FooterProps) {
+export default function Footer({ meta, bgTiles, ...props }: FooterProps) {
   const dateStr = meta.lastModified;
 
   return (
     <footer
-      className="bg-svg-tiles from-footer-from to-footer-to -z-10 -mt-10 h-32 content-center bg-cover bg-center pt-12 pb-2 text-center text-sm text-white dark:opacity-90 dark:contrast-125 dark:saturate-50 print:hidden"
+      className="bg-angled-gradient from-footer-from to-footer-to relative isolate -z-10 -mt-10 h-32 content-center pt-12 pb-2 text-center text-sm text-white dark:opacity-90 dark:contrast-125 dark:saturate-50 print:hidden"
       {...props}
     >
+      <img
+        src={bgTiles}
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 -z-10 size-full object-cover object-center"
+        aria-hidden="true"
+      />
       <div>
         {tx("last_modified", {
           date: (

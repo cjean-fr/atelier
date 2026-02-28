@@ -47,7 +47,13 @@ export function generateTriangulation(options: TrianglifyOptions = {}): string {
   const groups = generateTriangleGroups(points, prng);
   const svg = buildSvgData(width, height, groups);
 
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  const encoded = encodeURIComponent(svg)
+    .replace(/%20/g, " ")
+    .replace(/%3D/g, "=")
+    .replace(/%3A/g, ":")
+    .replace(/%2F/g, "/")
+    .replace(/%22/g, "'");
+  return `data:image/svg+xml,${encoded}`;
 }
 
 /**

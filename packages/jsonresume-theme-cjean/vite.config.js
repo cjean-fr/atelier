@@ -14,9 +14,6 @@ export default defineConfig({
       formats: ["es", "cjs"],
       fileName: "index",
     },
-    css: {
-      tranformer: 'lightningcss',
-    },
     outDir: "dist",
     emptyOutDir: true,
   },

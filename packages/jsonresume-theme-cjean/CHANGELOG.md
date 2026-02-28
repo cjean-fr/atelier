@@ -1,5 +1,12 @@
 # jsonresume-theme-cjean
 
+## 1.1.1
+
+### Performance improvements
+
+- **Header Background**: Improve web performance by using `<img>` elements instead of CSS background images.
+- **CSS**: Remove unused CSS.
+
 ## 1.1.0
 
 ### New features
