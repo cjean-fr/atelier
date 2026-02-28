@@ -18,7 +18,7 @@ interface LayoutProps extends StandardAttributes {
   css: string;
 }
 
-export default ({ resume, css, ...props }: LayoutProps) => {
+export default async ({ resume, css, ...props }: LayoutProps) => {
   const { basics, work: works, education, certificates, skills, meta } = resume;
   const { ui, seo, modest } = meta.themeConfig;
 
@@ -32,7 +32,6 @@ export default ({ resume, css, ...props }: LayoutProps) => {
     seo.title ||
     (basics.label ? `${basics.name} - ${basics.label}` : basics.name);
   const description = seo.description || basics.summary;
-  const canonical = seo.canonical || basics.url;
   const { firstNameSlice, lastNameSlice } = splitName(basics.name);
 
   return (
@@ -46,13 +45,14 @@ export default ({ resume, css, ...props }: LayoutProps) => {
         <Base
           title={title}
           description={description}
-          canonical={canonical}
+          canonical={seo.canonical}
           robots={seo.robots}
+          favicon={seo.favicon}
         />
         <OpenGraph
           title={title}
           description={description}
-          url={canonical}
+          url={seo.canonical}
           image={seo.ogImage || basics.image}
           firstName={seo.firstName || firstNameSlice}
           lastName={seo.lastName || lastNameSlice}
@@ -60,15 +60,9 @@ export default ({ resume, css, ...props }: LayoutProps) => {
         <Twitter
           title={title}
           description={description}
-          url={canonical}
+          url={seo.canonical}
           image={seo.twitterImage || basics.image}
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');`,
-          }}
-        />
-
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -90,10 +84,7 @@ export default ({ resume, css, ...props }: LayoutProps) => {
         {...props}
       >
         <Header />
-        <main
-          className="relative z-10 container mx-auto max-w-5xl rounded bg-white p-4 shadow-md backdrop-blur-3xl md:p-6 dark:bg-slate-900/95 dark:text-slate-200 dark:shadow-2xl dark:ring-1 dark:ring-white/10 print:rounded-none print:shadow-none [&_a]:underline"
-          role="main"
-        >
+        <main className="relative z-10 container mx-auto max-w-5xl rounded bg-white p-4 shadow-md backdrop-blur-3xl md:p-6 dark:bg-slate-900/95 dark:text-slate-200 dark:shadow-2xl dark:ring-1 dark:ring-white/10 print:rounded-none print:shadow-none [&_a]:underline">
           <article>
             <Banner name={basics.name} label={basics.label} />
 
@@ -126,6 +117,11 @@ export default ({ resume, css, ...props }: LayoutProps) => {
           />
         )}
         <ProfilePageJsonLd resume={resume} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');`,
+          }}
+        />
       </body>
     </html>
   );

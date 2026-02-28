@@ -18,6 +18,8 @@ interface Point {
   y: number;
 }
 
+type Triangle = [Point, Point, Point];
+
 export interface TrianglifyOptions {
   width?: number;
   height?: number;
@@ -28,6 +30,8 @@ export interface TrianglifyOptions {
 
 /**
  * Generates a jittered grid triangulation as an SVG Data URI
+ * @param options
+ * @returns
  */
 export function generateTriangulation(options: TrianglifyOptions = {}): string {
   const {
@@ -39,52 +43,141 @@ export function generateTriangulation(options: TrianglifyOptions = {}): string {
   } = options;
 
   const prng = new PRNG(seed);
-  const points: Point[][] = [];
-
-  const columns = Math.ceil(width / cellSize) + 2;
-  const rows = Math.ceil(height / cellSize) + 2;
-
-  // 1. Generate jittered points
-  for (let j = 0; j < rows; j++) {
-    const row: Point[] = [];
-    for (let i = 0; i < columns; i++) {
-      const x =
-        (i - 0.5) * cellSize + (prng.next() - 0.5) * cellSize * variance;
-      const y =
-        (j - 0.5) * cellSize + (prng.next() - 0.5) * cellSize * variance;
-      row.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 });
-    }
-    points.push(row);
-  }
-
-  // 2. Build paths
-  let paths = "";
-  for (let j = 0; j < rows - 1; j++) {
-    for (let i = 0; i < columns - 1; i++) {
-      const p1 = points[j]![i]!;
-      const p2 = points[j]![i + 1]!;
-      const p3 = points[j + 1]![i]!;
-      const p4 = points[j + 1]![i + 1]!;
-
-      // Two triangles per grid cell
-      paths += drawTriangle(p1, p2, p3, prng.next());
-      paths += drawTriangle(p2, p4, p3, prng.next());
-    }
-  }
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">
-    <g fill-rule="evenodd">${paths}</g>
-  </svg>`;
+  const points = generatePoints(width, height, cellSize, variance, prng);
+  const groups = generateTriangleGroups(points, prng);
+  const svg = buildSvgData(width, height, groups);
 
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
 
-function drawTriangle(p1: Point, p2: Point, p3: Point, rand: number): string {
-  // Use random opacity of black/white to create the texture effect
-  // This interacts with the CSS gradient background
-  const isDark = rand > 0.5;
-  const opacity = (Math.round(rand * 100) / 1000).toFixed(3); // 0.00 to 0.10
-  const color = isDark ? "0,0,0" : "255,255,255";
+/**
+ * Generate points for the triangulation.
+ * @param width
+ * @param height
+ * @param cellSize
+ * @param variance
+ * @param prng
+ * @returns
+ */
+function generatePoints(
+  width: number,
+  height: number,
+  cellSize: number,
+  variance: number,
+  prng: PRNG,
+): Point[][] {
+  const points: Point[][] = [];
+  const columns = Math.ceil(width / cellSize) + 2;
+  const rows = Math.ceil(height / cellSize) + 2;
 
-  return `<path d="M${p1.x},${p1.y}L${p2.x},${p2.y}L${p3.x},${p3.y}Z" fill="rgba(${color},${opacity})"/>`;
+  for (let j = 0; j < rows; j++) {
+    const row: Point[] = [];
+    for (let i = 0; i < columns; i++) {
+      const x = Math.round(
+        (i - 0.5) * cellSize + (prng.next() - 0.5) * cellSize * variance,
+      );
+      const y = Math.round(
+        (j - 0.5) * cellSize + (prng.next() - 0.5) * cellSize * variance,
+      );
+      row.push({ x, y });
+    }
+    points.push(row);
+  }
+
+  return points;
+}
+
+/**
+ * Get a random fill color.
+ * @param prng
+ * @returns
+ */
+function getRandomFillColor(prng: PRNG): string {
+  const rand = prng.next();
+  const hexColor = rand > 0.5 ? "#000000" : "#ffffff";
+  const alpha = (Math.round(rand * 5) * 5).toString(16).padStart(2, "0");
+  return hexColor + alpha;
+}
+
+/**
+ * Format a triangle path in relative coordinates.
+ * @param triangle
+ * @param lastPoint
+ * @returns
+ */
+function formatRelativeTrianglePath(
+  triangle: Triangle,
+  lastPoint: Point,
+): string {
+  const [p0, p1, p2] = triangle;
+  const dx0 = p0.x - lastPoint.x;
+  const dy0 = p0.y - lastPoint.y;
+  const dx1 = p1.x - p0.x;
+  const dy1 = p1.y - p0.y;
+  const dx2 = p2.x - p1.x;
+  const dy2 = p2.y - p1.y;
+
+  return `m${dx0} ${dy0} ${dx1} ${dy1} ${dx2} ${dy2}`.replace(/ -/g, "-");
+}
+
+/**
+ * Generate triangle groups.
+ * @param points
+ * @param prng
+ * @returns
+ */
+function generateTriangleGroups(
+  points: Point[][],
+  prng: PRNG,
+): Record<string, string> {
+  const svgPathsByColor: Record<string, string> = {};
+  const lastPointByColor: Record<string, Point> = {};
+  const rows = points.length;
+  const columns = points[0]?.length ?? 0;
+
+  for (let j = 0; j < rows - 1; j++) {
+    for (let i = 0; i < columns - 1; i++) {
+      const triangles: Triangle[] = [
+        [points[j]![i]!, points[j]![i + 1]!, points[j + 1]![i]!],
+        [points[j]![i + 1]!, points[j + 1]![i + 1]!, points[j + 1]![i]!],
+      ];
+
+      triangles.forEach((triangle) => {
+        const fill = getRandomFillColor(prng);
+
+        if (!svgPathsByColor[fill]) {
+          svgPathsByColor[fill] = "";
+          lastPointByColor[fill] = { x: 0, y: 0 };
+        }
+
+        const lastPoint = lastPointByColor[fill]!;
+        const relativePath = formatRelativeTrianglePath(triangle, lastPoint);
+
+        svgPathsByColor[fill] += relativePath;
+        lastPointByColor[fill] = triangle[2]!;
+      });
+    }
+  }
+
+  return svgPathsByColor;
+}
+
+/**
+ * Build the SVG data.
+ * @param width
+ * @param height
+ * @param groups
+ * @returns
+ */
+function buildSvgData(
+  width: number,
+  height: number,
+  groups: Record<string, string>,
+): string {
+  let paths = "";
+  for (const [fill, data] of Object.entries(groups)) {
+    paths += `<path fill="${fill}" d="${data}"/>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">${paths}</svg>`;
 }

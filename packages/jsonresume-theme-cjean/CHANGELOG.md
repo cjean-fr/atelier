@@ -1,5 +1,12 @@
 # jsonresume-theme-cjean
 
+## 1.1.0
+
+### New features
+
+- **Header Background**: Reduce background SVG size by 3x.
+- **Favicon**: Added support for a favicon via the `favicon` field in the `meta.themeConfig` object.
+
 ## 1.0.0
 
 ### Initial release

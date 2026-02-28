@@ -34,6 +34,7 @@ export const ThemeConfigSchema = z.object({
       title: z.optional(z.string()),
       description: z.optional(z.string()),
       canonical: z.optional(z.url()),
+      favicon: z.optional(z.string()),
       ogImage: z.optional(z.url()),
       twitterImage: z.optional(z.url()),
       firstName: z.optional(z.string()),

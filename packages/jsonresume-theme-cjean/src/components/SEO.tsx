@@ -1,3 +1,5 @@
+import { getIcon } from "./Icons";
+
 export function splitName(name: string) {
   const [firstName, ...rest] = name.split(" ");
   return {
@@ -6,16 +8,18 @@ export function splitName(name: string) {
   };
 }
 
-export function Base({
+export async function Base({
   title,
   description,
   canonical,
   robots,
+  favicon,
 }: {
   title: string;
   description?: string;
   canonical?: string;
   robots?: string;
+  favicon?: string;
 }) {
   return (
     <>
@@ -23,6 +27,14 @@ export function Base({
       {description && <meta name="description" content={description} />}
       <meta name="robots" content={robots || "index, follow"} />
       {canonical && <link rel="canonical" href={canonical} />}
+      {favicon && (
+        <link
+          rel="icon"
+          href={`data:image/svg+xml;base64,${btoa(
+            (await getIcon(favicon)).toString(),
+          )}`}
+        />
+      )}
     </>
   );
 }

@@ -1,6 +1,6 @@
 import Layout from "./components/Layout.js";
 import { init } from "./lib/i18n.js";
-import { getOptimizedBase64Image } from "./lib/image.js";
+import { getLogoFromUrl } from "./lib/image.js";
 import { ResumeSchema } from "./schema.js";
 import css from "./styles/tailwind.input.css?inline";
 
@@ -21,7 +21,7 @@ export async function render(resumeData: unknown): Promise<string> {
       resume.work
         .filter((work) => !work.logo)
         .map(async (work) => {
-          work.logo = await getOptimizedBase64Image(work.url);
+          work.logo = await getLogoFromUrl(work.url);
         }),
     );
   }

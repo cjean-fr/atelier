@@ -50,12 +50,12 @@ export function generateWSRVUrl(
 }
 
 /**
- * Get an optimized base64 image from a URL.
- * @param url The URL to get an image from.
- * @param size The size of the image.
- * @returns The optimized base64 image.
+ * Get the company logo from an URL.
+ * @param url The URL to get the logo from.
+ * @param size The size of the logo.
+ * @returns The optimized logo.
  */
-export async function getOptimizedBase64Image(
+export async function getLogoFromUrl(
   url?: string,
   size: number = 64,
 ): Promise<string | undefined> {

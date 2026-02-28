@@ -89,7 +89,7 @@ You can customize the theme by adding a `meta` object to your `resume.json`.
 | `cta.url`             | The button target url                                                        | -                                            |
 | `cta.icon`            | The button icon                                                              | -                                            |
 
-**Note on `contactLinks`**:
+**Note on `links`**:
 
 - The order in the array determines the order of appearance.
 - **Special keywords**: `phone`, `email`, `location`, `profiles`
@@ -111,7 +111,8 @@ The theme uses [Iconify](https://icon-sets.iconify.design/) to dynamically fetch
 | :------------- | :------------------------------------------ | :----------------- |
 | `title`        | Meta title (overrides default name - label) | -                  |
 | `description`  | Meta description (overrides basics.summary) | -                  |
-| `canonical`    | Canonical URL                               | `basics.url`       |
+| `canonical`    | Canonical URL                               | -                  |
+| `favicon`      | Iconify identifier to use as favicon        | -                  |
 | `ogImage`      | Open Graph image URL                        | `basics.image`     |
 | `twitterImage` | Twitter card image URL                      | `basics.image`     |
 | `robots`       | Robots meta tag content                     | `index, follow`    |
