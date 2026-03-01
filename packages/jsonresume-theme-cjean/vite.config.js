@@ -4,9 +4,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   publicDir: false,
-  plugins: [tailwindcss(), dts({
-    include: ['src/index.ts'],
-  })],
+  plugins: [
+    tailwindcss(),
+    dts({ rollupTypes: true })
+  ],
   build: {
     lib: {
       name: "jsonresume-theme-cjean",

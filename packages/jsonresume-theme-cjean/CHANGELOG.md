@@ -1,5 +1,11 @@
 # jsonresume-theme-cjean
 
+## 1.1.2
+
+### Bug fixes
+
+- **Types**: Export `Resume` type for improved declaration bundling.
+
 ## 1.1.1
 
 ### Performance improvements
