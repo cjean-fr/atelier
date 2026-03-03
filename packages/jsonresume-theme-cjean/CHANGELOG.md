@@ -1,8 +1,14 @@
 # jsonresume-theme-cjean
 
+## 1.1.4
+
+### Improvements
+
+- **Section**: Add `break-after-avoid` to section title to prevent page breaks after section titles.
+
 ## 1.1.3
 
-### Bug fixes
+### Improvements
 
 - **Types**: Export `Resume` type for improved declaration bundling.
 
