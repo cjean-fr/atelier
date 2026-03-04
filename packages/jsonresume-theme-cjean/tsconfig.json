@@ -3,7 +3,7 @@
   "compilerOptions": {
     "types": ["vite/client", "react"],
     "jsx": "react-jsx",
-    "jsxImportSource": "@cjean/jsx-string",
+    "jsxImportSource": "@cjean-fr/jsx-string",
     "outDir": "./dist",
     "rootDir": "./src"
   },

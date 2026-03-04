@@ -1,7 +1,7 @@
 import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import Section from "./Section.js";
-import type { StandardAttributes } from "@cjean/jsx-string";
+import type { StandardAttributes } from "@cjean-fr/jsx-string";
 
 interface SkillsProps extends StandardAttributes {
   skills: Resume["skills"];

@@ -1,5 +1,11 @@
 # jsonresume-theme-cjean
 
+## 1.1.5
+
+### Bug fixes
+
+- **Imports**: Fix package names in imports.
+
 ## 1.1.4
 
 ### Improvements

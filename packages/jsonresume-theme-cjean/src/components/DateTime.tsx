@@ -1,5 +1,5 @@
 import { dateFormatter } from "../lib/i18n.js";
-import type { StandardAttributes } from "@cjean/jsx-string";
+import type { StandardAttributes } from "@cjean-fr/jsx-string";
 
 interface DateTimeProps extends StandardAttributes {
   date: Date | string;

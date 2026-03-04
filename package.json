@@ -16,7 +16,7 @@
       "@types/resume.json": "latest",
       "bunup": "latest",
       "tailwindcss": "latest",
-      "typescript": "6.0.0-beta",
+      "typescript": "~5.8.2",
       "vite": "latest",
       "vite-plugin-dts": "latest",
       "zod": "latest"
@@ -31,7 +31,7 @@
     "turbo": "latest"
   },
   "peerDependencies": {
-    "typescript": "^6.0.0-beta"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "turbo build",

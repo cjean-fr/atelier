@@ -1,4 +1,4 @@
-import type { StandardAttributes } from "@cjean/jsx-string";
+import type { StandardAttributes } from "@cjean-fr/jsx-string";
 
 interface BannerProps extends StandardAttributes {
   name: string;

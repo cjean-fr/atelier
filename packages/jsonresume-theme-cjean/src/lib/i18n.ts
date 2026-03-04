@@ -4,8 +4,8 @@ import {
   type Translator,
   type InferSpec,
   defineTranslations,
-} from "@cjean/i18n-tiny";
-import { SafeString } from "@cjean/jsx-string";
+} from "@cjean-fr/i18n-tiny";
+import { SafeString } from "@cjean-fr/jsx-string";
 
 const en = {
   work_experience: "Work Experience",
