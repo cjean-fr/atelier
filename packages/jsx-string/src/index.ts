@@ -25,10 +25,15 @@ export * from "./core/types.js";
 export function jsx<P extends {} = {}>(
   tag: string | FunctionalComponent<P>,
   props: P,
-  // @ts-ignore unused key prop
-  _key?: string | number,
+  ...childrenArgs: any[]
 ): RenderResult {
-  const finalProps = (props || {}) as P & { children?: any };
+  const finalProps = { ...(props || {}) } as P & { children?: any };
+
+  if (childrenArgs.length > 0 && finalProps.children === undefined) {
+    finalProps.children =
+      childrenArgs.length === 1 ? childrenArgs[0] : childrenArgs;
+  }
+
   const childProp = finalProps.children;
   const children = Array.isArray(childProp)
     ? childProp

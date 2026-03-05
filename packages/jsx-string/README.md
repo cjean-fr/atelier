@@ -15,23 +15,41 @@ Zero dependencies. Fully typed. Optimized for performance and security.
 ## Installation
 
 ```bash
-bun add @cjean/jsx-string
+bun add @cjean-fr/jsx-string
 # or
-npm install @cjean/jsx-string
+npm install @cjean-fr/jsx-string
 ```
 
 ## Configuration
 
-Enable automatic JSX transform in your `tsconfig.json`:
+### 1. Automatic JSX Runtime (Recommended)
+
+Enable automatic JSX transform in your `tsconfig.json`. This is the modern way to use JSX where you don't need to import `jsx` in every file.
 
 ```json
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@cjean/jsx-string"
+    "jsxImportSource": "@cjean-fr/jsx-string"
   }
 }
 ```
+
+### 2. Classic JSX Runtime
+
+If you prefer or need to use the Classic JSX runtime (e.g., with older tools or for specific performance needs), use the following configuration in your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "jsxFactory": "jsx",
+    "jsxFragmentFactory": "Fragment"
+  }
+}
+```
+
+Then, you must import `jsx` and/or `Fragment` in your files, or use a `// @jsx jsx` pragma.
 
 ## Usage
 
@@ -40,7 +58,7 @@ Enable automatic JSX transform in your `tsconfig.json`:
 If your JSX tree contains no Promises or async components, `renderToString` returns a `string` immediately.
 
 ```tsx
-import { renderToString } from "@cjean/jsx-string";
+import { renderToString } from "@cjean-fr/jsx-string";
 
 const html = renderToString(
   <div id="root" className="container">
@@ -55,7 +73,7 @@ const html = renderToString(
 If the tree contains `async` components or `Promises`, `renderToString` returns a `Promise<string>`.
 
 ```tsx
-import { renderToString } from "@cjean/jsx-string";
+import { renderToString } from "@cjean-fr/jsx-string";
 
 const AsyncComponent = async ({ name }) => {
   await new Promise((resolve) => setTimeout(resolve, 10));
@@ -78,7 +96,7 @@ const html = await renderToString(
 Preserve pre-escaped HTML or inject trusted content safely.
 
 ```tsx
-import { SafeString } from "@cjean/jsx-string";
+import { SafeString } from "@cjean-fr/jsx-string";
 
 // Using SafeString (wrapper)
 const safe = new SafeString("<span>Safe</span>");

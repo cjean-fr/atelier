@@ -1,0 +1,18 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## 1.1.0
+
+### Added
+
+- Support for Classic JSX Runtime: the `jsx` factory now accepts children as additional arguments (e.g., `jsx(tag, props, ...children)`), following the historical React signature.
+- Documentation in README for both Automatic and Classic JSX runtimes configuration in `tsconfig.json`.
+
+### Changed
+
+- Improved `jsx` factory to merge residual arguments into `props.children` when they are present.
+
+## 1.0.0
+
+- Initial release of `@cjean-fr/jsx-string`.

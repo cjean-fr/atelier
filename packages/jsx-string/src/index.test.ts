@@ -13,6 +13,26 @@ describe("jsx-string (Integration)", () => {
       );
     });
 
+    it("should support Classic JSX runtime (children as extra arguments)", () => {
+      // @ts-ignore - simulating classic runtime call jsx(tag, props, ...children)
+      const element = jsx(
+        "div",
+        { id: "parent" },
+        jsx("span", {}, "Child 1"),
+        jsx("span", {}, "Child 2"),
+      );
+
+      expect(renderToString(element)).toBe(
+        '<div id="parent"><span>Child 1</span><span>Child 2</span></div>',
+      );
+    });
+
+    it("should prioritize props.children over extra arguments if both exist", () => {
+      // @ts-ignore - simulating mixed usage
+      const element = jsx("div", { children: "Props Child" }, "Extra Child");
+      expect(renderToString(element)).toBe("<div>Props Child</div>");
+    });
+
     it("should handle Fragments", () => {
       const result = jsx(Fragment, {
         children: [jsx("b", {}), jsx("i", {})],
