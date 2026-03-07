@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 1.2.0
 
-### Fixed
+### Added
 
 - Preserve/translate React/SVG attribute names (e.g., `htmlFor`, `xlinkHref`, `viewBox`).
 - `dangerouslySetInnerHTML.__html` now treats `null`/`undefined` as empty string.
