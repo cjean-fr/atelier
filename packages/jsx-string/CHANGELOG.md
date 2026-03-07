@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- Preserve/translate React/SVG attribute names (e.g., `htmlFor`, `xlinkHref`, `viewBox`).
+- `dangerouslySetInnerHTML.__html` now treats `null`/`undefined` as empty string.
+- Inline event handlers are now always dropped during rendering.
+- Unsafe CSS values are now always filtered, and Promises inside style objects are now awaited.
+
 ## 1.1.1
 
 ### Fixed

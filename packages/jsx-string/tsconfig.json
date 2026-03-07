@@ -2,14 +2,14 @@
   "extends": "../typescript-config/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@cjean/jsx-string",
+    "jsxImportSource": "@cjean-fr/jsx-string",
     "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "./",
     "paths": {
-      "@cjean/jsx-string": ["./src/index.ts"],
-      "@cjean/jsx-string/jsx-runtime": ["./src/index.ts"],
-      "@cjean/jsx-string/jsx-dev-runtime": ["./src/index.ts"]
+      "@cjean-fr/jsx-string": ["./src/index.ts"],
+      "@cjean-fr/jsx-string/jsx-runtime": ["./src/index.ts"],
+      "@cjean-fr/jsx-string/jsx-dev-runtime": ["./src/index.ts"]
     },
     "types": ["bun", "react"]
   },

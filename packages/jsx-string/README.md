@@ -113,6 +113,8 @@ Security is built-in, not optional:
 - **Escaping**: All text content is escaped by default following OWASP rules.
 - **Attributes**: Values are escaped, attribute names are validated against a safe pattern.
 - **URL Sanitization**: Attributes like `href` or `src` are sanitized to block `javascript:` and `vbscript:` protocols.
+- **Inline Handlers**: `on*` attributes are dropped during rendering.
+- **Inline Styles**: Unsafe CSS values are filtered out, and Promises inside style objects are awaited.
 
 ```tsx
 // XSS is prevented:
@@ -123,6 +125,11 @@ renderToString(<div>{"<script>alert(1)</script>"}</div>);
 renderToString(<a href="javascript:alert(1)">click</a>);
 // => '<a href="#blocked">click</a>'
 ```
+
+Inline handlers are intentionally unsupported because this package renders HTML strings, not hydrated event bindings.
+Nested async values inside `style` are supported: they are awaited before serialization.
+
+Note: `dangerouslySetInnerHTML` always bypasses escaping by design.
 
 ## API Reference
 

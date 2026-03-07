@@ -27,6 +27,31 @@ describe("HTML Utilities", () => {
       );
     });
 
+    it("should drop inline event handlers", () => {
+      expect(renderAttributes({ onClick: "alert(1)", id: "x" } as any)).toBe(
+        ' id="x"',
+      );
+    });
+
+    it("should filter unsafe CSS values", () => {
+      expect(
+        renderAttributes({
+          style: {
+            backgroundImage: "url(javascript:alert(1))",
+            color: "red",
+          },
+        }),
+      ).toBe(' style="color:red"');
+    });
+
+    it("should resolve promises inside style objects", async () => {
+      await expect(
+        renderAttributes({
+          style: { color: Promise.resolve("red") as any },
+        }),
+      ).resolves.toBe(' style="color:red"');
+    });
+
     it("should ignore internal props", () => {
       expect(renderAttributes({ key: "1", ref: "r", id: "ok" })).toBe(
         ' id="ok"',
@@ -39,6 +64,21 @@ describe("HTML Utilities", () => {
       expect(renderStyle({ backgroundColor: "red", "--custom": "blue" })).toBe(
         "background-color:red;--custom:blue",
       );
+    });
+
+    it("should drop unsafe CSS values", () => {
+      expect(
+        renderStyle({
+          backgroundImage: "url(javascript:alert(1))",
+          color: "red",
+        }),
+      ).toBe("color:red");
+    });
+
+    it("should resolve promises in style values", async () => {
+      await expect(
+        renderStyle({ color: Promise.resolve("red") as any }),
+      ).resolves.toBe("color:red");
     });
   });
 });

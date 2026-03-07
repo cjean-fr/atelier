@@ -1,9 +1,9 @@
-import * as Main from "@cjean/jsx-string";
-import * as JSXRuntime from "@cjean/jsx-string/jsx-runtime";
+import * as Main from "@cjean-fr/jsx-string";
+import * as JSXRuntime from "@cjean-fr/jsx-string/jsx-runtime";
 import { describe, it, expect } from "bun:test";
 
 describe("Package Exports Integration", () => {
-  describe("Main Entry Point (@cjean/jsx-string)", () => {
+  describe("Main Entry Point (@cjean-fr/jsx-string)", () => {
     it("should export SafeString", () => {
       expect(Main.SafeString).toBeDefined();
       expect(new Main.SafeString("test").toString()).toBe("test");
@@ -23,7 +23,7 @@ describe("Package Exports Integration", () => {
     });
   });
 
-  describe("JSX Runtime Entry Point (@cjean/jsx-string/jsx-runtime)", () => {
+  describe("JSX Runtime Entry Point (@cjean-fr/jsx-string/jsx-runtime)", () => {
     it("should export jsx", () => {
       expect(JSXRuntime.jsx).toBeDefined();
       expect(typeof JSXRuntime.jsx).toBe("function");

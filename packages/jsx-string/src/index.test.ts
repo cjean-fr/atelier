@@ -79,6 +79,30 @@ describe("jsx-string (Integration)", () => {
   });
 
   describe("Edge Cases", () => {
+    it("should map htmlFor to for", () => {
+      expect(
+        renderToString(jsx("label", { htmlFor: "input", children: "Name" })),
+      ).toBe('<label for="input">Name</label>');
+    });
+
+    it("should preserve SVG case-sensitive attrs and map xlinkHref", () => {
+      const element = jsx("svg", {
+        viewBox: "0 0 10 10",
+        children: jsx("use", { xlinkHref: "javascript:alert(1)" }),
+      });
+      expect(renderToString(element)).toBe(
+        '<svg viewBox="0 0 10 10"><use xlink:href="#blocked"></use></svg>',
+      );
+    });
+
+    it("should treat undefined dangerouslySetInnerHTML as empty", () => {
+      expect(
+        jsx("div", {
+          dangerouslySetInnerHTML: { __html: undefined as any },
+        }).toString(),
+      ).toBe("<div></div>");
+    });
+
     it("should handle null/undefined/boolean children", () => {
       expect(
         renderToString(

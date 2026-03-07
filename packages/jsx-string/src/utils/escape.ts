@@ -23,6 +23,7 @@ export const URL_ATTRIBUTES = new Set([
   "poster",
   "icon",
   "data",
+  "xlink:href",
 ]);
 
 const REGEX_CONTENT = /[&<>]/g;
