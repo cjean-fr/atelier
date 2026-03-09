@@ -8,6 +8,8 @@
       "packages/*"
     ],
     "catalog": {
+      "@cjean-fr/i18n-tiny": "latest",
+      "@cjean-fr/jsx-string": "latest",
       "@iconify-icons/tabler": "latest",
       "@tailwindcss/vite": "latest",
       "@types/node": "latest",

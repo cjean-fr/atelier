@@ -1,5 +1,11 @@
 # jsonresume-theme-cjean
 
+## 1.1.6
+
+### Improvements
+
+- **Logo**: better error handling for missing logo.
+
 ## 1.1.5
 
 ### Bug fixes

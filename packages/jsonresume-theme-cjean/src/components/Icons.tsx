@@ -1,4 +1,4 @@
-import { SafeString } from "@cjean-fr/jsx-string/jsx-runtime";
+import { SafeString } from "@cjean-fr/jsx-string";
 
 type IconifyIconName = `${string}:${string}`;
 type IconifyAPIOptions = {

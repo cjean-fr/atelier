@@ -67,10 +67,9 @@ const resolveNestedPromises = async (value: unknown): Promise<unknown> => {
   }
   if (value && typeof value === "object") {
     const entries = await Promise.all(
-      Object.entries(value as Record<string, unknown>).map(async ([key, item]) => [
-        key,
-        await resolveNestedPromises(item),
-      ]),
+      Object.entries(value as Record<string, unknown>).map(
+        async ([key, item]) => [key, await resolveNestedPromises(item)],
+      ),
     );
     return Object.fromEntries(entries);
   }
@@ -121,13 +120,15 @@ export function renderAttributes(
     if (
       key &&
       (hasPromise(value) ||
-        (key === "style" && typeof value === "object" && hasNestedPromise(value)))
+        (key === "style" &&
+          typeof value === "object" &&
+          hasNestedPromise(value)))
     ) {
-      return Promise.all(
-        keys.map(async (k) => [k, await (props as any)[k]]),
-      )
+      return Promise.all(keys.map(async (k) => [k, await (props as any)[k]]))
         .then((entries) => resolveNestedPromises(Object.fromEntries(entries)))
-        .then((resolved) => renderAttributesSync(resolved as StandardAttributes));
+        .then((resolved) =>
+          renderAttributesSync(resolved as StandardAttributes),
+        );
     }
   }
 
@@ -163,7 +164,8 @@ function renderAttributesSync(props: StandardAttributes): string {
     const mapped = ATTRIBUTE_NAME_MAP.get(key);
     let name = mapped ? mapped : sanitize(key);
     if (!isValidAttrName(name)) continue;
-    if (REGEX_EVENT_HANDLER.test(key) || REGEX_EVENT_HANDLER.test(name)) continue;
+    if (REGEX_EVENT_HANDLER.test(key) || REGEX_EVENT_HANDLER.test(name))
+      continue;
 
     if (name === "style") {
       if (typeof value === "object") {
@@ -201,9 +203,7 @@ function renderAttributesSync(props: StandardAttributes): string {
  * @param style - An object mapping CSS property names to values
  * @returns A semicolon-delimited CSS declaration string (e.g., `color:red;margin-top:1px`)
  */
-export function renderStyle(
-  style: CSSProperties,
-): string | Promise<string> {
+export function renderStyle(style: CSSProperties): string | Promise<string> {
   if (hasNestedPromise(style)) {
     return Promise.resolve(resolveNestedPromises(style)).then((resolved) =>
       renderStyleSync(resolved as CSSProperties),

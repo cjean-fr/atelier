@@ -72,7 +72,7 @@ export async function getLogoFromUrl(
 
     const response = await fetch(cdnUrl);
     if (!response.ok) {
-      console.warn(cdnUrl, response);
+      console.warn(`Error fetching logo from ${url}: ${response.statusText}`);
       return undefined;
     }
 

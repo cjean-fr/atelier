@@ -11,7 +11,7 @@ import { ProfilePageJsonLd } from "./ProfilePageJsonLd.js";
 import { Base, OpenGraph, Twitter, splitName } from "./SEO.js";
 import Skills from "./Skills.js";
 import WorkExperience from "./WorkExperience.js";
-import { type StandardAttributes } from "@cjean-fr/jsx-string";
+import type { StandardAttributes } from "@cjean-fr/jsx-string";
 
 interface LayoutProps extends StandardAttributes {
   resume: Resume;

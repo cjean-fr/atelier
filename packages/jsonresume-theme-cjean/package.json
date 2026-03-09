@@ -21,8 +21,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
-    "@cjean-fr/i18n-tiny": "workspace:",
-    "@cjean-fr/jsx-string": "workspace:",
+    "@cjean-fr/i18n-tiny": "catalog:",
+    "@cjean-fr/jsx-string": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/react": "catalog:",
     "tailwindcss": "catalog:",

@@ -1,5 +1,5 @@
 import { t, dateFormatter } from "../lib/i18n.js";
-import { type Resume } from "../schema.js";
+import type { Resume } from "../schema.js";
 import DateTime from "./DateTime.js";
 import Section from "./Section.js";
 import type { StandardAttributes } from "@cjean-fr/jsx-string/jsx-runtime";
