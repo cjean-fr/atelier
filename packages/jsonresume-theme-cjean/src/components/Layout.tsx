@@ -89,18 +89,24 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
 
             <Links basics={basics} list={meta.themeConfig.ui.links} />
 
-            <div className="flex break-inside-avoid flex-wrap justify-center gap-4 sm:flex-nowrap">
-              <div className="relative inline-block">
-                <img
-                  src={basics.image}
-                  alt={t("portrait_alt", { name: basics.name })}
-                  width="200"
-                  height="200"
-                  className="relative aspect-square min-w-30 rounded-full object-cover"
-                />
+            {(basics.image || basics.summary) && (
+              <div className="flex break-inside-avoid flex-wrap justify-center gap-4 sm:flex-nowrap">
+                {basics.image && (
+                  <div className="relative inline-block">
+                    <img
+                      src={basics.image}
+                      alt={t("portrait_alt", { name: basics.name })}
+                      width="200"
+                      height="200"
+                      className="relative aspect-square min-w-30 rounded-full object-cover"
+                    />
+                  </div>
+                )}
+                {basics.summary && (
+                  <p className="text-lg print:text-base">{basics.summary}</p>
+                )}
               </div>
-              <p className="text-lg print:text-base">{basics.summary}</p>
-            </div>
+            )}
 
             <WorkExperience works={works} showLogos={ui.showLogos} />
             <Education education={education} certificates={certificates} />

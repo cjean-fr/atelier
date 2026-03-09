@@ -47,8 +47,8 @@ function getProfilePageJsonLd(resume: Resume) {
           url: job.url,
         };
       }),
-      sameAs: resume.basics.profiles?.map((p) => p.url),
-      knowsAbout: resume.skills.flatMap((s) => s.keywords),
+      sameAs: resume.basics.profiles?.map((p) => p.url).filter(Boolean),
+      knowsAbout: resume.skills.flatMap((s) => s.keywords || []),
     },
   };
 }

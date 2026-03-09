@@ -18,7 +18,7 @@
       "@types/resume.json": "latest",
       "bunup": "latest",
       "tailwindcss": "latest",
-      "typescript": "~5.8.2",
+      "typescript": "latest",
       "vite": "latest",
       "vite-plugin-dts": "latest",
       "zod": "latest"

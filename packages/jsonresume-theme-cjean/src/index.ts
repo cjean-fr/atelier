@@ -28,5 +28,3 @@ export async function render(resumeData: unknown): Promise<string> {
 
   return `<!doctype html>${await Layout({ resume, css })}`;
 }
-
-export type { Resume } from "./schema.js";

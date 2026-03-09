@@ -4,7 +4,10 @@
 
 ### Improvements
 
-- **Logo**: better error handling for missing logo.
+- **Logo**: Better error handling for missing logo.
+- **Types**: Do not export `Resume` type for improved declaration bundling.
+- **FAB**: Use `scrollY` instead of deprecated `pageYOffset`.
+- **resume.json**: Cover more resume.json cases.
 
 ## 1.1.5
 

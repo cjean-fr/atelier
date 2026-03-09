@@ -46,11 +46,11 @@ export const initFloatingButton = () => {
   ).matches;
   if (isReduced) return;
 
-  let lastScroll = window.pageYOffset || document.documentElement.scrollTop;
+  let lastScroll = window.scrollY || document.documentElement.scrollTop;
   const threshold = 15;
 
   const handleScroll = () => {
-    const current = window.pageYOffset || document.documentElement.scrollTop;
+    const current = window.scrollY || document.documentElement.scrollTop;
     const diff = current - lastScroll;
 
     if (Math.abs(diff) > threshold) {

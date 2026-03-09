@@ -28,7 +28,7 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
+    "vite-plugin-dts": "^4.5.4",
     "zod": "catalog:"
   },
   "exports": {

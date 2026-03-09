@@ -7,9 +7,9 @@ function buildMapsUri(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
-function getProfileIcon(network: string) {
+async function getProfileIcon(network: string) {
   try {
-    return getIcon(`tabler:brand-${network.toLowerCase()}`);
+    return await getIcon(`tabler:brand-${network.toLowerCase()}`);
   } catch (e) {
     return getIcon("tabler:link");
   }
@@ -56,20 +56,32 @@ export default function Links({
       );
     }
 
-    if (key === "location" && location) {
+    if (
+      key === "location" &&
+      location &&
+      location.city &&
+      (location.countryCode || location.region)
+    ) {
       return (
         <BasicsItem key="location">
           {getIcon("tabler:map-pin")}
           <a
             href={buildMapsUri(
-              `${location.city}, ${location.region}, ${location.postalCode || ""}, ${location.countryCode}`,
+              [
+                location.city,
+                location.postalCode,
+                location.region,
+                location.countryCode,
+              ]
+                .filter(Boolean)
+                .join(", "),
             )}
             title={t("show_address")}
             target="_blank"
             rel="noopener noreferrer"
             referrerPolicy="no-referrer"
           >
-            {location.city}, {location.countryCode}
+            {location.city}, {location.countryCode || location.region}
           </a>
         </BasicsItem>
       );
