@@ -51,6 +51,46 @@ If you prefer or need to use the Classic JSX runtime (e.g., with older tools or 
 
 Then, you must import `jsx` and/or `Fragment` in your files, or use a `// @jsx jsx` pragma.
 
+### 3. Babel Integration
+
+When using Babel, configure `@babel/preset-react` to use the automatic runtime:
+
+```json
+{
+  "presets": [
+    [
+      "@babel/preset-react",
+      {
+        "runtime": "automatic",
+        "importSource": "@cjean-fr/jsx-string"
+      }
+    ]
+  ]
+}
+```
+
+### 4. Vite / esbuild
+
+In your `vite.config.ts` or esbuild configuration:
+
+```ts
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  esbuild: {
+    jsx: "automatic",
+    jsxImportSource: "@cjean-fr/jsx-string",
+  },
+});
+```
+
+## Use Cases
+
+- **Static Site Generation (SSG)**: Generate static HTML files securely without the overhead of a full frontend framework. Perfect for blogs, documentation sites, or landing pages.
+- **Email Templates**: Write maintainable email templates using the familiar JSX syntax with complete TypeScript support, then compile them to raw HTML string for your mailer.
+- **Lightweight SSR**: Return HTML strings directly from lightweight backend frameworks (like Hono, Elysia, or Express) without requiring a virtual DOM or complex hydration logic.
+- **PDF Generation**: Assemble reliable HTML markups server-side before feeding them to tools like Puppeteer or specialized PDF printers.
+
 ## Usage
 
 ### 1. Synchronous Rendering
