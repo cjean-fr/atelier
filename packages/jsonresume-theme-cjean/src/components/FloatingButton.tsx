@@ -20,6 +20,7 @@ export default ({
         target="_blank"
         rel="noopener noreferrer"
         id="cta-fab"
+        aria-label={text}
         className="fab--extended group fixed right-8 bottom-8 z-20 inline-flex items-center space-x-2 rounded-full bg-black/80 p-4 text-lg whitespace-nowrap text-white shadow-md backdrop-blur-sm transition-colors hover:bg-black dark:bg-gray-700 dark:text-white print:hidden"
         {...props}
       >

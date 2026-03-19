@@ -26,9 +26,18 @@ export const fetchIcon = async (
   return response.text();
 };
 
-export const getIcon = async (name: string, size: number = 24) => {
+export const getIcon = async (
+  name: string,
+  size: number = 24,
+  ariaHidden: boolean = true,
+) => {
   const icon = await fetchIcon(name as IconifyIconName, {
     height: size,
   });
-  return new SafeString(icon);
+
+  const modifiedIcon = ariaHidden
+    ? icon.replace("<svg", '<svg aria-hidden="true"')
+    : icon;
+
+  return new SafeString(modifiedIcon);
 };
