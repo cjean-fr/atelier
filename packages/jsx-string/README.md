@@ -146,6 +146,16 @@ renderToString(<div>{safe}</div>); // '<div><span>Safe</span></div>'
 renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
 ```
 
+## AI-Friendly
+
+`@cjean-fr/jsx-string` is designed to be easily manipulated by AI agents. Being pure functions without complex state mechanisms like React hooks, AIs can generate full HTML views flawlessly.
+
+It includes a dedicated **Skill** that agents can consume to learn how to use the library optimally.
+
+```bash
+npx skills add @cjean-fr/jsx-string
+```
+
 ## Security
 
 Security is built-in, not optional:

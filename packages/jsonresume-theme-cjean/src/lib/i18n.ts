@@ -2,12 +2,26 @@ import {
   createTranslator,
   type ValidTranslations,
   type Translator,
-  type InferSpec,
   defineTranslations,
 } from "@cjean-fr/i18n-tiny";
 import { SafeString } from "@cjean-fr/jsx-string";
 
-const en = {
+export type ThemeSpec = {
+  work_experience: readonly [];
+  education: readonly [];
+  skills: readonly [];
+  present: readonly [];
+  contact_info: readonly [];
+  phone_call: readonly [];
+  email_send: readonly [];
+  show_address: readonly [];
+  portrait_alt: readonly ["name"];
+  last_modified: readonly ["date"];
+  profile_page_name: readonly ["name", "label"];
+  theme_credit: readonly ["link"];
+};
+
+const en = defineTranslations<ThemeSpec>()({
   work_experience: "Work Experience",
   education: "Education",
   skills: "Skills",
@@ -20,9 +34,7 @@ const en = {
   last_modified: "Last updated on {date}",
   profile_page_name: "{name}'s resume - {label}",
   theme_credit: "Theme made with love by {link}",
-} as const;
-
-type ThemeSpec = InferSpec<typeof en>;
+});
 
 const fr = defineTranslations<ThemeSpec>()({
   work_experience: "Expériences professionnelles",

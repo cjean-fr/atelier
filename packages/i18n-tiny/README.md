@@ -10,6 +10,7 @@ Provides a simple way to manage translations with **strict TypeScript inference*
 - 🔒 **Type-Safe**: Autocompletion for keys and validation for required parameters.
 - 🚀 **Fast**: Simple string interpolation.
 - 🛠 **Flexible**: "Define Spec First" approach.
+- 🤖 **AI-Friendly**: Built-in [skill](./skills/i18n-tiny/SKILL.md) for agentic adoption.
 
 ## Installation
 
@@ -23,12 +24,12 @@ npm install @cjean-fr/i18n-tiny
 
 ### 1. Define your Translation Specification
 
-Define the structure of your translations (Keys -> List of required params).
+Define the structure of your translations (Keys -> List of required params). It's recommended to define a `type` with `readonly` arrays.
 
 ```typescript
-import { createTranslator, type ValidTranslations } from "@cjean-fr/i18n-tiny";
+import { createTranslator, defineTranslations } from "@cjean-fr/i18n-tiny";
 
-type AppTranslationSpec = {
+export type AppTranslationSpec = {
   welcome: readonly ["name"]; // Requires 'name'
   notifications: readonly ["count"]; // Requires 'count'
   logout: readonly []; // No parameters
@@ -36,27 +37,58 @@ type AppTranslationSpec = {
 };
 ```
 
-### 2. Implement a Language
+### 2. Implement Languages
 
-Create a translation object that satisfies your specification.
+Use the `defineTranslations` helper to strictly enforce keys AND inline placeholders. This is the **most bulletproof** way to catch typos like `{nom}` instead of `{name}` at compile time.
 
 ```typescript
-const enParams = {
+export const en = defineTranslations<AppTranslationSpec>()({
   welcome: "Welcome back, {name}!",
   notifications: "You have {count} new messages.",
   logout: "Log out",
   "user-profile": "User profile #{id}",
-} satisfies ValidTranslations<AppTranslationSpec>;
+});
+
+// A typo in a placeholder will trigger a TypeScript error!
+// export const fr = defineTranslations<AppTranslationSpec>()({
+//   welcome: "Bienvenue {nom} !", // ❌ Error: Type '"Bienvenue {nom} !"' is not assignable...
+//   ...
+// });
 ```
 
 ### 3. Create the Translator
 
 ```typescript
-const t = createTranslator<AppTranslationSpec>(enParams);
+const t = createTranslator<AppTranslationSpec>(en);
 
 // ✅ Correct usage
 console.log(t("welcome", { name: "Alice" })); // "Welcome back, Alice!"
 console.log(t("logout")); // "Log out"
+```
+
+### Alternative: Auto-Infer The Specification
+
+If you prefer to write your translations first, you can use `InferSpec` to automatically generate the specification from a base language.
+
+```typescript
+import { type InferSpec, defineTranslations, createTranslator } from "@cjean-fr/i18n-tiny";
+
+// 1. Define base language (must use `as const`)
+const baseEn = {
+  welcome: "Welcome {name}",
+  logout: "Log out",
+} as const; 
+
+// 2. Infer the Spec automatically
+type AppSpec = InferSpec<typeof baseEn>;
+
+// 3. Keep other languages strictly typed based on the inferred spec
+const fr = defineTranslations<AppSpec>()({
+  welcome: "Bienvenue {name}",
+  logout: "Se déconnecter",
+});
+
+const t = createTranslator<AppSpec>(baseEn);
 ```
 
 ### Interpolation
@@ -112,6 +144,16 @@ const t = createTranslator<Spec>(translations, {
 });
 
 console.log(t("cart", { count: 1 })); // "1 item in your cart."
+```
+
+## AI-Friendly
+
+`@cjean-fr/i18n-tiny` is designed with AI-first development in mind. The strict Type-safety and **Spec-First** approach make it easy for AI agents to write correct translations.
+
+It includes a dedicated **Skill** that agents can consume to learn how to use the library optimally.
+
+```bash
+npx skills add @cjean-fr/i18n-tiny
 ```
 
 ## Security
