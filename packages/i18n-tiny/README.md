@@ -14,9 +14,9 @@ Provides a simple way to manage translations with **strict TypeScript inference*
 ## Installation
 
 ```bash
-bun add @cjean/i18n-tiny
+bun add @cjean-fr/i18n-tiny
 # or
-npm install @cjean/i18n-tiny
+npm install @cjean-fr/i18n-tiny
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ npm install @cjean/i18n-tiny
 Define the structure of your translations (Keys -> List of required params).
 
 ```typescript
-import { createTranslator, type ValidTranslations } from "@cjean/i18n-tiny";
+import { createTranslator, type ValidTranslations } from "@cjean-fr/i18n-tiny";
 
 type AppTranslationSpec = {
   welcome: readonly ["name"]; // Requires 'name'
@@ -64,7 +64,7 @@ console.log(t("logout")); // "Log out"
 The library uses a regex-based interpolation. Supported placeholders: `{variable}`, `{user_name}`, `{my-variable}`.
 
 ```typescript
-import { interpolate } from "@cjean/i18n-tiny";
+import { interpolate } from "@cjean-fr/i18n-tiny";
 
 interpolate("Hello {name}", { name: "Bob" }); // "Hello Bob"
 ```
@@ -74,7 +74,7 @@ interpolate("Hello {name}", { name: "Bob" }); // "Hello Bob"
 By default, the translator returns a `string`. You can customize the return type (and allowed parameter types) to integrate with UI libraries like React.
 
 ```tsx
-import { type Translator } from "@cjean/i18n-tiny";
+import { type Translator } from "@cjean-fr/i18n-tiny";
 import type { ReactNode } from "react";
 
 // Define tx returning ReactNode and accepting ReactNode as parameters
@@ -86,6 +86,32 @@ const tx: Translator<AppTranslationSpec, ReactNode> = (key, ...args) => {
 const element = tx("welcome", {
   name: <strong>Alice</strong>,
 });
+```
+
+## Advanced: Custom Interpolator (ICU, etc.)
+
+By default, the library uses simple regex string replacement. You can easily plug in a more powerful interpolator like **ICU MessageFormat** (useful for plurals, gender, etc.) by passing an `interpolate` function in the config.
+
+```typescript
+import { createTranslator } from "@cjean-fr/i18n-tiny";
+import IntlMessageFormat from "intl-messageformat";
+
+const translations = {
+  cart: "{count, plural, =0 {No items} one {1 item} other {{count} items}} in your cart.",
+} as const;
+
+type Spec = {
+  cart: readonly ["count"];
+};
+
+const t = createTranslator<Spec>(translations, {
+  locale: "en-US",
+  interpolate: (template, params, { locale }) => {
+    return new IntlMessageFormat(template, locale).format(params) as string;
+  },
+});
+
+console.log(t("cart", { count: 1 })); // "1 item in your cart."
 ```
 
 ## Security
