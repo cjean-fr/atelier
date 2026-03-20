@@ -1,4 +1,4 @@
-import { t, dateFormatter } from "../lib/i18n.js";
+import { t } from "../lib/i18n.js";
 import { type Resume } from "../schema.js";
 import DateTime from "./DateTime.js";
 import Section from "./Section.js";
@@ -17,15 +17,9 @@ export default function WorkExperience({
 
   return (
     <Section name={t("work_experience")}>
-      <ol
-        className="relative list-none space-y-8 border-gray-200/60 md:ml-4 md:border-l-2 md:pl-8 dark:border-slate-700/50"
-        reversed
-      >
+      <ol className="timeline" reversed>
         {works.map((work) => (
-          <li
-            className="before:border-primary relative break-inside-avoid before:absolute before:top-1.5 before:-left-[33px] before:hidden before:h-4 before:w-4 before:-translate-x-1/2 before:rounded-full before:border-[3px] before:bg-white md:before:block dark:before:bg-slate-900"
-            key={work.name + work.startDate}
-          >
+          <li className="timeline-item" key={work.name + work.startDate}>
             <article className="group">
               <div className="flex items-start gap-4">
                 {showLogos && (
@@ -36,7 +30,7 @@ export default function WorkExperience({
                         alt={work.name}
                         width="48"
                         height="48"
-                        className="h-12 w-12 rounded-lg object-contain transition-transform duration-300 group-hover:scale-105"
+                        className="h-12 w-12 rounded-lg object-contain"
                         loading="lazy"
                       />
                     ) : (
@@ -53,14 +47,10 @@ export default function WorkExperience({
                       {work.position}
                     </h3>
                     <div className="shrink-0 text-xs font-semibold tracking-widest text-gray-500 uppercase md:text-right dark:text-slate-400">
-                      <DateTime date={work.startDate}>
-                        {dateFormatter.format(work.startDate, "month")}
-                      </DateTime>
+                      <DateTime date={work.startDate} format="month" />
                       {" — "}
                       {work.endDate ? (
-                        <DateTime date={work.endDate}>
-                          {dateFormatter.format(work.endDate, "month")}
-                        </DateTime>
+                        <DateTime date={work.endDate} format="month" />
                       ) : (
                         <span className="text-primary font-bold">
                           {t("present")}
@@ -89,7 +79,10 @@ export default function WorkExperience({
                       </span>
                     )}
                     {work.description && (
-                      <span className="ml-2 text-sm text-gray-400 before:mr-2 before:content-['•']">
+                      <span className="ml-2 text-sm text-gray-400">
+                        <span className="mr-1 opacity-50" aria-hidden="true">
+                          ,
+                        </span>
                         {work.description}
                       </span>
                     )}
@@ -103,12 +96,9 @@ export default function WorkExperience({
                 </p>
               )}
 
-              <ul className="mt-3 list-inside space-y-1.5">
+              <ul className="bullet-list">
                 {work.highlights?.map((highlight: string) => (
-                  <li
-                    className="before:bg-gray-300 flex items-start gap-2 text-sm text-gray-600 before:mt-1.5 before:h-1.5 before:w-1.5 before:shrink-0 before:rounded-full before:content-[''] dark:text-slate-400 dark:before:bg-slate-700"
-                    key={highlight}
-                  >
+                  <li className="bullet-item" key={highlight}>
                     <span>{highlight}</span>
                   </li>
                 ))}

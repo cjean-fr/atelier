@@ -1,4 +1,4 @@
-import { t, dateFormatter } from "../lib/i18n.js";
+import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import DateTime from "./DateTime.js";
 import Section from "./Section.js";
@@ -17,18 +17,12 @@ export default function Education({ education, certificates }: EducationProps) {
 
   return (
     <Section name={t("education")} className="md:mt-4">
-      <div className="space-y-6 md:ml-4 md:border-l-2 md:border-gray-100 md:pl-8 dark:md:border-slate-800">
+      <div className="timeline">
         {education?.map((edu, index) => (
-          <article
-            className="group md:before:border-primary relative break-inside-avoid md:before:absolute md:before:top-1.5 md:before:-left-[33px] md:before:h-4 md:before:w-4 md:before:-translate-x-1/2 md:before:rounded-full md:before:border-[3px] md:before:bg-white md:before:content-[''] dark:md:before:bg-slate-900"
-            key={`edu-${index}`}
-          >
+          <article className="timeline-item group" key={`edu-${index}`}>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
               {edu.studyType}
-              <span
-                className="mx-2 text-gray-300 dark:text-gray-700"
-                aria-hidden="true"
-              >
+              <span className="mx-1 opacity-50" aria-hidden="true">
                 •
               </span>
               <span className="font-medium text-gray-600 dark:text-slate-400">
@@ -41,20 +35,15 @@ export default function Education({ education, certificates }: EducationProps) {
               </span>
               {edu.startDate && (
                 <span className="italic">
-                  {" ("}
-                  <DateTime date={edu.startDate}>
-                    {dateFormatter.format(edu.startDate, "year")}
-                  </DateTime>
+                  (
+                  <DateTime date={edu.startDate} format="year" />
                   {edu.endDate && (
                     <>
-                      {" "}
-                      —{" "}
-                      <DateTime date={edu.endDate}>
-                        {dateFormatter.format(edu.endDate, "year")}
-                      </DateTime>
+                      {" — "}
+                      <DateTime date={edu.endDate} format="year" />
                     </>
                   )}
-                  {")"}
+                  )
                 </span>
               )}
             </div>
@@ -63,7 +52,7 @@ export default function Education({ education, certificates }: EducationProps) {
 
         {certificates?.map((cert, index) => (
           <article
-            className="group relative break-inside-avoid md:before:absolute md:before:top-1.5 md:before:-left-[33px] md:before:h-4 md:before:w-4 md:before:-translate-x-1/2 md:before:rounded-full md:before:border-[3px] md:before:border-gray-200 md:before:bg-white md:before:content-[''] dark:md:before:border-slate-800 dark:md:before:bg-slate-900"
+            className="timeline-item timeline-item-secondary group"
             key={`cert-${index}`}
           >
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -75,9 +64,9 @@ export default function Education({ education, certificates }: EducationProps) {
               </span>
               {cert.date && (
                 <span className="italic">
-                  <DateTime date={cert.date}>
-                    ({dateFormatter.format(cert.date, "year")})
-                  </DateTime>
+                  {" ("}
+                  <DateTime date={cert.date} format="year" />
+                  {")"}
                 </span>
               )}
             </div>

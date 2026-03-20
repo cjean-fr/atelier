@@ -1,4 +1,42 @@
-import { getIcon } from "./Icons";
+import { getIcon } from "./Icons.js";
+import type { Resume } from "../schema.js";
+
+export default async function SEO({ resume }: { resume: Resume }) {
+  const { basics, meta } = resume;
+  const { seo } = meta.themeConfig;
+
+  const title =
+    seo.title ||
+    (basics.label ? `${basics.name} - ${basics.label}` : basics.name);
+  const description = seo.description || basics.summary;
+  const { firstNameSlice, lastNameSlice } = splitName(basics.name);
+
+  return (
+    <>
+      <Base
+        title={title}
+        description={description}
+        canonical={seo.canonical}
+        robots={seo.robots}
+        favicon={seo.favicon}
+      />
+      <OpenGraph
+        title={title}
+        description={description}
+        url={seo.canonical}
+        image={seo.ogImage || basics.image}
+        firstName={seo.firstName || firstNameSlice}
+        lastName={seo.lastName || lastNameSlice}
+      />
+      <Twitter
+        title={title}
+        description={description}
+        url={seo.canonical}
+        image={seo.twitterImage || basics.image}
+      />
+    </>
+  );
+}
 
 export function splitName(name: string) {
   const [firstName, ...rest] = name.split(" ");

@@ -8,7 +8,7 @@ import Footer from "./Footer.js";
 import Header from "./Header.js";
 import Links from "./Links.js";
 import { ProfilePageJsonLd } from "./ProfilePageJsonLd.js";
-import { Base, OpenGraph, Twitter, splitName } from "./SEO.js";
+import SEO from "./SEO.js";
 import Skills from "./Skills.js";
 import WorkExperience from "./WorkExperience.js";
 import type { StandardAttributes } from "@cjean-fr/jsx-string";
@@ -20,19 +20,13 @@ interface LayoutProps extends StandardAttributes {
 
 export default async ({ resume, css, ...props }: LayoutProps) => {
   const { basics, work: works, education, certificates, skills, meta } = resume;
-  const { ui, seo, modest } = meta.themeConfig;
+  const { ui, modest } = meta.themeConfig;
 
   const bgTiles = generateTriangulation({
     seed: ui.backgroundTilesSeed,
     cellSize: 60,
     variance: 0.8,
   });
-
-  const title =
-    seo.title ||
-    (basics.label ? `${basics.name} - ${basics.label}` : basics.name);
-  const description = seo.description || basics.summary;
-  const { firstNameSlice, lastNameSlice } = splitName(basics.name);
 
   return (
     <html lang={meta.lang}>
@@ -42,27 +36,8 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
         <meta name="theme-color" content={ui.primary} />
         {!modest && <meta name="generator" content="JSON Resume Theme CJEAN" />}
 
-        <Base
-          title={title}
-          description={description}
-          canonical={seo.canonical}
-          robots={seo.robots}
-          favicon={seo.favicon}
-        />
-        <OpenGraph
-          title={title}
-          description={description}
-          url={seo.canonical}
-          image={seo.ogImage || basics.image}
-          firstName={seo.firstName || firstNameSlice}
-          lastName={seo.lastName || lastNameSlice}
-        />
-        <Twitter
-          title={title}
-          description={description}
-          url={seo.canonical}
-          image={seo.twitterImage || basics.image}
-        />
+        <SEO resume={resume} />
+
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -103,7 +78,9 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
                   </div>
                 )}
                 {basics.summary && (
-                  <p className="text-lg print:text-base">{basics.summary}</p>
+                  <p className="content-center text-lg print:text-base">
+                    {basics.summary}
+                  </p>
                 )}
               </div>
             )}
