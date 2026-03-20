@@ -13,7 +13,7 @@ export default function Footer({ meta, bgTiles, ...props }: FooterProps) {
 
   return (
     <footer
-      className="bg-angled-gradient from-footer-from to-footer-to relative isolate -z-10 -mt-10 h-32 content-center pt-12 pb-2 text-center text-sm text-white dark:opacity-90 dark:contrast-125 dark:saturate-50 print:hidden"
+      className="bg-angled-gradient from-footer-from to-footer-to relative isolate z-0 -mt-10 h-32 content-center pt-12 pb-2 text-center text-sm text-white dark:opacity-90 dark:contrast-125 dark:saturate-50 print:hidden"
       {...props}
     >
       <img
