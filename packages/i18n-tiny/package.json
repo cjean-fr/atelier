@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/i18n-tiny",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zero-dependency, type-safe, minimalist internationalization library.",
   "author": "Christophe Jean",
   "license": "MIT",
