@@ -1,5 +1,12 @@
 # jsonresume-theme-cjean
 
+## 1.2.0
+
+### Improvements
+
+- refresh UI
+- Update dependencies
+
 ## 1.1.6
 
 ### Improvements
