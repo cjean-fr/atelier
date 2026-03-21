@@ -5,8 +5,7 @@
 ### Patch Changes
 
 - Update packages.json data and README.md
-
-All notable changes to this project will be documented in this file.
+- add SKILL for AI agents
 
 ## 1.2.0
 
