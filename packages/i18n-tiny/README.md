@@ -71,13 +71,17 @@ console.log(t("logout")); // "Log out"
 If you prefer to write your translations first, you can use `InferSpec` to automatically generate the specification from a base language.
 
 ```typescript
-import { type InferSpec, defineTranslations, createTranslator } from "@cjean-fr/i18n-tiny";
+import {
+  type InferSpec,
+  defineTranslations,
+  createTranslator,
+} from "@cjean-fr/i18n-tiny";
 
 // 1. Define base language (must use `as const`)
 const baseEn = {
   welcome: "Welcome {name}",
   logout: "Log out",
-} as const; 
+} as const;
 
 // 2. Infer the Spec automatically
 type AppSpec = InferSpec<typeof baseEn>;
@@ -153,7 +157,7 @@ console.log(t("cart", { count: 1 })); // "1 item in your cart."
 It includes a dedicated **Skill** that agents can consume to learn how to use the library optimally.
 
 ```bash
-npx skills add @cjean-fr/i18n-tiny
+npx skills add cjean-fr/atelier --skill i18n-tiny
 ```
 
 ## Security
