@@ -866,9 +866,9 @@
 
     "js-yaml/argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 
-    "jsonresume-theme-cjean/@cjean-fr/i18n-tiny": ["@cjean-fr/i18n-tiny@1.0.0", "", {}, "sha512-hj1uWwzc3UXgiA52wCuTL1gBF0QvTPBcAFbsKkX4XFNAELzRAxUObEHbtKI+c4UiylJmCBCwr66HYRF665hw6w=="],
+    "jsonresume-theme-cjean/@cjean-fr/i18n-tiny": ["@cjean-fr/i18n-tiny@1.0.1", "", {}, "sha512-5RXU7No3MUyxXhpr6y0YKHUqrYG45uOAe7e7f7DODbGy4mjFfyaq3BEfXS0LpuQ4Bo7/M2064KPNVCoAQqhVJQ=="],
 
-    "jsonresume-theme-cjean/@cjean-fr/jsx-string": ["@cjean-fr/jsx-string@1.2.0", "", {}, "sha512-forgrb41aIAxELlxEckxmW0O1XU5vuUT5/qPmgcjRZZsNFqsaGSGWi4i7zPpoZ9mf9R3epOS88akgFlRXcxmvQ=="],
+    "jsonresume-theme-cjean/@cjean-fr/jsx-string": ["@cjean-fr/jsx-string@1.2.1", "", {}, "sha512-rwEZb1aLGEchNMVZmZJsHi7vTYIFHm6t39Ye70vsJxA5z5DvUukPzMAkKn28+HekRCMK7Jv0y/a7aE46T9S1aQ=="],
 
     "micromatch/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
 

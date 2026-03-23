@@ -21,15 +21,15 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
-    "@cjean-fr/i18n-tiny": "catalog:",
-    "@cjean-fr/jsx-string": "catalog:",
-    "@tailwindcss/vite": "catalog:",
-    "@types/react": "catalog:",
-    "tailwindcss": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:",
+    "@cjean-fr/i18n-tiny": "^1.0.1",
+    "@cjean-fr/jsx-string": "^1.2.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
     "vite-plugin-dts": "^4.5.4",
-    "zod": "catalog:"
+    "zod": "^4.3.6"
   },
   "exports": {
     ".": {
