@@ -64,9 +64,9 @@ export async function AsyncDashboard({ id }: { id: string }) {
 Use the `renderToString` function. Always respect its hybrid return type.
 
 ```tsx
-import { renderToString } from "@cjean-fr/jsx-string";
-import { UserProfile } from "./components/UserProfile";
 import { AsyncDashboard } from "./components/AsyncDashboard";
+import { UserProfile } from "./components/UserProfile";
+import { renderToString } from "@cjean-fr/jsx-string";
 
 // Synchronous rendering
 const html = renderToString(<UserProfile name="Alice" />);
@@ -84,6 +84,7 @@ const asyncHtml = await renderToString(<AsyncDashboard id="123" />);
 By default, everything is escaped. To inject raw HTML (e.g., from an external Markdown parser or a trusted template), you have two valid approaches:
 
 **Approach 1: `SafeString` Wrapper**
+
 ```tsx
 import { renderToString, SafeString } from "@cjean-fr/jsx-string";
 
@@ -92,6 +93,7 @@ renderToString(<div>{safeContent}</div>);
 ```
 
 **Approach 2: `dangerouslySetInnerHTML`**
+
 ```tsx
 import { renderToString } from "@cjean-fr/jsx-string";
 

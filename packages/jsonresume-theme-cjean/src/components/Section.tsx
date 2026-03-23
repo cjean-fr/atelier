@@ -5,7 +5,9 @@ interface SectionProps extends StandardAttributes {
 }
 
 export default function Section({ name, children, ...props }: SectionProps) {
-  const sectionId = name ? `section-${name.toLowerCase().replace(/\s+/g, "-")}` : undefined;
+  const sectionId = name
+    ? `section-${name.toLowerCase().replace(/\s+/g, "-")}`
+    : undefined;
 
   return (
     <section aria-labelledby={sectionId} {...props}>

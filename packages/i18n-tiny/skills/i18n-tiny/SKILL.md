@@ -40,8 +40,8 @@ For strict type-checking of both the keys AND the inline placeholders (`{name}`)
 
 ```typescript
 // locales/en.ts
-import { defineTranslations } from "@cjean-fr/i18n-tiny";
 import type { AppTranslationSpec } from "../types/i18n";
+import { defineTranslations } from "@cjean-fr/i18n-tiny";
 
 export const en = defineTranslations<AppTranslationSpec>()({
   welcome: "Welcome back, {name}!",
@@ -63,9 +63,9 @@ export const fr = defineTranslations<AppTranslationSpec>()({
 Use `createTranslator<Spec>(translations)` to create your `t` function.
 
 ```typescript
-import { createTranslator } from "@cjean-fr/i18n-tiny";
 import { en } from "./locales/en";
 import type { AppTranslationSpec } from "./types/i18n";
+import { createTranslator } from "@cjean-fr/i18n-tiny";
 
 const t = createTranslator<AppTranslationSpec>(en);
 
@@ -79,7 +79,11 @@ t("logout"); // "Sign Out"
 If you prefer writing your base localization first and automatically inferring the Spec, use `InferSpec`:
 
 ```typescript
-import { createTranslator, type InferSpec, defineTranslations } from "@cjean-fr/i18n-tiny";
+import {
+  createTranslator,
+  type InferSpec,
+  defineTranslations,
+} from "@cjean-fr/i18n-tiny";
 
 // 1. Define base language with `as const`
 export const enBase = {
