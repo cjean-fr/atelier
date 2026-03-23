@@ -2,7 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["check", "format"],
       "outputs": ["dist/**"]
     },
     "check": {
@@ -10,6 +10,9 @@
     },
     "format": {
       "cache": true
+    },
+    "publish": {
+      "dependsOn": ["test", "build"]
     },
     "test": {
       "cache": true

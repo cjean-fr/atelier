@@ -83,7 +83,7 @@ const isSafeCssValue = (value: string): boolean => {
   REGEX_CSS_URL.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = REGEX_CSS_URL.exec(sanitized))) {
-    const url = match[2].trim();
+    const url = match[2]?.trim() ?? "";
     if (!isSafeUrl(url)) return false;
   }
 

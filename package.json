@@ -25,7 +25,6 @@
     }
   },
   "devDependencies": {
-    "@changesets/cli": "latest",
     "@trivago/prettier-plugin-sort-imports": "latest",
     "bun": "latest",
     "prettier": "latest",
@@ -37,12 +36,10 @@
   },
   "scripts": {
     "build": "turbo build",
-    "changeset": "changeset",
     "check": "turbo check",
     "format": "turbo format",
-    "version": "changeset version",
     "test": "turbo test",
-    "release": "changeset publish"
+    "publish": "turbo publish"
   },
   "packageManager": "bun@1.3.10"
 }
