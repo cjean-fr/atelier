@@ -153,7 +153,7 @@ renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
 It includes a dedicated **Skill** that agents can consume to learn how to use the library optimally.
 
 ```bash
-npx skills add @cjean-fr/jsx-string
+npx skills add cjean-fr/atelier --skill jsx-string
 ```
 
 ## Security
