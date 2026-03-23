@@ -1,5 +1,5 @@
-import { getIcon } from "./Icons.js";
 import type { Resume } from "../schema.js";
+import { getIcon } from "./Icons.js";
 
 export default async function SEO({ resume }: { resume: Resume }) {
   const { basics, meta } = resume;

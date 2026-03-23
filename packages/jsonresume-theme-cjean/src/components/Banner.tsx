@@ -12,7 +12,10 @@ export default function Banner({
   ...props
 }: BannerProps) {
   return (
-    <header className="flex-1 grow border-b border-gray-100 pb-8 dark:border-white/5" {...props}>
+    <header
+      className="flex-1 grow border-b border-gray-100 pb-8 dark:border-white/5"
+      {...props}
+    >
       <h1 className="text-primary kerning-normal inline-block text-5xl font-extrabold tracking-tight uppercase sm:text-6xl">
         {name}
       </h1>
