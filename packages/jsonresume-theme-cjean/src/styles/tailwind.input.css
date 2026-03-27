@@ -43,7 +43,7 @@
 
   /* Timeline dot/marker */
   .timeline-item::before {
-    @apply absolute top-1.5 -left-[33px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] border-primary bg-white content-[''] md:block dark:bg-slate-900;
+    @apply border-primary absolute top-1.5 -left-[33px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white content-[''] md:block dark:bg-slate-900;
   }
 
   .timeline-item-secondary::before {
@@ -51,11 +51,11 @@
   }
 
   .bullet-list {
-    @apply mt-3 list-disc ml-5 space-y-1.5 marker:text-gray-300 dark:marker:text-slate-700;
+    @apply mt-3 ml-5 list-disc space-y-1.5 marker:text-gray-300 dark:marker:text-slate-900;
   }
 
   .bullet-item {
-    @apply text-sm text-gray-600 dark:text-slate-400 pl-1;
+    @apply pl-1 text-sm text-gray-600 dark:text-slate-400;
   }
 
   .badge {

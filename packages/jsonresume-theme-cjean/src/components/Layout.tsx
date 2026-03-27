@@ -38,6 +38,10 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
 
         <SEO resume={resume} />
 
+        {basics.image && (
+          <link rel="preload" as="image" href={basics.image} fetchPriority="high" />
+        )}
+
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -73,6 +77,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
                       alt={t("portrait_alt", { name: basics.name })}
                       width="200"
                       height="200"
+                      fetchPriority="high"
                       className="relative aspect-square min-w-30 rounded-full object-cover"
                     />
                   </div>

@@ -20,7 +20,7 @@ export default function Banner({
         {name}
       </h1>
       {label && (
-        <p className="mt-2 text-2xl font-light tracking-wide text-gray-500 dark:text-slate-400">
+        <p className="mt-2 text-3xl font-light tracking-wide text-gray-500 dark:text-slate-400">
           {label}
         </p>
       )}
