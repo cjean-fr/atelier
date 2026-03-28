@@ -34,7 +34,7 @@
 
 @layer components {
   .timeline {
-    @apply relative list-none space-y-8 border-gray-200/60 md:ml-4 md:border-l-2 md:pl-8 dark:border-slate-700/50;
+    @apply relative list-none space-y-8 border-gray-200/60 md:ml-4 md:border-l-4 md:pl-8 dark:border-slate-700/50;
   }
 
   .timeline-item {
@@ -43,7 +43,7 @@
 
   /* Timeline dot/marker */
   .timeline-item::before {
-    @apply border-primary absolute top-1.5 -left-[33px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white content-[''] md:block dark:bg-slate-900;
+    @apply border-primary absolute top-1.5 -left-[34px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white content-[''] md:block dark:bg-slate-900;
   }
 
   .timeline-item-secondary::before {
