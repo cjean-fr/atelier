@@ -1,5 +1,11 @@
 # jsonresume-theme-cjean
 
+## 1.2.1
+
+### Minor UI fixes
+
+- **Work Experience**: Fix layout of work experience items.
+
 ## 1.2.0
 
 ### Improvements

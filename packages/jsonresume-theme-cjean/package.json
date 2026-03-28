@@ -1,6 +1,6 @@
 {
   "name": "jsonresume-theme-cjean",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A clean, professional, and print-optimized JSON Resume theme built with Tailwind CSS and TypeScript.",
   "author": "Christophe Jean",
   "license": "MIT",
