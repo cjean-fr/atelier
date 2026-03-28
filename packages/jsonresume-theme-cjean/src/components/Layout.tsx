@@ -39,7 +39,12 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
         <SEO resume={resume} />
 
         {basics.image && (
-          <link rel="preload" as="image" href={basics.image} fetchPriority="high" />
+          <link
+            rel="preload"
+            as="image"
+            href={basics.image}
+            fetchPriority="high"
+          />
         )}
 
         <style
