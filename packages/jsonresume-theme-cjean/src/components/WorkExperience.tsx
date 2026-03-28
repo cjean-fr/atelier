@@ -1,7 +1,7 @@
 import { t } from "../lib/i18n.js";
 import { type Resume } from "../schema.js";
-import Section from "./Section.js";
 import Period from "./Period.js";
+import Section from "./Section.js";
 import type { StandardAttributes } from "@cjean-fr/jsx-string";
 
 interface WorkExperienceProps extends StandardAttributes {
@@ -19,10 +19,7 @@ export default function WorkExperience({
     <Section name={t("work_experience")}>
       <ol className="timeline" reversed>
         {works.map((work) => (
-          <li
-            className="timeline-item"
-            key={work.name + work.startDate}
-          >
+          <li className="timeline-item" key={work.name + work.startDate}>
             <article className="group">
               <div className="flex items-start gap-4">
                 {showLogos && (
