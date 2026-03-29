@@ -2,6 +2,8 @@
 
 A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Tailwind CSS and TypeScript.
 
+![Theme Preview](https://i.imgur.com/lWBFRBK.png)
+
 ## Features
 
 - **Responsive Design**: Looks great on mobile and desktop.

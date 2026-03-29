@@ -84,22 +84,22 @@ export default function WorkExperience({
                       className="mt-1 flex shrink-0 text-sm text-gray-500 capitalize md:mt-1.5 md:items-start md:text-right dark:text-slate-400"
                     />
                   </div>
-
-                  {work.summary && (
-                    <p className="mt-3 text-sm leading-relaxed text-pretty text-gray-600 dark:text-slate-400">
-                      {work.summary}
-                    </p>
-                  )}
-
-                  <ul className="bullet-list">
-                    {work.highlights?.map((highlight: string) => (
-                      <li className="bullet-item" key={highlight}>
-                        <span>{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
+
+              {work.summary && (
+                <p className="mt-3 text-sm leading-relaxed text-pretty text-gray-600 dark:text-slate-400">
+                  {work.summary}
+                </p>
+              )}
+
+              <ul className="bullet-list">
+                {work.highlights?.map((highlight: string) => (
+                  <li className="bullet-item" key={highlight}>
+                    <span>{highlight}</span>
+                  </li>
+                ))}
+              </ul>
             </article>
           </li>
         ))}
