@@ -26,7 +26,7 @@
     },
     "packages/jsonresume-theme-cjean": {
       "name": "jsonresume-theme-cjean",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "devDependencies": {
         "@cjean-fr/i18n-tiny": "catalog:",
         "@cjean-fr/jsx-string": "catalog:",
@@ -41,7 +41,7 @@
     },
     "packages/jsx-string": {
       "name": "@cjean-fr/jsx-string",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "devDependencies": {
         "@types/bun": "catalog:",
         "@types/react": "catalog:",
@@ -685,7 +685,7 @@
 
     "jsonresume-theme-cjean/@cjean-fr/i18n-tiny": ["@cjean-fr/i18n-tiny@1.0.1", "", {}, "sha512-5RXU7No3MUyxXhpr6y0YKHUqrYG45uOAe7e7f7DODbGy4mjFfyaq3BEfXS0LpuQ4Bo7/M2064KPNVCoAQqhVJQ=="],
 
-    "jsonresume-theme-cjean/@cjean-fr/jsx-string": ["@cjean-fr/jsx-string@1.2.1", "", {}, "sha512-rwEZb1aLGEchNMVZmZJsHi7vTYIFHm6t39Ye70vsJxA5z5DvUukPzMAkKn28+HekRCMK7Jv0y/a7aE46T9S1aQ=="],
+    "jsonresume-theme-cjean/@cjean-fr/jsx-string": ["@cjean-fr/jsx-string@1.2.2", "", {}, "sha512-/xsV8hL5eXAftdtYveyODFAk+fLZ1r70dsBd9O8mnEfZzHTipiT0DIUAAlU8ahMXZ0UMP/BbyhAR0dcM8u3DmA=="],
 
     "jsonresume-theme-cjean/typescript": ["typescript@6.0.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ=="],
 
