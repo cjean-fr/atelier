@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/jsx-string",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "The small, safe way to render JSX into HTML strings. Zero dependencies. Fully typed.",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -34,16 +34,12 @@
       "default": "./dist/index.js"
     },
     "./jsx-runtime": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./jsx-dev-runtime": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "publishConfig": {
