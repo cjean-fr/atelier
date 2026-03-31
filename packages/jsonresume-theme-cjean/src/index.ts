@@ -1,6 +1,6 @@
 import Layout from "./components/Layout.js";
 import { init } from "./lib/i18n.js";
-import { getLogoFromUrl } from "./lib/image.js";
+import { getLogoFromUrl, getPictureFromEmail } from "./lib/image.js";
 import { ResumeSchema } from "./schema.js";
 import css from "./styles/tailwind.input.css?inline";
 
@@ -24,6 +24,11 @@ export async function render(resumeData: unknown): Promise<string> {
           work.logo = await getLogoFromUrl(work.url);
         }),
     );
+  }
+
+  // Fetch gravatar if no image are provided
+  if (!resume.basics.image && resume.basics.email) {
+    resume.basics.image = await getPictureFromEmail(resume.basics.email);
   }
 
   return `<!doctype html>${await Layout({ resume, css })}`;

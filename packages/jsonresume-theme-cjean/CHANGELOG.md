@@ -1,5 +1,11 @@
 # jsonresume-theme-cjean
 
+## 1.3.1
+
+### New features
+
+- **Gravatar**: Added support for gravatar images if no picture are provided.
+
 ## 1.3.0
 
 ### New features
