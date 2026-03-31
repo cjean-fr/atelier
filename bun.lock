@@ -44,7 +44,7 @@
     },
     "packages/jsx-string": {
       "name": "@cjean-fr/jsx-string",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "devDependencies": {
         "@types/bun": "catalog:",
         "@types/react": "catalog:",
