@@ -11,7 +11,8 @@ A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Ta
 - **SEO Ready**: Full support for Meta tags, OpenGraph, Twitter Cards, and JSON-LD.
 - **Customizable Aesthetics**: Easy branding via granular `ui` configuration and geometric patterns.
 - **Multi-locale Support**: Comes with `fr` and `en`. Locales are managed in a single file (`i18n.ts`) — feel free to contribute yours!
-- **Modern Tech Stack**: Built with Bun, TypeScript, and functional components.
+- **Modern Tech Stack**: Built with Bun, TypeScript, and JSX components.
+- **CLI**: Built-in CLI to render your resume to an HTML file.
 
 ## Usage
 
@@ -27,18 +28,20 @@ bun install
 bun run build
 ```
 
-### Resume Commands
+### Execution (CLI)
 
-To export your resume to an HTML file:
+While this theme is compatible with the official [resume-cli](https://github.com/jsonresume/resume-cli), it also comes with its own built-in CLI to render your resume to an HTML file:
+
+#### Using npx
 
 ```bash
-bun run resume:export
+npx jsonresume-theme-cjean resume.json -o resume.html
 ```
 
-To live preview your resume (auto-reloads on changes):
+#### Using bunx
 
 ```bash
-bun run resume:serve
+bunx jsonresume-theme-cjean resume.json -o resume.html
 ```
 
 ## Configuration
