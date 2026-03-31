@@ -1,5 +1,12 @@
 # jsonresume-theme-cjean
 
+## 1.3.0
+
+### New features
+
+- **CLI**: Added a built-in CLI to export your resume directly via `npx jsonresume-theme-cjean`.
+- **Dependencies**: Removed dependency on `resume-cli` for exports.
+
 ## 1.2.1
 
 ### Minor UI fixes
