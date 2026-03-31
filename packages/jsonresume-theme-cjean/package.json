@@ -21,10 +21,9 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "jsonresume-theme-cjean": "./dist/bin.js"
+    "jsonresume-theme-cjean": "./bin/jsonresume-theme-cjean.js"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
     "@cjean-fr/i18n-tiny": "catalog:",
     "@cjean-fr/jsx-string": "catalog:",
     "@tailwindcss/vite": "catalog:",

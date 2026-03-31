@@ -2,7 +2,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { render } from "./index.js";
+import { render } from "../dist/index.js";
 
 async function main() {
   const { values, positionals } = parseArgs({
@@ -36,7 +36,7 @@ Options:
     const outputPath = resolve(process.cwd(), output);
     await writeFile(outputPath, html);
     console.log(`✅ Successfully exported resume to ${output}`);
-  } catch (error: any) {
+  } catch (error) {
     if (error.code === 'ENOENT') {
       console.error(`❌ Error: File not found: ${error.path}`);
     } else {
