@@ -46,6 +46,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "package.json",
     "README.md",
     "LICENSE"
