@@ -15,7 +15,6 @@
       "@types/node": "latest",
       "@types/bun": "latest",
       "@types/react": "latest",
-      "@types/resume.json": "latest",
       "bunup": "latest",
       "tailwindcss": "latest",
       "typescript": "latest",
