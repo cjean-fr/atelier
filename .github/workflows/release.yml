@@ -1,0 +1,63 @@
+name: Manuel Release (Bun)
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Select the package to publish"
+        required: true
+        type: choice
+        options:
+          - jsx-string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Extract Version
+        id: meta
+        run: |
+          # Lit la version dans le package.json du dossier choisi
+          VERSION=$(jq -r '.version' packages/${{ github.event.inputs.package }}/package.json)
+          TAG="${{ github.event.inputs.package }}@$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Check if Tag Exists
+        run: |
+          if git rev-parse "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1 || git ls-remote --tags origin "${{ steps.meta.outputs.tag }}" | grep -q "${{ steps.meta.outputs.tag }}"; then
+            echo "Erreur : Le tag ${{ steps.meta.outputs.tag }} existe déjà sur local ou distant."
+            echo "Veuillez incrémenter la version dans le package.json localement avant de relancer."
+            exit 1
+          fi
+
+      - name: Build Package
+        run: bunx turbo build --filter=@cjean-fr/${{ github.event.inputs.package }}
+
+      - name: Create and Push Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.meta.outputs.tag }}
+          git push origin ${{ steps.meta.outputs.tag }}
+
+      - name: Publish to NPM
+        run: |
+          cd packages/${{ github.event.inputs.package }}
+          # --provenance ajoute une preuve signée de l'origine du package
+          bun publish --access public --provenance
