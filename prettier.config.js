@@ -1,6 +1,5 @@
-import { type Config } from "prettier";
-
-const config: Config = {
+/** @type {import("prettier").Config} */
+const config = {
   plugins: [
     "@trivago/prettier-plugin-sort-imports",
     "prettier-plugin-tailwindcss",

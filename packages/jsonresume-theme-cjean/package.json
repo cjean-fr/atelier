@@ -32,7 +32,11 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "eslint": "catalog:",
+    "typescript-eslint": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:"
   },
   "exports": {
     ".": {
@@ -55,7 +59,7 @@
     "build": "vite build",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "publish": "bun pm pack && npm publish"
+    "lint": "eslint ."
   },
   "type": "module"
 }

@@ -34,10 +34,19 @@ Block React imports at lint time (ESLint flat config):
 ```javascript
 // eslint.config.js
 import tseslint from "@typescript-eslint/eslint-plugin";
+import tsparser from "@typescript-eslint/parser";
 
 export default [
   {
     files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
     plugins: {
       "@typescript-eslint": tseslint,
     },
@@ -46,24 +55,39 @@ export default [
         "error",
         {
           paths: [
-            { name: "react", message: "React imports are not compatible with @cjean-fr/jsx-string." },
-            { name: "react-dom", message: "React imports are not compatible with @cjean-fr/jsx-string." }
-          ]
-        }
+            {
+              name: "react",
+              message:
+                "React imports are not compatible with @cjean-fr/jsx-string.",
+            },
+            {
+              name: "react-dom",
+              message:
+                "React imports are not compatible with @cjean-fr/jsx-string.",
+            },
+          ],
+        },
       ],
-      "@typescript-eslint/no-restricted-syntax": [
+      "no-restricted-syntax": [
         "error",
         {
           selector: "CallExpression[callee.name='useState']",
-          message: "useState is not compatible with @cjean-fr/jsx-string. Extract state as props."
+          message:
+            "useState is not compatible with @cjean-fr/jsx-string. Extract state as props.",
         },
         {
           selector: "CallExpression[callee.name='useEffect']",
-          message: "useEffect is not compatible with @cjean-fr/jsx-string. Fetch data before render."
-        }
-      ]
-    }
-  }
+          message:
+            "useEffect is not compatible with @cjean-fr/jsx-string. Fetch data before render.",
+        },
+        {
+          selector: "JSXAttribute[name.name=/^on[A-Z]/]",
+          message:
+            "Event handlers are ignored by @cjean-fr/jsx-string. It renders static HTML.",
+        },
+      ],
+    },
+  },
 ];
 ```
 
@@ -113,12 +137,12 @@ Code stays compatible with React - just follow these rules.
 
 ### Rules
 
-| Rule | Why |
-|------|-----|
-| No hooks (`useState`, `useEffect`, etc.) | Static rendering only |
-| No context providers | Use Registry or props |
-| No event handlers in render | Static HTML, no interactivity |
-| No refs | No DOM access |
+| Rule                                     | Why                           |
+| ---------------------------------------- | ----------------------------- |
+| No hooks (`useState`, `useEffect`, etc.) | Static rendering only         |
+| No context providers                     | Use Registry or props         |
+| No event handlers in render              | Static HTML, no interactivity |
+| No refs                                  | No DOM access                 |
 
 ### Pattern: Extract Data Before Render
 
@@ -300,12 +324,12 @@ renderToString(<button onClick={fn}>btn</button>); // <button>btn</button>;
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
+| Problem                    | Solution                                                       |
+| -------------------------- | -------------------------------------------------------------- |
 | "TypeScript errors on JSX" | Check tsconfig has `"jsxImportSource": "@cjean-fr/jsx-string"` |
-| "Promise in output" | Missing `await` on renderToString or inside component |
-| "Styles don't work" | Use camelCase: `backgroundColor`, not `background-color` |
-| "class doesn't work" | Use `className` (JSX convention) |
+| "Promise in output"        | Missing `await` on renderToString or inside component          |
+| "Styles don't work"        | Use camelCase: `backgroundColor`, not `background-color`       |
+| "class doesn't work"       | Use `className` (JSX convention)                               |
 
 ## Output Checklist
 
