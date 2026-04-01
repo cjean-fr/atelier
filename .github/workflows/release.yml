@@ -24,7 +24,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version-file: package.json
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
@@ -40,7 +40,9 @@ jobs:
 
       - name: Check if Tag Exists
         run: |
-          if git rev-parse "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1 || git ls-remote --tags origin "${{ steps.meta.outputs.tag }}" | grep -q "${{ steps.meta.outputs.tag }}"; then
+          TAG="${{ steps.meta.outputs.tag }}"
+          if git show-ref --tags --verify --quiet "refs/tags/$TAG" || \
+             git ls-remote --exit-code --tags --refs origin "refs/tags/$TAG" >/dev/null; then
             echo "Erreur : Le tag ${{ steps.meta.outputs.tag }} existe déjà sur local ou distant."
             echo "Veuillez incrémenter la version dans le package.json localement avant de relancer."
             exit 1
