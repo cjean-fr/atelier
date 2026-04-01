@@ -40,7 +40,6 @@
     "build": "bunup --minify",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "publish": "bun pm pack && npm publish",
     "test": "bun test"
   },
   "devDependencies": {
