@@ -1,5 +1,5 @@
 import type { JSXChild } from "./core/types.js";
-import { h, jsx, Fragment, renderToString } from "./index.js";
+import { h, jsx, Fragment, renderToString, SafeString } from "./index.js";
 import { expect, describe, it } from "bun:test";
 
 describe("jsx-string (Integration)", () => {
@@ -137,6 +137,19 @@ describe("jsx-string (Integration)", () => {
           } as any,
         }).toString(),
       ).toBe('<div style="color:red"></div>');
+    });
+  });
+
+  describe("SafeString top-level", () => {
+    it("should return SafeString.value unchanged (sync)", () => {
+      const safe = new SafeString("<b>trusted</b>");
+      expect(renderToString(safe)).toBe("<b>trusted</b>");
+    });
+
+    it("should resolve and return SafeString.value unchanged (async)", async () => {
+      const safe = new SafeString("<i>async-trusted</i>");
+      const result = await renderToString(Promise.resolve(safe));
+      expect(result).toBe("<i>async-trusted</i>");
     });
   });
 });

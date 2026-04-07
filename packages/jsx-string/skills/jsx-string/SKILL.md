@@ -81,9 +81,10 @@ export default [
             "useEffect is not compatible with @cjean-fr/jsx-string. Fetch data before render.",
         },
         {
-          selector: "JSXAttribute[name.name=/^on[A-Z]/]",
+          selector:
+            "JSXAttribute[name.name=/^on[A-Z]/]:not([value.expression.callee.name='SafeString'])",
           message:
-            "Event handlers are ignored by @cjean-fr/jsx-string. It renders static HTML.",
+            "Event handlers must be wrapped in SafeString to be rendered by @cjean-fr/jsx-string.",
         },
       ],
     },
@@ -248,36 +249,48 @@ const html = renderToString(<Header />);
 ## Error Handling
 
 ```typescript
-// Simple try/catch
-const html = await renderToString(<Component />).catch(err => "<div>Error</div>");
+// Simple try/catch at renderToString level
+const html = await renderToString(<Page />).catch(() => "<div>Error</div>");
 
-// ErrorBoundary - React-compatible pattern in user land
-interface ErrorBoundaryProps {
-  children: JSXChild;
-  fallback: JSXChild;
-}
-
-const ErrorBoundary = async ({ children, fallback }: ErrorBoundaryProps) => {
+// Inline error handling in async components (simplest, recommended)
+// await <Child /> works because JSX compiles to a function call returning SafeString | Promise<SafeString>
+const UserSection = async ({ id }: { id: string }) => {
   try {
-    return <>{children}</>;
-  } catch (error) {
-    console.error("Render error:", error);
-    return <>{fallback}</>;
+    return await <UserCard id={id} />;
+  } catch {
+    return <div>Failed to load user</div>;
   }
 };
 
-// Usage
-const SafeComponent = ({ id }: { id: string }) => (
-  <ErrorBoundary fallback={<div>Failed to load</div>}>
-    <RiskyComponent id={id} />
-  </ErrorBoundary>
-);
+// Reusable: withCatch HOC
+// ⚠️ <ErrorBoundary><Child /></ErrorBoundary> does NOT work:
+//   JSX evaluates children BEFORE the component is called, so any throw or
+//   rejected Promise escapes the try/catch. Use withCatch instead.
+import type { RenderResult } from "@cjean-fr/jsx-string";
 
-// Timeout - React-compatible pattern in user land
+const withCatch = <P extends object>(
+  Component: (props: P) => RenderResult,
+  fallback: RenderResult,
+) => async (props: P): Promise<RenderResult> => {
+  try {
+    return await Component(props);
+  } catch (error) {
+    console.error("Render error:", error);
+    return fallback;
+  }
+};
+
+// Usage — call site is transparent, works like a normal component
+const SafeUserCard = withCatch(UserCard, <div>Failed to load</div>);
+// <SafeUserCard id="1" />
+
+// Timeout
 const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
   return Promise.race([
     promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms))
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), ms),
+    ),
   ]);
 };
 ```
@@ -318,8 +331,9 @@ renderToString(<div>{"<script>"}</div>); // &lt;script&gt;
 // javascript: blocked
 renderToString(<a href="javascript:alert(1)">link</a>); // href="#blocked";
 
-// Event handlers removed
-renderToString(<button onClick={fn}>btn</button>); // <button>btn</button>;
+// Event handlers removed except if marked as SafeString
+renderToString(<button onClick={new SafeString("alert(1)")}>btn</button>); // <button onclick="alert(1)">btn</button>
+renderToString(<button onClick={fn}>btn</button>); // <button>btn</button> (blocked)
 ```
 
 ## Troubleshooting
