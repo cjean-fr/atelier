@@ -65,9 +65,6 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
       <body
         className="bg-gray-200 text-gray-800 dark:bg-slate-950 dark:text-slate-300 print:bg-transparent print:text-sm"
         {...props}
-        onClick={() => {
-          alert("hello");
-        }}
       >
         <Header bgTiles={bgTiles} />
         <main className="relative z-10 container mx-auto max-w-5xl rounded bg-white p-4 shadow-md backdrop-blur-3xl md:p-6 dark:bg-slate-900/95 dark:text-slate-200 dark:shadow-2xl dark:ring-1 dark:ring-white/10 print:rounded-none print:shadow-none [&_a]:underline">

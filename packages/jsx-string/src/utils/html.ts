@@ -5,6 +5,7 @@ import type {
 } from "../core/types.js";
 import {
   escape,
+  hasAttrUnsafeChars,
   isSafeUrl,
   isValidAttrName,
   sanitize,
@@ -164,8 +165,15 @@ function renderAttributesSync(props: StandardAttributes): string {
     const mapped = ATTRIBUTE_NAME_MAP.get(key);
     let name = mapped ? mapped : sanitize(key);
     if (!isValidAttrName(name)) continue;
-    if (REGEX_EVENT_HANDLER.test(key) || REGEX_EVENT_HANDLER.test(name))
-      continue;
+    if (REGEX_EVENT_HANDLER.test(name)) {
+      if (!(value instanceof SafeString)) {
+        console.warn(
+          `Event handler "${name}" was blocked for security. Use SafeString to allow it.`,
+        );
+        continue;
+      }
+      name = name.toLowerCase();
+    }
 
     if (name === "style") {
       if (typeof value === "object") {
@@ -181,6 +189,16 @@ function renderAttributesSync(props: StandardAttributes): string {
     } else if (value === true) {
       attrs += ` ${name}`;
     } else {
+      if (value instanceof SafeString) {
+        if (hasAttrUnsafeChars(value.value)) {
+          console.warn(
+            `SafeString in attribute "${name}" contains unescaped HTML characters (&, <, >, "). ` +
+              `This may break the HTML structure. Use the escape() utility to sanitize the value.`,
+          );
+        }
+        attrs += ` ${name}="${value.value}"`;
+        continue;
+      }
       let str = String(value);
       if (URL_ATTRIBUTES.has(name) && !isSafeUrl(str)) str = "#blocked";
       attrs += ` ${name}="${escape(str, "attr")}"`;

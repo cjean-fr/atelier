@@ -1,3 +1,5 @@
+import type { SafeString } from "../utils/html.js";
+
 /**
  * Support for React type augmentation.
  */
@@ -5,10 +7,12 @@ declare module "react" {
   interface HTMLAttributes<T> {
     class?: string;
     children?: any;
+    [key: `on${string}`]: SafeString | undefined;
   }
   interface SVGAttributes<T> {
     class?: string;
     children?: any;
+    [key: `on${string}`]: SafeString | undefined;
   }
   interface CSSProperties {
     [key: string]: any;
@@ -41,6 +45,9 @@ export interface HTMLAttributes extends Omit<
   id?: string;
   style?: string | CSSProperties | any;
   dangerouslySetInnerHTML?: { __html: string };
+  /** Event handlers must be SafeStrings for security and clarity in @cjean-fr/jsx-string. */
+  [key: `on${string}`]: SafeString | undefined;
+  /** Catch-all for other HTML attributes */
   [key: string]: any;
 }
 
