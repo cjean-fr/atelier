@@ -32,6 +32,16 @@ const ATTRIBUTE_NAME_MAP = new Map<string, string>([
   ["xmlLang", "xml:lang"],
   ["xmlBase", "xml:base"],
   ["xmlSpace", "xml:space"],
+  ["tabIndex", "tabindex"],
+  ["readOnly", "readonly"],
+  ["maxLength", "maxlength"],
+  ["minLength", "minlength"],
+  ["autoFocus", "autofocus"],
+  ["autoPlay", "autoplay"],
+  ["autoComplete", "autocomplete"],
+  ["encType", "enctype"],
+  ["noValidate", "novalidate"],
+  ["dateTime", "datetime"],
 ]);
 
 const hasPromise = (v: unknown): boolean => {
@@ -106,10 +116,12 @@ export type RenderResult = SafeString | Promise<SafeString>;
 /**
  * Convert a props object into an HTML attribute string.
  *
+ * @param tag - The element tag name (used for attribute normalization context)
  * @param props - Attributes object to render; if `null` or `undefined` an empty string is produced
  * @returns The HTML attribute string
  */
 export function renderAttributes(
+  tag: string,
   props: StandardAttributes | null | undefined,
 ): string | Promise<string> {
   if (!props) return "";
@@ -128,12 +140,12 @@ export function renderAttributes(
       return Promise.all(keys.map(async (k) => [k, await (props as any)[k]]))
         .then((entries) => resolveNestedPromises(Object.fromEntries(entries)))
         .then((resolved) =>
-          renderAttributesSync(resolved as StandardAttributes),
+          renderAttributesSync(tag, resolved as StandardAttributes),
         );
     }
   }
 
-  return renderAttributesSync(props);
+  return renderAttributesSync(tag, props);
 }
 
 /**
@@ -141,10 +153,11 @@ export function renderAttributes(
  *
  * Skips internal props (e.g., children, key, ref), omits null/undefined/false values, merges `class`/`className` values, serializes `style` objects, renders boolean `true` attributes without a value, and sanitizes attribute names and URL-valued attributes.
  *
+ * @param tag - The element tag name
  * @param props - The props object to convert into HTML attributes
  * @returns A string containing the rendered HTML attributes (prefixed with a space for each attribute), or an empty string if no attributes are produced
  */
-function renderAttributesSync(props: StandardAttributes): string {
+function renderAttributesSync(tag: string, props: StandardAttributes): string {
   let attrs = "";
   const classes = new Set<string>();
 
@@ -163,7 +176,15 @@ function renderAttributesSync(props: StandardAttributes): string {
     }
 
     const mapped = ATTRIBUTE_NAME_MAP.get(key);
-    let name = mapped ? mapped : sanitize(key);
+    let name: string;
+
+    if (mapped) {
+      name = mapped;
+    } else if (key.startsWith("data-") || key.startsWith("aria-")) {
+      name = sanitize(key).replace(REGEX_CAMEL_TO_KEBAB, "-$&").toLowerCase();
+    } else {
+      name = sanitize(key);
+    }
     if (!isValidAttrName(name)) continue;
     if (REGEX_EVENT_HANDLER.test(name)) {
       if (!(value instanceof SafeString)) {
@@ -315,7 +336,7 @@ export function renderElement(
   props: StandardAttributes,
   children: JSXChild[],
 ): RenderResult {
-  const attrsResult = renderAttributes(props);
+  const attrsResult = renderAttributes(tag, props);
   const contentResult = props.dangerouslySetInnerHTML
     ? new SafeString(
         props.dangerouslySetInnerHTML.__html == null

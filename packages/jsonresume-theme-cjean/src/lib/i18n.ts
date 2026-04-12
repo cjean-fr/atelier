@@ -4,7 +4,7 @@ import {
   type Translator,
   defineTranslations,
 } from "@cjean-fr/i18n-tiny";
-import { SafeString } from "@cjean-fr/jsx-string";
+import { SafeString, type JSXChild } from "@cjean-fr/jsx-string";
 
 export type ThemeSpec = {
   work_experience: readonly [];
@@ -83,7 +83,7 @@ export const t: Translator<ThemeSpec> = (key, ...args) => {
  * @param args The arguments to pass to the translator.
  * @returns The translated string as a SafeString.
  */
-export const tx: Translator<ThemeSpec, SafeString> = (key, ...args) => {
+export const tx: Translator<ThemeSpec, JSXChild> = (key, ...args) => {
   return new SafeString(t(key, ...(args as any)));
 };
 

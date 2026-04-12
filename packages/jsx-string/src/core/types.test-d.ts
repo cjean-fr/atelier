@@ -5,7 +5,7 @@ import type { JSX } from "./types";
  */
 
 export const testReactProps: JSX.IntrinsicElements["div"] = {
-  onCopy: () => {},
+  onClick: "alert('clicked')",
   className: "from-react",
 };
 

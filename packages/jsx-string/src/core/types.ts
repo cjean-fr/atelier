@@ -2,20 +2,16 @@ import type { SafeString } from "../utils/html.js";
 
 /**
  * Support for React type augmentation.
+ * We override standard attributes to allow strings/SafeStrings.
  */
 declare module "react" {
   interface HTMLAttributes<T> {
     class?: string;
-    children?: any;
-    [key: `on${string}`]: SafeString | undefined;
+    [key: `on${string}`]: any;
   }
   interface SVGAttributes<T> {
     class?: string;
-    children?: any;
-    [key: `on${string}`]: SafeString | undefined;
-  }
-  interface CSSProperties {
-    [key: string]: any;
+    [key: `on${string}`]: any;
   }
 }
 
@@ -33,21 +29,42 @@ export interface CSSProperties extends Record<string, any> {}
 export interface CSSProperties extends React.CSSProperties {}
 
 /**
- * Base attributes shared by all HTML elements.
+ * Map React's functional event handlers to static strings or SafeStrings.
  */
-export interface HTMLAttributes extends Omit<
-  React.HTMLAttributes<any>,
-  "children" | "style"
-> {
-  children?: JSXChild;
+export type StringEventHandlers = {
+  [K in keyof React.DOMAttributes<any> as K extends `on${string}`
+    ? K
+    : never]?: string | SafeString;
+};
+
+/**
+ * Transform a React attribute set into a static-friendly one.
+ * Strips functional events, and adds back children/style/class.
+ */
+export type ToStatic<T> = Omit<
+  T,
+  keyof React.DOMAttributes<any> | "children" | "style" | "class" | "className"
+> & {
   class?: string;
   className?: string;
-  id?: string;
   style?: string | CSSProperties | any;
+  children?: JSXChild;
   dangerouslySetInnerHTML?: { __html: string };
-  /** Event handlers must be SafeStrings for security and clarity in @cjean-fr/jsx-string. */
-  [key: `on${string}`]: SafeString | undefined;
+} & StringEventHandlers;
+
+/**
+ * Base attributes shared by all HTML elements.
+ */
+export interface HTMLAttributes extends ToStatic<React.HTMLAttributes<any>> {
   /** Catch-all for other HTML attributes */
+  [key: string]: any;
+}
+
+/**
+ * Base attributes shared by all SVG elements.
+ */
+export interface SVGAttributes extends ToStatic<React.SVGAttributes<any>> {
+  /** Catch-all for other SVG attributes */
   [key: string]: any;
 }
 
@@ -66,14 +83,24 @@ export type JSXChild =
 
 export type FunctionalComponent<P = {}> = (
   props: P & StandardAttributes & { children?: JSXChild },
-) => any;
+) => RenderResult;
+
+/**
+ * Internal type for mapping React intrinsic elements to static ones.
+ */
+type StaticIntrinsicElements = {
+  [K in keyof React.JSX.IntrinsicElements]: ToStatic<
+    React.JSX.IntrinsicElements[K]
+  >;
+};
 
 /**
  * JSX Namespace for the internal factory.
  */
 export namespace JSX {
-  export type Element = any;
-  export interface IntrinsicElements extends React.JSX.IntrinsicElements {
+  /** The result of a JSX expression is a SafeString or a Promise thereof. */
+  export type Element = SafeString | Promise<SafeString>;
+  export interface IntrinsicElements extends StaticIntrinsicElements {
     [key: string]: any;
   }
   export interface IntrinsicAttributes
@@ -93,8 +120,8 @@ export namespace JSX {
  */
 declare global {
   namespace JSX {
-    interface Element extends JSXElement {}
-    interface IntrinsicElements extends React.JSX.IntrinsicElements {
+    interface Element extends SafeString {}
+    interface IntrinsicElements extends StaticIntrinsicElements {
       [key: string]: any;
     }
     interface IntrinsicAttributes extends React.Attributes, StandardAttributes {
