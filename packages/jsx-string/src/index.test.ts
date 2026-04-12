@@ -1,5 +1,5 @@
 import type { JSXChild } from "./core/types.js";
-import { h, jsx, Fragment, renderToString, SafeString } from "./index.js";
+import { h, jsx, Fragment, renderToString, renderToStringAsync, isAsync, SafeString } from "./index.js";
 import { expect, describe, it } from "bun:test";
 
 describe("jsx-string (Integration)", () => {
@@ -66,7 +66,7 @@ describe("jsx-string (Integration)", () => {
         await new Promise((r) => setTimeout(r, 5));
         return jsx("div", { children: "Async" });
       };
-      const html = await renderToString(jsx(AsyncComp, {}));
+      const html = await renderToStringAsync(jsx(AsyncComp, {}));
       expect(html).toBe("<div>Async</div>");
     });
 
@@ -74,7 +74,7 @@ describe("jsx-string (Integration)", () => {
       const element = jsx("div", {
         children: [Promise.resolve("A"), " ", Promise.resolve("B")],
       });
-      expect(await renderToString(element)).toBe("<div>A B</div>");
+      expect(await renderToStringAsync(element)).toBe("<div>A B</div>");
     });
   });
 
@@ -138,6 +138,12 @@ describe("jsx-string (Integration)", () => {
         }).toString(),
       ).toBe('<div style="color:red"></div>');
     });
+
+    it("should sanitize srcset attribute", () => {
+      expect(
+        renderToString(jsx("img", { srcset: "javascript:alert(1) 1x" })),
+      ).toBe('<img srcset="#blocked">');
+    });
   });
 
   describe("SafeString top-level", () => {
@@ -148,8 +154,61 @@ describe("jsx-string (Integration)", () => {
 
     it("should resolve and return SafeString.value unchanged (async)", async () => {
       const safe = new SafeString("<i>async-trusted</i>");
-      const result = await renderToString(Promise.resolve(safe));
+      const result = await renderToStringAsync(Promise.resolve(safe));
       expect(result).toBe("<i>async-trusted</i>");
+    });
+  });
+
+  describe("Hardening & Normalization", () => {
+    it("should normalize camelCase HTML attributes to lowercase", () => {
+      expect(renderToString(jsx("div", { tabIndex: 1 }))).toBe(
+        '<div tabindex="1"></div>',
+      );
+      expect(renderToString(jsx("input", { readOnly: true }))).toBe(
+        '<input readonly>',
+      );
+      expect(renderToString(jsx("button", { autoFocus: true }))).toBe(
+        "<button autofocus></button>",
+      );
+    });
+
+    it("should preserve case-sensitive SVG attributes", () => {
+      const svg = jsx("svg", {
+        viewBox: "0 0 10 10",
+        children: jsx("circle", { strokeWidth: "2" }),
+      });
+      expect(renderToString(svg)).toBe(
+        '<svg viewBox="0 0 10 10"><circle strokeWidth="2"></circle></svg>',
+      );
+    });
+
+    it("should preserve unknown camelCase attributes (except data-*/aria-*)", () => {
+      // @ts-ignore
+      expect(renderToString(jsx("div", { customOption: "foo" }))).toBe(
+        '<div customOption="foo"></div>',
+      );
+      // Now requiring dash for auto-kebab
+      // @ts-ignore
+      expect(renderToString(jsx("div", { dataTestId: "123" }))).toBe(
+        '<div dataTestId="123"></div>',
+      );
+      // @ts-ignore
+      expect(renderToString(jsx("div", { "data-testId": "123" }))).toBe(
+        '<div data-test-id="123"></div>',
+      );
+    });
+  });
+
+  describe("API Consistency", () => {
+    it("should throw on async in renderToString", () => {
+      const Async = async () => "foo";
+      // @ts-ignore
+      expect(() => renderToString(jsx(Async, {}))).toThrow(/asynchronous/);
+    });
+
+    it("should handle isAsync correctly", () => {
+      expect(isAsync(Promise.resolve())).toBe(true);
+      expect(isAsync("not-promise")).toBe(false);
     });
   });
 });

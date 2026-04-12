@@ -71,17 +71,40 @@ export function Fragment({
 }
 
 /**
- * Convert a JSX node into its HTML string representation.
+ * Convert a JSX node into its HTML string representation synchronously.
  *
- * @param node - The JSX node (element, text, fragment, component result, or promise thereof) to render
- * @returns The rendered HTML string for the provided node, or a Promise that resolves to that string
+ * @param node - The JSX node to render
+ * @returns The rendered HTML string
+ * @throws Error if the node is asynchronous (contains promises or async components)
  */
-export function renderToString(node: JSXChild): string | Promise<string> {
+export function renderToString(node: JSXChild): string {
   const result = renderChild(node);
   if (result instanceof Promise) {
-    return result.then((r) =>
-      r instanceof SafeString ? r.value : escape(String(r)),
+    throw new Error(
+      "renderToString encountered an asynchronous component or Promise. " +
+        "Use await renderToStringAsync(node) instead.",
     );
   }
   return result instanceof SafeString ? result.value : escape(String(result));
+}
+
+/**
+ * Convert a JSX node into its HTML string representation asynchronously.
+ *
+ * @param node - The JSX node to render
+ * @returns A Promise that resolves to the rendered HTML string
+ */
+export async function renderToStringAsync(node: JSXChild): Promise<string> {
+  const result = await renderChild(node);
+  return result instanceof SafeString ? result.value : escape(String(result));
+}
+
+/**
+ * Check if a value is a Promise.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a Promise
+ */
+export function isAsync(value: any): value is Promise<any> {
+  return value instanceof Promise;
 }
