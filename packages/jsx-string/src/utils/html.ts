@@ -13,10 +13,9 @@ import {
 } from "./escape.js";
 import { VOID_ELEMENTS } from "./void-elements.js";
 
-const REGEX_CAMEL_TO_KEBAB = /[A-Z]/g;
+const REGEX_CAMEL_TO_KEBAB = /[A-Z]/;
 const REGEX_EVENT_HANDLER = /^on[a-z]/i;
 const REGEX_CSS_UNSAFE = /expression\s*\(|javascript\s*:/i;
-const REGEX_CSS_URL = /url\(\s*(['"]?)(.*?)\1\s*\)/gi;
 const INTERNAL_PROPS = new Set([
   "children",
   "dangerouslySetInnerHTML",
@@ -91,11 +90,8 @@ const isSafeCssValue = (value: string): boolean => {
   const sanitized = sanitize(value);
   if (REGEX_CSS_UNSAFE.test(sanitized)) return false;
 
-  REGEX_CSS_URL.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = REGEX_CSS_URL.exec(sanitized))) {
-    const url = match[2]?.trim() ?? "";
-    if (!isSafeUrl(url)) return false;
+  for (const match of sanitized.matchAll(/url\(\s*(['"]?)(.*?)\1\s*\)/gi)) {
+    if (!isSafeUrl(match[2]?.trim() ?? "")) return false;
   }
 
   return true;
@@ -116,12 +112,10 @@ export type RenderResult = SafeString | Promise<SafeString>;
 /**
  * Convert a props object into an HTML attribute string.
  *
- * @param tag - The element tag name (used for attribute normalization context)
  * @param props - Attributes object to render; if `null` or `undefined` an empty string is produced
  * @returns The HTML attribute string
  */
 export function renderAttributes(
-  tag: string,
   props: StandardAttributes | null | undefined,
 ): string | Promise<string> {
   if (!props) return "";
@@ -140,12 +134,12 @@ export function renderAttributes(
       return Promise.all(keys.map(async (k) => [k, await (props as any)[k]]))
         .then((entries) => resolveNestedPromises(Object.fromEntries(entries)))
         .then((resolved) =>
-          renderAttributesSync(tag, resolved as StandardAttributes),
+          renderAttributesSync(resolved as StandardAttributes),
         );
     }
   }
 
-  return renderAttributesSync(tag, props);
+  return renderAttributesSync(props);
 }
 
 /**
@@ -157,7 +151,7 @@ export function renderAttributes(
  * @param props - The props object to convert into HTML attributes
  * @returns A string containing the rendered HTML attributes (prefixed with a space for each attribute), or an empty string if no attributes are produced
  */
-function renderAttributesSync(tag: string, props: StandardAttributes): string {
+function renderAttributesSync(props: StandardAttributes): string {
   let attrs = "";
   const classes = new Set<string>();
 
@@ -336,7 +330,7 @@ export function renderElement(
   props: StandardAttributes,
   children: JSXChild[],
 ): RenderResult {
-  const attrsResult = renderAttributes(tag, props);
+  const attrsResult = renderAttributes(props);
   const contentResult = props.dangerouslySetInnerHTML
     ? new SafeString(
         props.dangerouslySetInnerHTML.__html == null

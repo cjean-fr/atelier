@@ -83,7 +83,7 @@ export type JSXChild =
 
 export type FunctionalComponent<P = {}> = (
   props: P & StandardAttributes & { children?: JSXChild },
-) => RenderResult;
+) => JSXChild;
 
 /**
  * Internal type for mapping React intrinsic elements to static ones.
