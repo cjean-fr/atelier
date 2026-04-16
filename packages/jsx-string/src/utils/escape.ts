@@ -75,7 +75,7 @@ export const isValidAttrName = (name: string): boolean => {
 
 /**
  * Returns true if the string contains HTML characters that are unsafe in an attribute value
- * (&, <, >, "). Non-global regex: stops at first match, no lastIndex state.
+ * (&, <, >, ").
  */
 export const hasAttrUnsafeChars = (str: string): boolean =>
   REGEX_HAS_ATTR_UNSAFE.test(str);

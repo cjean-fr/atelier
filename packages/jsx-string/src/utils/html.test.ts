@@ -6,6 +6,8 @@ import {
 } from "./html.js";
 import { expect, describe, it } from "bun:test";
 
+const resolve = (v: string | Promise<string>) => Promise.resolve(v);
+
 describe("HTML Utilities", () => {
   describe("renderAttributes", () => {
     it("should handle class and className merging", () => {
@@ -114,5 +116,23 @@ describe("renderChild", () => {
     expect((result as SafeString).value).toBe(
       "<b>safe</b>raw &amp; text<i>also safe</i>plain",
     );
+  });
+});
+
+describe("régression — REGEX_CSS_URL lastIndex corrompu", () => {
+  // ✅ Passe REGEX_CSS_UNSAFE, bloqué uniquement par isSafeUrl
+  const UNSAFE_DATA = "url('data:text/html,<h1>xss</h1>')";
+
+  it("⚠️  2e appel consécutif — lastIndex corrompu rate le match", async () => {
+    // 1er appel : exec() trouve le match, lastIndex avance après le match,
+    // isSafeUrl retourne false => early return => lastIndex reste != 0
+    await resolve(renderStyle({ backgroundImage: UNSAFE_DATA }));
+
+    // 2e appel : REGEX_CSS_URL.exec() repart du lastIndex précédent,
+    // dépasse la fin de la chaîne => retourne null immédiatement
+    // => la valeur unsafe est acceptée à tort
+    const result = await resolve(renderStyle({ backgroundImage: UNSAFE_DATA }));
+
+    expect(result).toBe(""); // ❌ ÉCHOUE si on utilise regex globale
   });
 });

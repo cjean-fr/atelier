@@ -1,5 +1,13 @@
 import type { JSXChild } from "./core/types.js";
-import { h, jsx, Fragment, renderToString, renderToStringAsync, isAsync, SafeString } from "./index.js";
+import {
+  h,
+  jsx,
+  Fragment,
+  renderToString,
+  renderToStringAsync,
+  isAsync,
+  SafeString,
+} from "./index.js";
 import { expect, describe, it } from "bun:test";
 
 describe("jsx-string (Integration)", () => {
@@ -165,7 +173,7 @@ describe("jsx-string (Integration)", () => {
         '<div tabindex="1"></div>',
       );
       expect(renderToString(jsx("input", { readOnly: true }))).toBe(
-        '<input readonly>',
+        "<input readonly>",
       );
       expect(renderToString(jsx("button", { autoFocus: true }))).toBe(
         "<button autofocus></button>",
