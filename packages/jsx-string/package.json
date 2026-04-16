@@ -57,6 +57,14 @@
     "bunup": "catalog:",
     "typescript": "catalog:"
   },
+  "peerDependencies": {
+    "@types/react": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  },
   "files": [
     "dist",
     "README.md",
