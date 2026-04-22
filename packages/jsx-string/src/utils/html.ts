@@ -5,7 +5,6 @@ import type {
 } from "../core/types.js";
 import {
   escape,
-  hasAttrUnsafeChars,
   isSafeUrl,
   isValidAttrName,
   sanitize,
@@ -97,7 +96,7 @@ const isSafeCssValue = (value: string): boolean => {
   return true;
 };
 
-export class SafeString {
+export class RawString {
   readonly value: string;
   constructor(value: string) {
     this.value = value;
@@ -107,7 +106,13 @@ export class SafeString {
   }
 }
 
-export type RenderResult = SafeString | Promise<SafeString>;
+/**
+ * Creates a RawString from a value, which will be rendered without escaping.
+ * Use with caution to avoid XSS vulnerabilities.
+ */
+export const raw = (value: string): RawString => new RawString(value);
+
+export type RenderResult = RawString | Promise<RawString>;
 
 /**
  * Convert a props object into an HTML attribute string.
@@ -181,12 +186,14 @@ function renderAttributesSync(props: StandardAttributes): string {
     }
     if (!isValidAttrName(name)) continue;
     if (REGEX_EVENT_HANDLER.test(name)) {
-      if (!(value instanceof SafeString)) {
+      if (typeof value === "function") {
         console.warn(
-          `Event handler "${name}" was blocked for security. Use SafeString to allow it.`,
+          `[jsx-string] Event handler "${name}" was passed a function. ` +
+            `This is not supported in static HTML rendering. Use a string instead.`,
         );
         continue;
       }
+      if (typeof value !== "string") continue;
       name = name.toLowerCase();
     }
 
@@ -204,16 +211,6 @@ function renderAttributesSync(props: StandardAttributes): string {
     } else if (value === true) {
       attrs += ` ${name}`;
     } else {
-      if (value instanceof SafeString) {
-        if (hasAttrUnsafeChars(value.value)) {
-          console.warn(
-            `SafeString in attribute "${name}" contains unescaped HTML characters (&, <, >, "). ` +
-              `This may break the HTML structure. Use the escape() utility to sanitize the value.`,
-          );
-        }
-        attrs += ` ${name}="${value.value}"`;
-        continue;
-      }
       let str = String(value);
       if (URL_ATTRIBUTES.has(name) && !isSafeUrl(str)) str = "#blocked";
       attrs += ` ${name}="${escape(str, "attr")}"`;
@@ -261,26 +258,26 @@ function renderStyleSync(style: CSSProperties): string {
 }
 
 /**
- * Convert a JSX child (primitive, SafeString, array, or Promise) into HTML-safe rendered content.
+ * Convert a JSX child (primitive, RawString, array, or Promise) into HTML-safe rendered content.
  *
- * @param child - The JSX child to render; may be null, boolean, a SafeString, a Promise, an array of children, or any primitive value.
- * @returns A `string`, `SafeString`, or `Promise<SafeString>`: `string` for simple primitive values, `SafeString` for synchronously rendered content, or `Promise<SafeString>` when any nested child is asynchronous.
+ * @param child - The JSX child to render; may be null, boolean, a RawString, a Promise, an array of children, or any primitive value.
+ * @returns A `string`, `RawString`, or `Promise<RawString>`: `string` for simple primitive values, `RawString` for synchronously rendered content, or `Promise<RawString>` when any nested child is asynchronous.
  */
 export function renderChild(
   child: JSXChild,
-): string | SafeString | Promise<SafeString> {
+): string | RawString | Promise<RawString> {
   if (child == null || child === true || child === false) return "";
-  if (child instanceof SafeString) return child;
+  if (child instanceof RawString) return child;
   if (child instanceof Promise)
     return child
       .then(renderChild)
       .then((r) =>
-        r instanceof SafeString ? r : new SafeString(escape(String(r))),
+        r instanceof RawString ? r : new RawString(escape(String(r))),
       );
 
   if (Array.isArray(child)) {
     const len = child.length;
-    const rendered: (string | SafeString | Promise<SafeString>)[] = new Array(
+    const rendered: (string | RawString | Promise<RawString>)[] = new Array(
       len,
     );
     let hasAsync = false;
@@ -294,19 +291,19 @@ export function renderChild(
     if (!hasAsync) {
       let out = "";
       for (let i = 0; i < len; i++) {
-        const r = rendered[i] as string | SafeString;
-        out += r instanceof SafeString ? r.value : escape(String(r));
+        const r = rendered[i] as string | RawString;
+        out += r instanceof RawString ? r.value : escape(String(r));
       }
-      return new SafeString(out);
+      return new RawString(out);
     }
 
     return Promise.all(rendered).then((items) => {
       let out = "";
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        out += item instanceof SafeString ? item.value : escape(String(item));
+        out += item instanceof RawString ? item.value : escape(String(item));
       }
-      return new SafeString(out);
+      return new RawString(out);
     });
   }
 
@@ -318,12 +315,12 @@ export function renderChild(
  *
  * When `props.dangerouslySetInnerHTML` is provided, its `__html` is used as the element content;
  * otherwise the provided children are rendered. Attributes and children may be asynchronous; in that case
- * the function returns a Promise resolving to the same SafeString result.
+ * the function returns a Promise resolving to the same RawString result.
  *
  * @param tag - The element tag name
  * @param props - Element attributes and special props (e.g., `className`, `style`, `dangerouslySetInnerHTML`)
  * @param children - Child nodes to render inside the element
- * @returns A SafeString containing the rendered element HTML
+ * @returns A RawString containing the rendered element HTML
  */
 export function renderElement(
   tag: string,
@@ -332,7 +329,7 @@ export function renderElement(
 ): RenderResult {
   const attrsResult = renderAttributes(props);
   const contentResult = props.dangerouslySetInnerHTML
-    ? new SafeString(
+    ? new RawString(
         props.dangerouslySetInnerHTML.__html == null
           ? ""
           : String(props.dangerouslySetInnerHTML.__html),
@@ -341,28 +338,28 @@ export function renderElement(
 
   if (attrsResult instanceof Promise || contentResult instanceof Promise) {
     return Promise.all([attrsResult, contentResult]).then(([attrs, content]) =>
-      toSafeElement(tag, attrs, content),
+      toRawElement(tag, attrs, content),
     );
   }
 
-  return toSafeElement(tag, attrsResult, contentResult);
+  return toRawElement(tag, attrsResult, contentResult);
 }
 
 /**
- * Create a SafeString containing an HTML element built from a tag, pre-rendered attributes, and content.
+ * Create a RawString containing an HTML element built from a tag, pre-rendered attributes, and content.
  *
  * @param tag - The element tag name (e.g., "div", "img"); void elements will not receive a closing tag.
  * @param attrs - Pre-rendered attribute string (leading space if attributes are present), inserted into the opening tag.
- * @param content - Inner content for the element; a `SafeString` value is used verbatim, otherwise the value is escaped.
- * @returns A SafeString holding the final HTML for the element. For void elements the result is the opening tag only.
+ * @param content - Inner content for the element; a `RawString` value is used verbatim, otherwise the value is escaped.
+ * @returns A RawString holding the final HTML for the element. For void elements the result is the opening tag only.
  */
-function toSafeElement(
+function toRawElement(
   tag: string,
   attrs: string,
-  content: string | SafeString,
-): SafeString {
-  if (VOID_ELEMENTS.has(tag)) return new SafeString(`<${tag}${attrs}>`);
+  content: string | RawString,
+): RawString {
+  if (VOID_ELEMENTS.has(tag)) return new RawString(`<${tag}${attrs}>`);
   const inner =
-    content instanceof SafeString ? content.value : escape(String(content));
-  return new SafeString(`<${tag}${attrs}>${inner}</${tag}>`);
+    content instanceof RawString ? content.value : escape(String(content));
+  return new RawString(`<${tag}${attrs}>${inner}</${tag}>`);
 }

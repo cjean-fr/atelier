@@ -1,0 +1,60 @@
+{
+  "name": "@cjean-fr/eslint-plugin-jsx-string",
+  "version": "0.1.0",
+  "description": "ESLint plugin for @cjean-fr/jsx-string to ensure static rendering compatibility",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/eslint-plugin-jsx-string#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/eslint-plugin-jsx-string"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "jsx-string",
+    "react",
+    "static-rendering",
+    "xss-prevention"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,json,md}\""
+  },
+  "peerDependencies": {
+    "eslint": ">=8",
+    "@cjean-fr/jsx-string": ">=1.3.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "catalog:",
+    "@typescript-eslint/rule-tester": "catalog:",
+    "@typescript-eslint/utils": "catalog:",
+    "@types/bun": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

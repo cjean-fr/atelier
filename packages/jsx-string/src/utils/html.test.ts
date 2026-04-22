@@ -2,13 +2,22 @@ import {
   renderAttributes,
   renderChild,
   renderStyle,
-  SafeString,
+  RawString,
+  raw,
 } from "./html.js";
 import { expect, describe, it } from "bun:test";
 
 const resolve = (v: string | Promise<string>) => Promise.resolve(v);
 
 describe("HTML Utilities", () => {
+  describe("raw utility", () => {
+    it("should create a RawString instance", () => {
+      const r = raw("<b>test</b>");
+      expect(r).toBeInstanceOf(RawString);
+      expect(r.value).toBe("<b>test</b>");
+    });
+  });
+
   describe("renderAttributes", () => {
     it("should handle class and className merging", () => {
       expect(renderAttributes({ class: "a", className: "b" })).toBe(
@@ -34,16 +43,20 @@ describe("HTML Utilities", () => {
       );
     });
 
-    it("should drop inline event handlers", () => {
-      expect(renderAttributes({ onClick: "alert(1)", id: "x" } as any)).toBe(
-        ' id="x"',
-      );
-    });
-
-    it("should NOT drop inline event handlers if they are SafeString", () => {
+    it("should support string event handlers and block non-string values", () => {
       expect(
         renderAttributes({
-          onclick: new SafeString("alert(`Hello ${this.dataset.name}`)"),
+          onClick: "alert('hello')",
+          onHover: (() => {}) as any,
+          id: "btn",
+        }),
+      ).toBe(' onclick="alert(\'hello\')" id="btn"');
+    });
+
+    it("should support custom event handler with template literals", () => {
+      expect(
+        renderAttributes({
+          onclick: "alert(`Hello ${this.dataset.name}`)",
           "data-name": "World",
         }),
       ).toBe(
@@ -103,36 +116,33 @@ describe("HTML Utilities", () => {
 
 describe("renderChild", () => {
   it("should handle a mixed sync + async array", async () => {
-    // Covers the branch in renderChild where hasAsync=true and Promise.all is used
     const mixed = [
-      new SafeString("<b>safe</b>"),
+      new RawString("<b>safe</b>"),
       Promise.resolve("raw & text"),
-      Promise.resolve(new SafeString("<i>also safe</i>")),
+      Promise.resolve(new RawString("<i>also safe</i>")),
       "plain",
     ];
     const result = await renderChild(mixed);
-    expect(result instanceof SafeString).toBe(true);
-    // SafeString values pass through verbatim; plain strings and resolved strings are escaped
-    expect((result as SafeString).value).toBe(
+    expect(result instanceof RawString).toBe(true);
+    expect((result as RawString).value).toBe(
       "<b>safe</b>raw &amp; text<i>also safe</i>plain",
     );
   });
 });
 
-describe("régression — REGEX_CSS_URL lastIndex corrompu", () => {
-  // ✅ Passe REGEX_CSS_UNSAFE, bloqué uniquement par isSafeUrl
+describe("regression — REGEX_CSS_URL lastIndex corruption", () => {
   const UNSAFE_DATA = "url('data:text/html,<h1>xss</h1>')";
 
-  it("⚠️  2e appel consécutif — lastIndex corrompu rate le match", async () => {
-    // 1er appel : exec() trouve le match, lastIndex avance après le match,
-    // isSafeUrl retourne false => early return => lastIndex reste != 0
+  it("should block unsafe data on consecutive calls", async () => {
+    // First call: exec() finds the match, lastIndex moves past the match.
+    // isSafeUrl returns false => early return => lastIndex remains non-zero.
     await resolve(renderStyle({ backgroundImage: UNSAFE_DATA }));
 
-    // 2e appel : REGEX_CSS_URL.exec() repart du lastIndex précédent,
-    // dépasse la fin de la chaîne => retourne null immédiatement
-    // => la valeur unsafe est acceptée à tort
+    // Second call: REGEX_CSS_URL.exec() starts from the previous lastIndex.
+    // If it exceeds the string length, it returns null immediately, potentially
+    // accepting an unsafe value incorrectly if not handled.
     const result = await resolve(renderStyle({ backgroundImage: UNSAFE_DATA }));
 
-    expect(result).toBe(""); // ❌ ÉCHOUE si on utilise regex globale
+    expect(result).toBe("");
   });
 });

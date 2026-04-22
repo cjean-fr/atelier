@@ -1,4 +1,4 @@
-import { SafeString } from "@cjean-fr/jsx-string";
+import { raw } from "@cjean-fr/jsx-string";
 
 type IconifyIconName = `${string}:${string}`;
 type IconifyAPIOptions = {
@@ -39,5 +39,5 @@ export const getIcon = async (
     ? icon.replace("<svg", '<svg aria-hidden="true"')
     : icon;
 
-  return new SafeString(modifiedIcon);
+  return raw(modifiedIcon);
 };
