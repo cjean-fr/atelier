@@ -36,7 +36,8 @@
     "eslint": "catalog:",
     "typescript-eslint": "catalog:",
     "@typescript-eslint/parser": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:"
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@cjean-fr/eslint-plugin-jsx-string": "catalog:"
   },
   "exports": {
     ".": {

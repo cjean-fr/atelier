@@ -10,14 +10,14 @@ Zero dependencies. Fully typed. Optimized for performance and security.
 - 🛡️ **Secure**: OWASP-aligned escaping & URL sanitization (`javascript:` blocked).
 - 💎 **Type-friendly**: Zero-config JSX types. Smoothly bridges with React-based ecosystems.
 - 🔄 **Async ready**: Built-in support for `async` components and `Promises`.
-- ✅ **Feature-rich**: Style objects/strings, class merging, boolean attributes, `Fragment`, `SafeString`.
+- ✅ **Feature-rich**: Style objects/strings, class merging, boolean attributes, `Fragment`, `RawString`.
 
 ## Installation
 
 ```bash
 bun add @cjean-fr/jsx-string
-# or
-npm install @cjean-fr/jsx-string
+# Recommended to keep your code static-rendering safe:
+bun add -D @cjean-fr/eslint-plugin-jsx-string
 ```
 
 ## Configuration
@@ -84,6 +84,17 @@ export default defineConfig({
 });
 ```
 
+### 5. Linting (Highly Recommended)
+
+To ensure your code stays compatible with static rendering (no hooks, no React imports), use the dedicated ESLint plugin:
+
+```javascript
+// eslint.config.js
+import jsxString from "@cjean-fr/eslint-plugin-jsx-string";
+
+export default [jsxString.configs.recommended];
+```
+
 ## Use Cases
 
 - **Static Site Generation (SSG)**: Generate static HTML files securely without the overhead of a full frontend framework. Perfect for blogs, documentation sites, or landing pages.
@@ -131,16 +142,16 @@ const html = await renderToString(
 
 > **Note**: `renderToString` is hybrid. It returns a `string` if possible, otherwise a `Promise`.
 
-### 3. Safe HTML & Custom Content
+### 3. Raw HTML & Custom Content
 
-Preserve pre-escaped HTML or inject trusted content safely.
+Preserve pre-rendered HTML or inject trusted content safely.
 
 ```tsx
-import { SafeString } from "@cjean-fr/jsx-string";
+import { raw } from "@cjean-fr/jsx-string";
 
-// Using SafeString (wrapper)
-const safe = new SafeString("<span>Safe</span>");
-renderToString(<div>{safe}</div>); // '<div><span>Safe</span></div>'
+// Using raw helper
+const content = raw("<span>Raw</span>");
+renderToString(<div>{content}</div>); // '<div><span>Raw</span></div>'
 
 // Using dangerouslySetInnerHTML (React-like)
 renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
@@ -163,20 +174,24 @@ Security is built-in, not optional:
 - **Escaping**: All text content is escaped by default following OWASP rules.
 - **Attributes**: Values are escaped, attribute names are validated against a safe pattern.
 - **URL Sanitization**: Attributes like `href` or `src` are sanitized to block `javascript:` and `vbscript:` protocols.
-- **Inline Handlers**: `on*` attributes are dropped during rendering.
+- **Inline Handlers**: `on*` attributes are supported as strings (automatically escaped). Functions are blocked with a warning.
 - **Inline Styles**: Unsafe CSS values are filtered out, and Promises inside style objects are awaited.
 
 ```tsx
 // XSS is prevented:
 renderToString(<div>{"<script>alert(1)</script>"}</div>);
-// => '<div>&lt;script&gt;alert(1)&lt;/script&gt;</div>'
+// => "<div>&lt;script&gt;alert(1)&lt;/script&gt;</div>"
 
 // Unsafe URL becomes #blocked:
 renderToString(<a href="javascript:alert(1)">click</a>);
 // => '<a href="#blocked">click</a>'
+
+// Event handlers are escaped and functional:
+renderToString(<button onClick="alert('Hello')">Click</button>);
+// => '<button onclick="alert('Hello')">Click</button>'
 ```
 
-Inline handlers are intentionally unsupported because this package renders HTML strings, not hydrated event bindings.
+Inline handlers are supported as static strings. Complex event bindings via functions are not supported as this package renders static HTML strings.
 Nested async values inside `style` are supported: they are awaited before serialization.
 
 Note: `dangerouslySetInnerHTML` always bypasses escaping by design.
@@ -184,7 +199,8 @@ Note: `dangerouslySetInnerHTML` always bypasses escaping by design.
 ## API Reference
 
 - `renderToString(node)` — Hybrid renderer (returns `string | Promise<string>`).
-- `SafeString` — Utility to wrap strings that should not be escaped.
+- `raw(string)` — Helper function to create `RawString` instances.
+- `RawString` — Instances created using `raw()` for raw HTML strings.
 - `Fragment` — Standard JSX Fragment component.
 - `jsx/jsxs/h` — Internal JSX factories.
 - `StandardAttributes` — Base types for HTML elements (includes `style`, `class`, `className`, etc).

@@ -10,6 +10,8 @@
     "catalog": {
       "@cjean-fr/i18n-tiny": "workspace:*",
       "@cjean-fr/jsx-string": "workspace:*",
+      "@cjean-fr/eslint-plugin-jsx-string": "workspace:*",
+
       "@iconify-icons/tabler": "latest",
       "@tailwindcss/vite": "latest",
       "@types/node": "latest",
@@ -24,22 +26,25 @@
       "eslint": "latest",
       "typescript-eslint": "latest",
       "@typescript-eslint/parser": "latest",
-      "@typescript-eslint/eslint-plugin": "latest"
+      "@typescript-eslint/eslint-plugin": "latest",
+      "@typescript-eslint/utils": "latest",
+      "@typescript-eslint/rule-tester": "latest"
     }
+
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "latest",
     "bun": "latest",
-    "eslint": "catalog:",
+    "eslint": "^10.2.1",
     "prettier": "latest",
     "prettier-plugin-tailwindcss": "latest",
     "turbo": "latest",
-    "typescript-eslint": "catalog:",
-    "@typescript-eslint/parser": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:"
+    "typescript-eslint": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.0"
   },
   "peerDependencies": {
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "scripts": {
     "build": "turbo build",
