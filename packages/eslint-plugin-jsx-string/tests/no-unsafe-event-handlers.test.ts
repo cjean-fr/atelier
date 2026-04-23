@@ -1,6 +1,6 @@
-import { RuleTester } from '@typescript-eslint/rule-tester';
-import * as parser from '@typescript-eslint/parser';
-import { noUnsafeEventHandlers } from '../src/rules/no-unsafe-event-handlers';
+import { noUnsafeEventHandlers } from "../src/rules/no-unsafe-event-handlers";
+import * as parser from "@typescript-eslint/parser";
+import { RuleTester } from "@typescript-eslint/rule-tester";
 
 const ruleTester = new RuleTester({
   languageOptions: {
@@ -13,20 +13,19 @@ const ruleTester = new RuleTester({
   },
 });
 
-
-ruleTester.run('no-unsafe-event-handlers', noUnsafeEventHandlers, {
+ruleTester.run("no-unsafe-event-handlers", noUnsafeEventHandlers, {
   valid: [
     '<button class="btn">Click me</button>',
     '<div data-onclick="none"></div>',
   ],
   invalid: [
     {
-      code: '<button onClick={() => {}}>Click me</button>',
-      errors: [{ messageId: 'unsafeHandler' }],
+      code: "<button onClick={() => {}}>Click me</button>",
+      errors: [{ messageId: "unsafeHandler" }],
     },
     {
       code: '<div onMouseOver="alert(1)"></div>',
-      errors: [{ messageId: 'unsafeHandler' }],
+      errors: [{ messageId: "unsafeHandler" }],
     },
   ],
 });

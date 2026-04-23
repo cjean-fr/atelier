@@ -1,25 +1,26 @@
-import { ESLintUtils } from '@typescript-eslint/utils';
+import { ESLintUtils } from "@typescript-eslint/utils";
 
 export const noRefs = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
-    type: 'problem',
+    type: "problem",
     docs: {
-      description: 'Disallow React refs usage.',
+      description: "Disallow React refs usage.",
     },
 
     schema: [],
     messages: {
-      noRef: 'Refs are not compatible with @cjean-fr/jsx-string as there is no DOM access.',
+      noRef:
+        "Refs are not compatible with @cjean-fr/jsx-string as there is no DOM access.",
     },
   },
   defaultOptions: [],
   create(context) {
     return {
       JSXAttribute(node) {
-        if (node.name.type === 'JSXIdentifier' && node.name.name === 'ref') {
+        if (node.name.type === "JSXIdentifier" && node.name.name === "ref") {
           context.report({
             node,
-            messageId: 'noRef',
+            messageId: "noRef",
           });
         }
       },
