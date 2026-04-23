@@ -11,7 +11,6 @@
       "@cjean-fr/i18n-tiny": "workspace:*",
       "@cjean-fr/jsx-string": "workspace:*",
       "@cjean-fr/eslint-plugin-jsx-string": "workspace:*",
-
       "@iconify-icons/tabler": "latest",
       "@tailwindcss/vite": "latest",
       "@types/node": "latest",
@@ -30,7 +29,6 @@
       "@typescript-eslint/utils": "latest",
       "@typescript-eslint/rule-tester": "latest"
     }
-
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "latest",
