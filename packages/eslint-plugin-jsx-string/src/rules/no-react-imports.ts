@@ -1,15 +1,16 @@
-import { ESLintUtils } from '@typescript-eslint/utils';
+import { ESLintUtils } from "@typescript-eslint/utils";
 
 export const noReactImports = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
-    type: 'problem',
+    type: "problem",
     docs: {
-      description: 'Disallow React and React-DOM imports.',
+      description: "Disallow React and React-DOM imports.",
     },
 
     schema: [],
     messages: {
-      noReactImport: 'React imports are not compatible with @cjean-fr/jsx-string.',
+      noReactImport:
+        "React imports are not compatible with @cjean-fr/jsx-string.",
     },
   },
   defaultOptions: [],
@@ -17,10 +18,10 @@ export const noReactImports = ESLintUtils.RuleCreator.withoutDocs({
     return {
       ImportDeclaration(node) {
         const source = node.source.value;
-        if (source === 'react' || source === 'react-dom') {
+        if (source === "react" || source === "react-dom") {
           context.report({
             node,
-            messageId: 'noReactImport',
+            messageId: "noReactImport",
           });
         }
       },

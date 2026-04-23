@@ -1,15 +1,15 @@
-import { ESLintUtils } from '@typescript-eslint/utils';
+import { ESLintUtils } from "@typescript-eslint/utils";
 
 export const noJavascriptUrls = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
-    type: 'problem',
+    type: "problem",
     docs: {
-      description: 'Disallow javascript: URLs in href attributes.',
+      description: "Disallow javascript: URLs in href attributes.",
     },
 
     schema: [],
     messages: {
-      noJavascriptUrl: 'javascript: URLs are not allowed for security reasons.',
+      noJavascriptUrl: "javascript: URLs are not allowed for security reasons.",
     },
   },
   defaultOptions: [],
@@ -17,15 +17,15 @@ export const noJavascriptUrls = ESLintUtils.RuleCreator.withoutDocs({
     return {
       JSXAttribute(node) {
         if (
-          node.name.type === 'JSXIdentifier' &&
-          node.name.name === 'href' &&
-          node.value?.type === 'Literal' &&
-          typeof node.value.value === 'string' &&
-          node.value.value.toLowerCase().startsWith('javascript:')
+          node.name.type === "JSXIdentifier" &&
+          node.name.name === "href" &&
+          node.value?.type === "Literal" &&
+          typeof node.value.value === "string" &&
+          node.value.value.toLowerCase().startsWith("javascript:")
         ) {
           context.report({
             node,
-            messageId: 'noJavascriptUrl',
+            messageId: "noJavascriptUrl",
           });
         }
       },

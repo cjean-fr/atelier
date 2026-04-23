@@ -1,26 +1,29 @@
-import { ESLintUtils } from '@typescript-eslint/utils';
+import { ESLintUtils } from "@typescript-eslint/utils";
 
 export const noUnsafeEventHandlers = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
-    type: 'suggestion',
+    type: "suggestion",
     docs: {
-      description: 'Warn about event handlers which might be unsafely handled.',
+      description: "Warn about event handlers which might be unsafely handled.",
     },
 
     schema: [],
     messages: {
-      unsafeHandler: "Event handler attribute detected. @cjean-fr/jsx-string will escape it to ensure HTML validity, but be cautious about the injected JS code.",
+      unsafeHandler:
+        "Event handler attribute detected. @cjean-fr/jsx-string will escape it to ensure HTML validity, but be cautious about the injected JS code.",
     },
-
   },
   defaultOptions: [],
   create(context) {
     return {
       JSXAttribute(node) {
-        if (node.name.type === 'JSXIdentifier' && /^on[A-Z]/.test(node.name.name)) {
+        if (
+          node.name.type === "JSXIdentifier" &&
+          /^on[A-Z]/.test(node.name.name)
+        ) {
           context.report({
             node,
-            messageId: 'unsafeHandler',
+            messageId: "unsafeHandler",
           });
         }
       },
