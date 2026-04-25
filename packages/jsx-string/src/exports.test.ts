@@ -4,9 +4,14 @@ import { describe, it, expect } from "bun:test";
 
 describe("Package Exports Integration", () => {
   describe("Main Entry Point (@cjean-fr/jsx-string)", () => {
-    it("should export SafeString", () => {
-      expect(Main.SafeString).toBeDefined();
-      expect(new Main.SafeString("test").toString()).toBe("test");
+    it("should export RawString", () => {
+      expect(Main.RawString).toBeDefined();
+      expect(new Main.RawString("test").toString()).toBe("test");
+    });
+
+    it("should export raw utility", () => {
+      expect(Main.raw).toBeDefined();
+      expect(Main.raw("test").toString()).toBe("test");
     });
 
     it("should export hyperscript factory (h)", () => {
