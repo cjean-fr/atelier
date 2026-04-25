@@ -14,9 +14,7 @@
 
 .dark {
   /* Lower lightness and chroma (saturation) for a softer look on dark backgrounds */
-  --color-primary: oklch(
-    from var(--theme-primary) calc(l * 0.9) calc(c * 0.7) h
-  );
+  --color-primary: oklch(from var(--theme-primary) calc(l * 0.9) calc(c * 0.7) h);
 }
 
 @utility kerning-* {
@@ -25,11 +23,9 @@
 
 @utility bg-angled-gradient {
   --gradient-angle: 16deg;
-  background-image: linear-gradient(
-    var(--gradient-angle),
-    var(--tw-gradient-from, transparent),
-    var(--tw-gradient-to, transparent)
-  );
+  background-image: linear-gradient(var(--gradient-angle),
+      var(--tw-gradient-from, transparent),
+      var(--tw-gradient-to, transparent));
 }
 
 @layer components {
@@ -51,7 +47,7 @@
   }
 
   .bullet-list {
-    @apply mt-3 ml-5 list-disc space-y-1.5 marker:text-gray-300 dark:marker:text-slate-900;
+    @apply mt-3 ml-5 list-disc space-y-1.5 marker:text-gray-300 dark:marker:text-slate-400;
   }
 
   .bullet-item {
