@@ -15,20 +15,40 @@ export const noContext = ESLintUtils.RuleCreator.withoutDocs({
   },
   defaultOptions: [],
   create(context) {
+    const contextIdentifiers = new Set<string>();
+
+    const isCreateContext = (callee: any) =>
+      (callee.type === "Identifier" && callee.name === "createContext") ||
+      (callee.type === "MemberExpression" &&
+        callee.property.type === "Identifier" &&
+        callee.property.name === "createContext");
+
     return {
       CallExpression(node) {
-        if (
-          node.callee.type === "Identifier" &&
-          node.callee.name === "createContext"
-        ) {
+        if (isCreateContext(node.callee)) {
           context.report({
             node,
             messageId: "noContext",
           });
         }
       },
+      VariableDeclarator(node) {
+        if (
+          node.init &&
+          node.init.type === "CallExpression" &&
+          isCreateContext(node.init.callee) &&
+          node.id.type === "Identifier"
+        ) {
+          contextIdentifiers.add(node.id.name);
+        }
+      },
       JSXMemberExpression(node) {
-        if (node.property.name === "Provider") {
+        if (
+          node.property.type === "JSXIdentifier" &&
+          node.property.name === "Provider" &&
+          node.object.type === "JSXIdentifier" &&
+          contextIdentifiers.has(node.object.name)
+        ) {
           context.report({
             node,
             messageId: "noContext",

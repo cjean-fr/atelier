@@ -42,3 +42,7 @@ export default [
 ## License
 
 MIT © Christophe Jean
+
+---
+
+<p align="center">Made with ❤️ in Paris</p>

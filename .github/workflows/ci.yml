@@ -10,6 +10,8 @@ jobs:
   test:
     name: Test & Lint
     runs-on: ubuntu-latest
+    env:
+      DO_NOT_TRACK: 1
 
     steps:
       - name: Checkout code
