@@ -6,7 +6,7 @@ import {
   renderToString,
   renderToStringAsync,
   isAsync,
-  SafeString,
+  RawString,
 } from "./index.js";
 import { expect, describe, it } from "bun:test";
 
@@ -22,7 +22,7 @@ describe("jsx-string (Integration)", () => {
     });
 
     it("should support Classic JSX runtime (children as extra arguments)", () => {
-      // @ts-ignore - simulating classic runtime call jsx(tag, props, ...children)
+      // @ts-ignore
       const element = jsx(
         "div",
         { id: "parent" },
@@ -36,7 +36,7 @@ describe("jsx-string (Integration)", () => {
     });
 
     it("should prioritize props.children over extra arguments if both exist", () => {
-      // @ts-ignore - simulating mixed usage
+      // @ts-ignore
       const element = jsx("div", { children: "Props Child" }, "Extra Child");
       expect(renderToString(element)).toBe("<div>Props Child</div>");
     });
@@ -154,15 +154,15 @@ describe("jsx-string (Integration)", () => {
     });
   });
 
-  describe("SafeString top-level", () => {
-    it("should return SafeString.value unchanged (sync)", () => {
-      const safe = new SafeString("<b>trusted</b>");
-      expect(renderToString(safe)).toBe("<b>trusted</b>");
+  describe("RawString top-level", () => {
+    it("should return RawString.value unchanged (sync)", () => {
+      const rawString = new RawString("<b>trusted</b>");
+      expect(renderToString(rawString)).toBe("<b>trusted</b>");
     });
 
-    it("should resolve and return SafeString.value unchanged (async)", async () => {
-      const safe = new SafeString("<i>async-trusted</i>");
-      const result = await renderToStringAsync(Promise.resolve(safe));
+    it("should resolve and return RawString.value unchanged (async)", async () => {
+      const rawString = new RawString("<i>async-trusted</i>");
+      const result = await renderToStringAsync(Promise.resolve(rawString));
       expect(result).toBe("<i>async-trusted</i>");
     });
   });
@@ -195,7 +195,6 @@ describe("jsx-string (Integration)", () => {
       expect(renderToString(jsx("div", { customOption: "foo" }))).toBe(
         '<div customOption="foo"></div>',
       );
-      // Now requiring dash for auto-kebab
       // @ts-ignore
       expect(renderToString(jsx("div", { dataTestId: "123" }))).toBe(
         '<div dataTestId="123"></div>',

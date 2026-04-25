@@ -1,10 +1,4 @@
-import {
-  escape,
-  hasAttrUnsafeChars,
-  isSafeUrl,
-  isValidAttrName,
-  sanitize,
-} from "./escape.js";
+import { escape, isSafeUrl, isValidAttrName, sanitize } from "./escape.js";
 import { describe, it, expect } from "bun:test";
 
 describe("escape utilities", () => {
@@ -65,17 +59,6 @@ describe("escape utilities", () => {
     it("should block structural separators", () => {
       const invalid = ["a b", "a=", 'a"', "a'", "a>", "a/"];
       invalid.forEach((name) => expect(isValidAttrName(name)).toBe(false));
-    });
-  });
-
-  describe("hasAttrUnsafeChars", () => {
-    it("should detect HTML-unsafe attribute characters", () => {
-      expect(hasAttrUnsafeChars('has "quotes"')).toBe(true);
-      expect(hasAttrUnsafeChars("<script>")).toBe(true);
-      expect(hasAttrUnsafeChars("a > b")).toBe(true);
-      expect(hasAttrUnsafeChars("a & b")).toBe(true);
-      expect(hasAttrUnsafeChars("safe value")).toBe(false);
-      expect(hasAttrUnsafeChars("hello world")).toBe(false);
     });
   });
 });

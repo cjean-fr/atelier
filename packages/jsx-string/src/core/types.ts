@@ -1,8 +1,8 @@
-import type { SafeString } from "../utils/html.js";
+import type { RawString } from "../utils/html.js";
 
 /**
  * Support for React type augmentation.
- * We override standard attributes to allow strings/SafeStrings.
+ * We override standard attributes to allow strings/RawStrings.
  */
 declare module "react" {
   interface HTMLAttributes<T> {
@@ -29,12 +29,12 @@ export interface CSSProperties extends Record<string, any> {}
 export interface CSSProperties extends React.CSSProperties {}
 
 /**
- * Map React's functional event handlers to static strings or SafeStrings.
+ * Map React's functional event handlers to static strings.
  */
 export type StringEventHandlers = {
   [K in keyof React.DOMAttributes<any> as K extends `on${string}`
     ? K
-    : never]?: string | SafeString;
+    : never]?: string;
 };
 
 /**
@@ -98,8 +98,8 @@ type StaticIntrinsicElements = {
  * JSX Namespace for the internal factory.
  */
 export namespace JSX {
-  /** The result of a JSX expression is a SafeString or a Promise thereof. */
-  export type Element = SafeString | Promise<SafeString>;
+  /** The result of a JSX expression is a RawString or a Promise thereof. */
+  export type Element = RawString | Promise<RawString>;
   export interface IntrinsicElements extends StaticIntrinsicElements {
     [key: string]: any;
   }
@@ -120,7 +120,7 @@ export namespace JSX {
  */
 declare global {
   namespace JSX {
-    interface Element extends SafeString {}
+    interface Element extends RawString {}
     interface IntrinsicElements extends StaticIntrinsicElements {
       [key: string]: any;
     }

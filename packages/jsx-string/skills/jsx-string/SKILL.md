@@ -27,66 +27,25 @@ npm install -D @types/react
 }
 ```
 
-### ESLint (Optional)
+### ESLint (Highly Recommended)
 
-Block React imports at lint time (ESLint flat config):
+To ensure your code stays compatible with static rendering, use our official ESLint plugin:
+
+```bash
+bun add -D @cjean-fr/eslint-plugin-jsx-string
+```
+
+#### ESLint Flat Config (`eslint.config.js`)
 
 ```javascript
-// eslint.config.js
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
+import jsxString from "@cjean-fr/eslint-plugin-jsx-string";
 
 export default [
+  jsxString.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
-    plugins: {
-      "@typescript-eslint": tseslint,
-    },
     rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "react",
-              message:
-                "React imports are not compatible with @cjean-fr/jsx-string.",
-            },
-            {
-              name: "react-dom",
-              message:
-                "React imports are not compatible with @cjean-fr/jsx-string.",
-            },
-          ],
-        },
-      ],
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "CallExpression[callee.name='useState']",
-          message:
-            "useState is not compatible with @cjean-fr/jsx-string. Extract state as props.",
-        },
-        {
-          selector: "CallExpression[callee.name='useEffect']",
-          message:
-            "useEffect is not compatible with @cjean-fr/jsx-string. Fetch data before render.",
-        },
-        {
-          selector:
-            "JSXAttribute[name.name=/^on[A-Z]/]:not([value.expression.callee.name='SafeString'])",
-          message:
-            "Event handlers must be wrapped in SafeString to be rendered by @cjean-fr/jsx-string.",
-        },
-      ],
+      // You can override rules if needed
+      "@cjean-fr/jsx-string/no-unsafe-event-handlers": "warn",
     },
   },
 ];
@@ -124,12 +83,11 @@ const html = renderToString(<div>Hello</div>);
 const html = await renderToString(<AsyncComponent />);
 
 // Pre-sanitized HTML
-import { SafeString } from "@cjean-fr/jsx-string";
-const safe = new SafeString("<b>Bold</b>");
-renderToString(<div>{safe}</div>);
+import { raw } from "@cjean-fr/jsx-string";
+renderToString(<div>{raw("<b>Bold</b>")}</div>);
 
 // Raw HTML (bypasses escaping - dangerous!)
-renderToString(<div dangerouslySetInnerHTML={{ __html: rawHtml }} />);
+renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Bold</b>" }} />);
 ```
 
 ## Migration from React
@@ -253,7 +211,7 @@ const html = renderToString(<Header />);
 const html = await renderToString(<Page />).catch(() => "<div>Error</div>");
 
 // Inline error handling in async components (simplest, recommended)
-// await <Child /> works because JSX compiles to a function call returning SafeString | Promise<SafeString>
+// await <Child /> works because JSX compiles to a function call returning RawString | Promise<RawString>
 const UserSection = async ({ id }: { id: string }) => {
   try {
     return await <UserCard id={id} />;
@@ -331,9 +289,9 @@ renderToString(<div>{"<script>"}</div>); // &lt;script&gt;
 // javascript: blocked
 renderToString(<a href="javascript:alert(1)">link</a>); // href="#blocked";
 
-// Event handlers removed except if marked as SafeString
-renderToString(<button onClick={new SafeString("alert(1)")}>btn</button>); // <button onclick="alert(1)">btn</button>
-renderToString(<button onClick={fn}>btn</button>); // <button>btn</button> (blocked)
+// Event handlers supported as strings
+renderToString(<button onClick="alert(1)">btn</button>); // <button onclick="alert(1)">btn</button>
+renderToString(<button onClick={fn}>btn</button>); // blocked with warning (functions not supported)
 ```
 
 ## Troubleshooting

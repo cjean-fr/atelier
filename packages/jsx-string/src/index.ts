@@ -7,11 +7,11 @@ import { escape } from "./utils/escape.js";
 import {
   renderChild,
   renderElement,
-  SafeString,
+  RawString,
   type RenderResult,
 } from "./utils/html.js";
 
-export { SafeString } from "./utils/html.js";
+export { RawString, raw } from "./utils/html.js";
 export * from "./core/types.js";
 
 /**
@@ -85,7 +85,7 @@ export function renderToString(node: JSXChild): string {
         "Use await renderToStringAsync(node) instead.",
     );
   }
-  return result instanceof SafeString ? result.value : escape(String(result));
+  return result instanceof RawString ? result.value : escape(String(result));
 }
 
 /**
@@ -96,7 +96,7 @@ export function renderToString(node: JSXChild): string {
  */
 export async function renderToStringAsync(node: JSXChild): Promise<string> {
   const result = await renderChild(node);
-  return result instanceof SafeString ? result.value : escape(String(result));
+  return result instanceof RawString ? result.value : escape(String(result));
 }
 
 /**

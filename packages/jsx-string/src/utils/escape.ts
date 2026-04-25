@@ -3,7 +3,7 @@
 /**
  * OWASP Rule #2: Attribute Encode
  */
-const ESC_CHAR_MAP: Map<string, string> = new Map([
+const ESC_CHAR_MAP: ReadonlyMap<string, string> = new Map([
   ["&", "&amp;"],
   ["<", "&lt;"],
   [">", "&gt;"],
@@ -33,7 +33,6 @@ const REGEX_OTHER_UNICODE_CHARS = /\p{C}/gu;
 const REGEX_VALID_ATTR_NAME = /^[^\s"'>/=]+$/u;
 const REGEX_UNSAFE_PROTOCOLS = /^(?:java|vb)script:/i;
 const REGEX_NON_IMAGE_DATA_URI = /^data:(?!image\/)/i;
-const REGEX_HAS_ATTR_UNSAFE = /[&<>"]/;
 
 /**
  * Strips all 'Other' Unicode characters (controls, invisible formatters, etc.).
@@ -72,10 +71,3 @@ export const isSafeUrl = (url: string): boolean => {
 export const isValidAttrName = (name: string): boolean => {
   return REGEX_VALID_ATTR_NAME.test(name);
 };
-
-/**
- * Returns true if the string contains HTML characters that are unsafe in an attribute value
- * (&, <, >, ").
- */
-export const hasAttrUnsafeChars = (str: string): boolean =>
-  REGEX_HAS_ATTR_UNSAFE.test(str);

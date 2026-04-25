@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- **RawString Helper**: Introduced `raw(str)` to safely wrap strings that should be rendered without HTML escaping, preserving user-provided content like translated names or formatted text.
+
+### Changed
+
+- **`SafeString` to `RawString`**: Updated `SafeString` to `RawString` across the codebase to more accurately reflect its purpose: preserving content exactly as-is (raw) rather than guaranteeing safety (safe).
+
+### Fixed
+
+- **Type Compatibility**: Resolved TypeScript type issues preventing the seamless use of `JSXChild` with translators and JSX components by aligning type definitions with actual rendering behavior.
+
 ## 1.2.6
 
 ### Added

@@ -9,7 +9,7 @@
  * };
  */
 export type TranslationSpec = {
-  [key: string]: readonly string[]; // liste des noms de paramètres requis
+  [key: string]: readonly string[];
 };
 
 /**
@@ -26,33 +26,36 @@ export type ValidTranslations<T extends TranslationSpec> = {
 };
 
 /**
- * Tente d'isoler le nom de la variable avant un séparateur (virgule/espace).
- * Si la logique devient instable, privilégier un retour simple du segment complet.
+ * Attempts to isolate the variable name before a separator (comma/space).
+ * If logic becomes unstable, prefer simply returning the full segment.
  */
+
 type CleanKey<K extends string> = K extends `${infer Name}${"," | " "}${string}`
   ? Name
   : K;
 
 /**
- * Extrait récursivement les noms de paramètres (ex: {name}) d'une string.
- * Supporte les formats ICU simples (ex: {v, plural, ...}) en extrayant "v".
+ * Recursively extracts parameter names (e.g. {name}) from a string.
+ * Supports simple ICU formats (e.g. {v, plural, ...}) by extracting "v".
  *
  * @example
  * type Params = ExtractParams<"Hello {name}!">;
- * // Params est de type "name"
+ * // Params is of type "name"
  */
+
 export type ExtractParams<S extends string> =
   S extends `${string}{${infer P}}${infer Rest}`
     ? CleanKey<P> | ExtractParams<Rest>
     : never;
 
 /**
- * Génère automatiquement une TranslationSpec à partir d'un objet de traduction.
+ * Automatically generates a TranslationSpec from a translation object.
  *
  * @example
  * const spec = inferSpec({ hello: "Hello {name}!" });
- * // spec est de type { readonly hello: readonly ["name"]; }
+ * // spec is of type { readonly hello: readonly ["name"]; }
  */
+
 export type InferSpec<T> = {
   readonly [K in keyof T]: T[K] extends string
     ? readonly ExtractParams<T[K]>[]
@@ -73,7 +76,8 @@ type CheckParams<S extends string, Allowed extends string> = string extends S
         found: Exclude<ExtractParams<S>, Allowed>;
       };
 
-// Le type de retour T permet de supporter JSX, SafeString ou string
+// Return type T allows support for JSX, RawString or string
+
 export type InterpolateFn<T = string> = (
   template: string,
   params: Record<string, any>,
@@ -148,7 +152,7 @@ export function createTranslator<
       return config.interpolate(template, params, context);
     }
 
-    // Si aucun paramètre n'est passé, on retourne le template brut (casté en T)
+    // If no parameters are passed, return the raw template (casted to T)
     if (args.length === 0) {
       return template as unknown as T;
     }
