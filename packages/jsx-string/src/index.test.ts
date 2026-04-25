@@ -156,13 +156,13 @@ describe("jsx-string (Integration)", () => {
 
   describe("RawString top-level", () => {
     it("should return RawString.value unchanged (sync)", () => {
-      const safe = new RawString("<b>trusted</b>");
-      expect(renderToString(safe)).toBe("<b>trusted</b>");
+      const rawString = new RawString("<b>trusted</b>");
+      expect(renderToString(rawString)).toBe("<b>trusted</b>");
     });
 
     it("should resolve and return RawString.value unchanged (async)", async () => {
-      const safe = new RawString("<i>async-trusted</i>");
-      const result = await renderToStringAsync(Promise.resolve(safe));
+      const rawString = new RawString("<i>async-trusted</i>");
+      const result = await renderToStringAsync(Promise.resolve(rawString));
       expect(result).toBe("<i>async-trusted</i>");
     });
   });

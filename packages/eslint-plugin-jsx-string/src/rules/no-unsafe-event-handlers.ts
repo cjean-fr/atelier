@@ -19,7 +19,7 @@ export const noUnsafeEventHandlers = ESLintUtils.RuleCreator.withoutDocs({
       JSXAttribute(node) {
         if (
           node.name.type === "JSXIdentifier" &&
-          /^on[A-Z]/.test(node.name.name)
+          /^on[A-Za-z]/.test(node.name.name)
         ) {
           context.report({
             node,

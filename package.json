@@ -33,13 +33,13 @@
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "latest",
     "bun": "latest",
-    "eslint": "^10.2.1",
+    "eslint": "latest",
     "prettier": "latest",
     "prettier-plugin-tailwindcss": "latest",
     "turbo": "latest",
-    "typescript-eslint": "^8.59.0",
-    "@typescript-eslint/parser": "^8.59.0",
-    "@typescript-eslint/eslint-plugin": "^8.59.0"
+    "typescript-eslint": "latest",
+    "@typescript-eslint/parser": "latest",
+    "@typescript-eslint/eslint-plugin": "latest"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
