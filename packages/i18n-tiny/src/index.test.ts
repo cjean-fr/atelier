@@ -22,7 +22,7 @@ const validEnglish = {
   plural: "You have {count, plural, one {one item} other {# items}}",
 } satisfies ValidTranslations<UserSpec>;
 
-describe("i18n-tiny Translation System", () => {
+describe("translation system", () => {
   it("should create a valid translator and interpolate values", () => {
     const t = createTranslator<UserSpec>(validEnglish);
 
@@ -131,6 +131,26 @@ describe("i18n-tiny Translation System", () => {
 
     it("should handle non-string values gracefully", () => {
       expect(interpolate("Count: {count}", { count: 42 })).toBe("Count: 42");
+    });
+  });
+
+  describe("extensibility", () => {
+    it("should support complex pluralization via custom interpolator", () => {
+      const tFr = createTranslator<UserSpec>(validEnglish, {
+        locale: "fr-FR",
+        interpolate: (template, params) => {
+          return template.replace(
+            /\{(\w+), plural, one \{(.+?)\} other \{(.+?)\}\}/g,
+            (_, key, one, other) => {
+              const val = params[key];
+              return val === 1 ? one : other.replace("#", val);
+            },
+          );
+        },
+      });
+
+      expect(tFr("plural", { count: 1 })).toBe("You have one item");
+      expect(tFr("plural", { count: 5 })).toBe("You have 5 items");
     });
   });
 });

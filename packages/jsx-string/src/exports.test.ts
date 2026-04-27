@@ -2,8 +2,8 @@ import * as Main from "@cjean-fr/jsx-string";
 import * as JSXRuntime from "@cjean-fr/jsx-string/jsx-runtime";
 import { describe, it, expect } from "bun:test";
 
-describe("Package Exports Integration", () => {
-  describe("Main Entry Point (@cjean-fr/jsx-string)", () => {
+describe("package exports", () => {
+  describe("main entry point", () => {
     it("should export RawString", () => {
       expect(Main.RawString).toBeDefined();
       expect(new Main.RawString("test").toString()).toBe("test");
@@ -28,7 +28,7 @@ describe("Package Exports Integration", () => {
     });
   });
 
-  describe("JSX Runtime Entry Point (@cjean-fr/jsx-string/jsx-runtime)", () => {
+  describe("jsx-runtime entry point", () => {
     it("should export jsx", () => {
       expect(JSXRuntime.jsx).toBeDefined();
       expect(typeof JSXRuntime.jsx).toBe("function");

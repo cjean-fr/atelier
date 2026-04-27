@@ -10,8 +10,8 @@ import {
 } from "./index.js";
 import { expect, describe, it } from "bun:test";
 
-describe("jsx-string (Integration)", () => {
-  describe("Factories", () => {
+describe("integration", () => {
+  describe("factories", () => {
     it("should support h() and jsx() factories", () => {
       expect(h("div", { id: "1" }, "test").toString()).toBe(
         '<div id="1">test</div>',
@@ -47,9 +47,20 @@ describe("jsx-string (Integration)", () => {
       });
       expect(renderToString(result)).toBe("<b></b><i></i>");
     });
+
+    it("should handle nested Fragments", () => {
+      const result = jsx(Fragment, {
+        children: jsx(Fragment, {
+          children: jsx(Fragment, {
+            children: "deep",
+          }),
+        }),
+      });
+      expect(renderToString(result)).toBe("deep");
+    });
   });
 
-  describe("Components", () => {
+  describe("components", () => {
     it("should render functional components", () => {
       const Button = ({ label }: { label: string }) =>
         jsx("button", { children: label });
@@ -68,7 +79,7 @@ describe("jsx-string (Integration)", () => {
     });
   });
 
-  describe("Async Rendering", () => {
+  describe("async rendering", () => {
     it("should support async components", async () => {
       const AsyncComp = async () => {
         await new Promise((r) => setTimeout(r, 5));
@@ -86,7 +97,7 @@ describe("jsx-string (Integration)", () => {
     });
   });
 
-  describe("Edge Cases", () => {
+  describe("edge cases", () => {
     it("should map htmlFor to for", () => {
       expect(
         renderToString(jsx("label", { htmlFor: "input", children: "Name" })),
@@ -154,7 +165,7 @@ describe("jsx-string (Integration)", () => {
     });
   });
 
-  describe("RawString top-level", () => {
+  describe("raw string top-level", () => {
     it("should return RawString.value unchanged (sync)", () => {
       const rawString = new RawString("<b>trusted</b>");
       expect(renderToString(rawString)).toBe("<b>trusted</b>");
@@ -167,7 +178,7 @@ describe("jsx-string (Integration)", () => {
     });
   });
 
-  describe("Hardening & Normalization", () => {
+  describe("hardening & normalization", () => {
     it("should normalize camelCase HTML attributes to lowercase", () => {
       expect(renderToString(jsx("div", { tabIndex: 1 }))).toBe(
         '<div tabindex="1"></div>',
@@ -206,7 +217,7 @@ describe("jsx-string (Integration)", () => {
     });
   });
 
-  describe("API Consistency", () => {
+  describe("api consistency", () => {
     it("should throw on async in renderToString", () => {
       const Async = async () => "foo";
       // @ts-ignore
@@ -216,6 +227,17 @@ describe("jsx-string (Integration)", () => {
     it("should handle isAsync correctly", () => {
       expect(isAsync(Promise.resolve())).toBe(true);
       expect(isAsync("not-promise")).toBe(false);
+    });
+
+    it("should escape event handlers as strings to prevent XSS", () => {
+      const html = renderToString(
+        jsx("button", {
+          onClick: "alert('XSS')",
+          onmouseover: 'console.log("hover")',
+        }),
+      );
+      expect(html).toContain("onclick=\"alert('XSS')\"");
+      expect(html).toContain('onmouseover="console.log(&quot;hover&quot;)"');
     });
   });
 });

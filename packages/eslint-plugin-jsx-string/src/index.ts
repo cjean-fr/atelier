@@ -1,9 +1,9 @@
-import { noContext } from "./rules/no-context";
-import { noJavascriptUrls } from "./rules/no-javascript-urls";
-import { noReactHooks } from "./rules/no-react-hooks";
-import { noReactImports } from "./rules/no-react-imports";
-import { noRefs } from "./rules/no-refs";
-import { noUnsafeEventHandlers } from "./rules/no-unsafe-event-handlers";
+import { noContext } from "./rules/no-context.js";
+import { noJavascriptUrls } from "./rules/no-javascript-urls.js";
+import { noReactHooks } from "./rules/no-react-hooks.js";
+import { noReactImports } from "./rules/no-react-imports.js";
+import { noRefs } from "./rules/no-refs.js";
+import { noUnsafeEventHandlers } from "./rules/no-unsafe-event-handlers.js";
 
 const rules = {
   "no-react-imports": noReactImports,

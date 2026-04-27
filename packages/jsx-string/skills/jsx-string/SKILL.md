@@ -253,6 +253,24 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
 };
 ```
 
+## Ecosystem (CSS Post-processing)
+
+The `@cjean-fr/jsx-string` engine can be extended via asynchronous string transformations for styling.
+If you need to use PostCSS or Tailwind CSS v4, use the official `@cjean-fr/jsx-string-postcss` package.
+
+```typescript
+import { renderToString } from "@cjean-fr/jsx-string";
+import { withPostCss } from "@cjean-fr/jsx-string-postcss";
+import tailwindcss from "@tailwindcss/postcss";
+
+const html = await renderToString(<App />);
+// Post-process the generated HTML string
+const styledHtml = await withPostCss(html, {
+  baseCss: '@import "tailwindcss";',
+  plugins: [tailwindcss()]
+});
+```
+
 ## Testing
 
 Examples use Vitest, but work with Jest and bun:test.

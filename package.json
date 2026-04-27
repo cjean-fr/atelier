@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/*"
+      "packages/*",
+      "playground"
     ],
     "catalog": {
       "@cjean-fr/i18n-tiny": "workspace:*",
@@ -17,6 +18,7 @@
       "@types/bun": "latest",
       "@types/react": "latest",
       "bunup": "latest",
+      "postcss": "latest",
       "tailwindcss": "latest",
       "typescript": "latest",
       "vite": "latest",
@@ -31,15 +33,17 @@
     }
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
     "@trivago/prettier-plugin-sort-imports": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
     "bun": "latest",
     "eslint": "latest",
     "prettier": "latest",
     "prettier-plugin-tailwindcss": "latest",
+    "tailwindcss": "^4.2.4",
     "turbo": "latest",
-    "typescript-eslint": "latest",
-    "@typescript-eslint/parser": "latest",
-    "@typescript-eslint/eslint-plugin": "latest"
+    "typescript-eslint": "latest"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
