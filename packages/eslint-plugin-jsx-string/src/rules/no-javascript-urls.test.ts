@@ -1,4 +1,4 @@
-import { noJavascriptUrls } from "../src/rules/no-javascript-urls";
+import { noJavascriptUrls } from "./no-javascript-urls";
 import * as parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

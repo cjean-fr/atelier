@@ -1,4 +1,4 @@
-import { noReactHooks } from "../src/rules/no-react-hooks";
+import { noReactHooks } from "./no-react-hooks";
 import * as parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

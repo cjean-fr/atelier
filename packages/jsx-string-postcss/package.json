@@ -1,0 +1,52 @@
+{
+  "name": "@cjean-fr/jsx-string-postcss",
+  "version": "1.0.0",
+  "description": "PostCSS plugin for @cjean-fr/jsx-string ecosystem",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string-postcss#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/jsx-string-postcss"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bunup src/index.ts --format esm --minify",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "bunup": "catalog:",
+    "postcss": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@cjean-fr/jsx-string": "workspace:*",
+    "postcss": "catalog:"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

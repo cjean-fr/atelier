@@ -84,7 +84,7 @@ export default defineConfig({
 });
 ```
 
-### 5. Linting (Highly Recommended)
+### 5. Linting (Recommended)
 
 To ensure your code stays compatible with static rendering (no hooks, no React imports), use the dedicated ESLint plugin:
 
@@ -124,14 +124,14 @@ const html = renderToString(
 If the tree contains `async` components or `Promises`, `renderToString` returns a `Promise<string>`.
 
 ```tsx
-import { renderToString } from "@cjean-fr/jsx-string";
+import { renderToStringAsync } from "@cjean-fr/jsx-string";
 
 const AsyncComponent = async ({ name }) => {
   await new Promise((resolve) => setTimeout(resolve, 10));
   return <div>Hello {name}</div>;
 };
 
-const html = await renderToString(
+const html = await renderToStringAsync(
   <section>
     <AsyncComponent name="World" />
     {Promise.resolve(<span>!</span>)}
@@ -139,8 +139,6 @@ const html = await renderToString(
 );
 // => '<section><div>Hello World</div><span>!</span></section>'
 ```
-
-> **Note**: `renderToString` is hybrid. It returns a `string` if possible, otherwise a `Promise`.
 
 ### 3. Raw HTML & Custom Content
 
@@ -156,6 +154,12 @@ renderToString(<div>{content}</div>); // '<div><span>Raw</span></div>'
 // Using dangerouslySetInnerHTML (React-like)
 renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
 ```
+
+## Ecosystem
+
+Extend `@cjean-fr/jsx-string` with official plugins:
+
+- **`@cjean-fr/jsx-string-postcss`**: A post-processing plugin that parses your rendered HTML string and injects CSS compiled by PostCSS. This is the recommended way to use tools like **Tailwind CSS v4**, keeping the rendering engine pure while getting full styling capabilities.
 
 ## AI-Friendly
 

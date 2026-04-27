@@ -1,0 +1,11 @@
+{
+  "extends": "../typescript-config/base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@cjean-fr/jsx-string",
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "types": ["bun", "react"]
+  },
+  "include": ["src"]
+}

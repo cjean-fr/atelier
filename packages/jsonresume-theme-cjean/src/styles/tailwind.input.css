@@ -39,7 +39,7 @@
 
   /* Timeline dot/marker */
   .timeline-item::before {
-    @apply border-primary absolute top-1.5 -left-[34px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white content-[''] md:block dark:bg-slate-900;
+    @apply border-primary absolute top-1.5 -left-[34px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white dark:bg-slate-900/95 content-[''] md:block;
   }
 
   .timeline-item-secondary::before {

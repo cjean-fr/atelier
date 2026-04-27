@@ -1,4 +1,4 @@
-import { noUnsafeEventHandlers } from "../src/rules/no-unsafe-event-handlers";
+import { noUnsafeEventHandlers } from "./no-unsafe-event-handlers";
 import * as parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

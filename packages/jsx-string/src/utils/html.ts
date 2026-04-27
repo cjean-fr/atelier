@@ -97,6 +97,7 @@ const isSafeCssValue = (value: string): boolean => {
 };
 
 export class RawString {
+  readonly __isRawString = true;
   readonly value: string;
   constructor(value: string) {
     this.value = value;
@@ -104,6 +105,13 @@ export class RawString {
   toString(): string {
     return this.value;
   }
+}
+
+/**
+ * Robust check for RawString instance, even across different versions or module resolutions.
+ */
+export function isRawString(value: any): value is RawString {
+  return value instanceof RawString || (value && value.__isRawString === true);
 }
 
 /**
@@ -267,13 +275,11 @@ export function renderChild(
   child: JSXChild,
 ): string | RawString | Promise<RawString> {
   if (child == null || child === true || child === false) return "";
-  if (child instanceof RawString) return child;
+  if (isRawString(child)) return child;
   if (child instanceof Promise)
     return child
       .then(renderChild)
-      .then((r) =>
-        r instanceof RawString ? r : new RawString(escape(String(r))),
-      );
+      .then((r) => (isRawString(r) ? r : new RawString(escape(String(r)))));
 
   if (Array.isArray(child)) {
     const len = child.length;
@@ -292,7 +298,7 @@ export function renderChild(
       let out = "";
       for (let i = 0; i < len; i++) {
         const r = rendered[i] as string | RawString;
-        out += r instanceof RawString ? r.value : escape(String(r));
+        out += isRawString(r) ? r.value : escape(String(r));
       }
       return new RawString(out);
     }
@@ -301,7 +307,7 @@ export function renderChild(
       let out = "";
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        out += item instanceof RawString ? item.value : escape(String(item));
+        out += isRawString(item) ? item.value : escape(String(item));
       }
       return new RawString(out);
     });
@@ -359,7 +365,6 @@ function toRawElement(
   content: string | RawString,
 ): RawString {
   if (VOID_ELEMENTS.has(tag)) return new RawString(`<${tag}${attrs}>`);
-  const inner =
-    content instanceof RawString ? content.value : escape(String(content));
+  const inner = isRawString(content) ? content.value : escape(String(content));
   return new RawString(`<${tag}${attrs}>${inner}</${tag}>`);
 }

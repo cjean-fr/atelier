@@ -5,13 +5,13 @@ import type {
 } from "./core/types.js";
 import { escape } from "./utils/escape.js";
 import {
+  isRawString,
   renderChild,
   renderElement,
-  RawString,
   type RenderResult,
 } from "./utils/html.js";
 
-export { RawString, raw } from "./utils/html.js";
+export { RawString, raw, isRawString } from "./utils/html.js";
 export * from "./core/types.js";
 
 /**
@@ -85,7 +85,7 @@ export function renderToString(node: JSXChild): string {
         "Use await renderToStringAsync(node) instead.",
     );
   }
-  return result instanceof RawString ? result.value : escape(String(result));
+  return isRawString(result) ? result.toString() : escape(String(result));
 }
 
 /**
@@ -96,7 +96,7 @@ export function renderToString(node: JSXChild): string {
  */
 export async function renderToStringAsync(node: JSXChild): Promise<string> {
   const result = await renderChild(node);
-  return result instanceof RawString ? result.value : escape(String(result));
+  return isRawString(result) ? result.toString() : escape(String(result));
 }
 
 /**

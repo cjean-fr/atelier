@@ -1,4 +1,4 @@
-import { noContext } from "../src/rules/no-context";
+import { noContext } from "./no-context";
 import * as parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
