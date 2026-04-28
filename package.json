@@ -5,8 +5,7 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/*",
-      "playground"
+      "packages/*"
     ],
     "catalog": {
       "@cjean-fr/i18n-tiny": "workspace:*",
