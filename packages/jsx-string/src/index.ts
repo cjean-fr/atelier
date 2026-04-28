@@ -6,6 +6,7 @@ import type {
 import { escape } from "./utils/escape.js";
 import {
   isRawString,
+  raw,
   renderChild,
   renderElement,
   type RenderResult,
@@ -42,7 +43,11 @@ export function jsx<P extends {} = {}>(
       : [];
 
   if (typeof tag === "function") {
-    return tag(finalProps) as RenderResult;
+    const result = renderChild(tag(finalProps));
+    if (result instanceof Promise || isRawString(result)) {
+      return result as RenderResult;
+    }
+    return raw(escape(String(result)));
   }
 
   return renderElement(

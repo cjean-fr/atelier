@@ -1,3 +1,4 @@
+import { renderToStringAsync } from "@cjean-fr/jsx-string";
 import Layout from "./components/Layout.js";
 import { init } from "./lib/i18n.js";
 import { getLogoFromUrl, getPictureFromEmail } from "./lib/image.js";
@@ -31,5 +32,6 @@ export async function render(resumeData: unknown): Promise<string> {
     resume.basics.image = await getPictureFromEmail(resume.basics.email);
   }
 
-  return `<!doctype html>${await Layout({ resume, css })}`;
+  return renderToStringAsync(<Layout resume={resume} css={css} />);
 }
+

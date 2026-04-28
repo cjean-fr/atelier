@@ -77,6 +77,26 @@ describe("integration", () => {
         '<div class="box"><p>Hello</p></div>',
       );
     });
+
+    it("should handle components returning Fragments without array leakage (commas)", () => {
+      const List = () =>
+        jsx(Fragment, {
+          children: [
+            jsx("li", { children: "1" }),
+            jsx("li", { children: "2" }),
+          ],
+        });
+      const App = () => jsx("ul", { children: jsx(List, {}) });
+
+      expect(renderToString(jsx(App, {}))).toBe(
+        "<ul><li>1</li><li>2</li></ul>",
+      );
+
+      // Crucially, the return value of jsx(List) should be a RawString, not an array
+      const result = jsx(List, {});
+      expect(Array.isArray(result)).toBe(false);
+      expect(renderToString(result)).toBe("<li>1</li><li>2</li>");
+    });
   });
 
   describe("async rendering", () => {
@@ -87,6 +107,22 @@ describe("integration", () => {
       };
       const html = await renderToStringAsync(jsx(AsyncComp, {}));
       expect(html).toBe("<div>Async</div>");
+    });
+
+    it("should handle async components returning Fragments", async () => {
+      const AsyncList = async () => {
+        await Promise.resolve();
+        return jsx(Fragment, {
+          children: [
+            jsx("li", { children: "1" }),
+            jsx("li", { children: "2" }),
+          ],
+        });
+      };
+      const result = jsx(AsyncList, {});
+      expect(result).toBeInstanceOf(Promise);
+      const html = await renderToStringAsync(result);
+      expect(html).toBe("<li>1</li><li>2</li>");
     });
 
     it("should support nested promises", async () => {

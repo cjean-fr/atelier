@@ -45,7 +45,7 @@ const html = await renderToString(<App />);
 
 // 3. Post-process with Tailwind
 const styledHtml = await withPostCss(html, {
-  baseCss: '@import "tailwindcss";', // For Tailwind v4
+  css: '@import "tailwindcss";', // For Tailwind v4
   plugins: [tailwindcss()],
 });
 
@@ -57,7 +57,7 @@ console.log(styledHtml);
 `withPostCss(html, options)` accepts the following options:
 
 - `plugins` (Array): An array of PostCSS plugins to apply. Default is `[]`.
-- `baseCss` (String): A base CSS string to parse (e.g., `@import "tailwindcss";` or `@tailwind utilities;`). Default is `''`.
+- `css` (String): A base CSS string to parse (e.g., `@import "tailwindcss";` or `@tailwind utilities;`). Default is `''`.
 - `useCache` (Boolean): Whether to cache the processed output to speed up subsequent renders. The cache key is generated securely using the Web Crypto API. Default is `true`.
 
 ## Features

@@ -24,8 +24,8 @@
     "jsonresume-theme-cjean": "./bin/jsonresume-theme-cjean.js"
   },
   "devDependencies": {
-    "@cjean-fr/i18n-tiny": "catalog:",
-    "@cjean-fr/jsx-string": "catalog:",
+    "@cjean-fr/i18n-tiny": "workspace:*",
+    "@cjean-fr/jsx-string": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/react": "catalog:",
     "tailwindcss": "catalog:",
