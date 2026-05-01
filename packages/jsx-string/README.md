@@ -155,11 +155,34 @@ renderToString(<div>{content}</div>); // '<div><span>Raw</span></div>'
 renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
 ```
 
+### 4. Context API
+
+`@cjean-fr/jsx-string` exposes a type-safe Async Context API (`withContext` and `useContext`) backed by `AsyncLocalStorage`. It allows sharing data (like user sessions or configuration) deeply across the entire rendering tree without prop-drilling.
+
+```tsx
+import { withContext, useContext, renderToStringAsync } from "@cjean-fr/jsx-string";
+
+// 1. Read from context anywhere in the tree
+const UserProfile = () => {
+  const ctx = useContext();
+  return <div>Welcome, {ctx.user}</div>;
+};
+
+// 2. Wrap your render in an isolated context scope
+const html = await withContext(async () => {
+  const ctx = useContext();
+  ctx.user = "Alice"; // Mutate the current scope safely
+  
+  return renderToStringAsync(<UserProfile />);
+});
+// => "<div>Welcome, Alice</div>"
+```
+
 ## Ecosystem
 
 Extend `@cjean-fr/jsx-string` with official plugins:
 
-- **`@cjean-fr/jsx-string-postcss`**: A post-processing plugin that parses your rendered HTML string and injects CSS compiled by PostCSS. This is the recommended way to use tools like **Tailwind CSS v4**, keeping the rendering engine pure while getting full styling capabilities.
+- **`@cjean-fr/jsx-string-await`**: A streaming solution offering an `<Await />` component to render fallbacks synchronously while deferring complex async trees. It streams resolved chunks via Web Streams using strategies like Hotwire or HTMX (`renderToStream`).
 
 ## AI-Friendly
 

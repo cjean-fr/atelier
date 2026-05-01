@@ -1,23 +1,14 @@
 {
-  "name": "@cjean-fr/jsx-string-postcss",
+  "name": "@cjean-fr/jsx-string-await",
   "version": "1.0.0",
-  "description": "PostCSS plugin for @cjean-fr/jsx-string ecosystem",
+  "description": "Async streaming and defer plugin for @cjean-fr/jsx-string",
   "author": "Christophe Jean",
   "license": "MIT",
-  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string-postcss#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/cjean-fr/atelier.git",
-    "directory": "packages/jsx-string-postcss"
-  },
-  "bugs": {
-    "url": "https://github.com/cjean-fr/atelier/issues"
-  },
   "type": "module",
+  "types": "./dist/index.d.ts",
   "engines": {
     "node": ">=20.0.0"
   },
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -33,16 +24,22 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"
   },
+  "dependencies": {
+    "@cjean-fr/jsx-string": "workspace:*"
+  },
   "devDependencies": {
-    "@types/bun": "catalog:",
     "@types/react": "catalog:",
+    "@types/bun": "catalog:",
     "bunup": "catalog:",
-    "postcss": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@cjean-fr/jsx-string": "workspace:*",
-    "postcss": "catalog:"
+    "@types/react": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
   },
   "files": [
     "dist",

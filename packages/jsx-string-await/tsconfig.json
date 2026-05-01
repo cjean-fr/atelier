@@ -1,0 +1,10 @@
+{
+  "extends": "../../packages/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@cjean-fr/jsx-string"
+  },
+  "include": ["src/**/*"]
+}
