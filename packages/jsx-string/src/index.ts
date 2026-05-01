@@ -14,6 +14,7 @@ import {
 
 export { RawString, raw, isRawString } from "./utils/html.js";
 export * from "./core/types.js";
+export * from "./core/context.js";
 
 /**
  * Create a RenderResult from a JSX tag name or functional component.

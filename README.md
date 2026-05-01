@@ -4,11 +4,21 @@ Personal collection of high-performance, type-safe tools and themes.
 
 ## Packages
 
-| Package                                                       | Description                                           |
-| :------------------------------------------------------------ | :---------------------------------------------------- |
-| [`@cjean-fr/jsx-string`](./packages/jsx-string)               | High-performance, secure JSX-to-HTML string renderer. |
-| [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny)                 | Zero-dependency, type-safe minimalist i18n.           |
-| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Modern, print-optimized JSON Resume theme.            |
+### `jsx-string` Ecosystem
+
+| Package                                                                     | Description                                                 |
+| :-------------------------------------------------------------------------- | :---------------------------------------------------------- |
+| [`@cjean-fr/jsx-string`](./packages/jsx-string)                             | High-performance, secure JSX-to-HTML string renderer.       |
+| [`@cjean-fr/jsx-string-await`](./packages/jsx-string-await)                 | Async streaming and defer plugin for jsx-string.            |
+| [`@cjean-fr/jsx-string-postcss`](./packages/jsx-string-postcss)             | PostCSS plugin for scoped CSS extraction in jsx-string.     |
+| [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for secure and valid jsx-string usage.         |
+
+### Other Tools
+
+| Package                                                       | Description                                 |
+| :------------------------------------------------------------ | :------------------------------------------ |
+| [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny)                 | Zero-dependency, type-safe minimalist i18n. |
+| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Modern, print-optimized JSON Resume theme.  |
 
 ## Development
 
