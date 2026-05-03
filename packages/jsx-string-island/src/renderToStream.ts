@@ -1,14 +1,15 @@
-import { useAwaitEntries } from "./hooks.js";
-import type { RenderStrategy, IdGenerator, AwaitEntry } from "./types.js";
+import { useIslandEntries } from "./hooks.js";
+import type { RenderAdapter, IdGenerator, IslandEntry } from "./types.js";
 import {
   withContext,
-  useContext,
   renderToStringAsync,
+  renderToString,
+  raw,
   type JSXChild,
 } from "@cjean-fr/jsx-string";
 
 export interface RenderToStreamOptions {
-  strategy: RenderStrategy;
+  adapter: RenderAdapter;
   idGenerator?: IdGenerator;
 }
 
@@ -18,9 +19,8 @@ export function renderToStream(
 ): ReadableStream {
   return new ReadableStream({
     async start(controller) {
-      await withContext(async () => {
-        const ctx = useContext();
-        ctx.strategy = options.strategy;
+      await withContext(async (ctx) => {
+        ctx.adapter = options.adapter;
         if (options.idGenerator) {
           ctx.idGenerator = options.idGenerator;
         }
@@ -28,13 +28,13 @@ export function renderToStream(
         const encoder = new TextEncoder();
 
         try {
-          // Render the shell (synchronous layout but allowing async children via await)
+          // Render the shell (synchronous layout but allowing async children via Island)
           const nodeChild = typeof node === "function" ? node() : node;
           const shellStr = await renderToStringAsync(nodeChild);
           controller.enqueue(encoder.encode(shellStr));
 
-          const entries = useAwaitEntries();
-          const pendingPromises = new Map<Promise<any>, AwaitEntry>();
+          const entries = useIslandEntries();
+          const pendingPromises = new Map<Promise<any>, IslandEntry>();
 
           for (const entry of entries) {
             const p = entry.promise.then(
@@ -59,15 +59,16 @@ export function renderToStream(
             }
 
             if (ok && result !== undefined) {
-              const chunk = options.strategy.wrapResolved(entry.id, result);
+              const chunk = renderToString(
+                options.adapter.wrapResolved(entry.id, raw(result)),
+              );
               controller.enqueue(encoder.encode(chunk));
             } else {
-              const errorFallbackStr = entry.errorFallback
+              const errorFallbackNode = entry.errorFallback
                 ? entry.errorFallback()
                 : "";
-              const chunk = options.strategy.wrapError(
-                entry.id,
-                errorFallbackStr,
+              const chunk = renderToString(
+                options.adapter.wrapError(entry.id, errorFallbackNode),
               );
               controller.enqueue(encoder.encode(chunk));
             }

@@ -1,5 +1,5 @@
 {
-  "name": "@cjean-fr/jsx-string-await",
+  "name": "@cjean-fr/jsx-string-island",
   "version": "1.0.0",
   "description": "Async streaming and defer plugin for @cjean-fr/jsx-string",
   "author": "Christophe Jean",

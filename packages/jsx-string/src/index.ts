@@ -104,13 +104,3 @@ export async function renderToStringAsync(node: JSXChild): Promise<string> {
   const result = await renderChild(node);
   return isRawString(result) ? result.toString() : escape(String(result));
 }
-
-/**
- * Check if a value is a Promise.
- *
- * @param value - The value to check
- * @returns True if the value is a Promise
- */
-export function isAsync(value: any): value is Promise<any> {
-  return value instanceof Promise;
-}

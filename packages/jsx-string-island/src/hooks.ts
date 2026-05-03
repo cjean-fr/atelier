@@ -1,11 +1,11 @@
-import type { AwaitEntry, IdGenerator } from "./types.js";
+import type { IslandEntry, IdGenerator } from "./types.js";
 import { useContext } from "@cjean-fr/jsx-string";
 
 export class SequentialIdGenerator implements IdGenerator {
   private counter = 0;
   private prefix: string;
 
-  constructor(prefix: string = "await") {
+  constructor(prefix: string = "island") {
     this.prefix = prefix;
   }
 
@@ -15,18 +15,18 @@ export class SequentialIdGenerator implements IdGenerator {
   }
 }
 
-export function useAwaitEntries(): AwaitEntry[] {
+export function useIslandEntries(): IslandEntry[] {
   const ctx = useContext();
-  if (!ctx.await) {
-    ctx.await = [];
+  if (!ctx.islands) {
+    ctx.islands = [];
   }
-  return ctx.await;
+  return ctx.islands;
 }
 
 export function useIdGenerator(): IdGenerator {
   const ctx = useContext();
   if (!ctx.idGenerator) {
-    ctx.idGenerator = new SequentialIdGenerator("await");
+    ctx.idGenerator = new SequentialIdGenerator("island");
   }
   return ctx.idGenerator;
 }

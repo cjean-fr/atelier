@@ -5,7 +5,6 @@ import {
   Fragment,
   renderToString,
   renderToStringAsync,
-  isAsync,
   RawString,
 } from "./index.js";
 import { expect, describe, it } from "bun:test";
@@ -260,20 +259,65 @@ describe("integration", () => {
       expect(() => renderToString(jsx(Async, {}))).toThrow(/asynchronous/);
     });
 
-    it("should handle isAsync correctly", () => {
-      expect(isAsync(Promise.resolve())).toBe(true);
-      expect(isAsync("not-promise")).toBe(false);
-    });
-
-    it("should escape event handlers as strings to prevent XSS", () => {
+    it("should escape event handlers to ensure valid HTML attribute syntax", () => {
       const html = renderToString(
         jsx("button", {
-          onClick: "alert('XSS')",
+          onClick: "alert('Hello world')",
           onmouseover: 'console.log("hover")',
         }),
       );
-      expect(html).toContain("onclick=\"alert('XSS')\"");
+      expect(html).toContain("onclick=\"alert('Hello world')\"");
       expect(html).toContain('onmouseover="console.log(&quot;hover&quot;)"');
+    });
+  });
+
+  describe("integration edge cases", () => {
+    it("should handle renderToStringAsync with a direct Promise child", async () => {
+      const html = await renderToStringAsync(
+        jsx("div", { children: Promise.resolve("async child") }),
+      );
+      expect(html).toBe("<div>async child</div>");
+    });
+
+    it("should handle Fragment with undefined children", () => {
+      const result = jsx(Fragment, { children: undefined });
+      expect(renderToString(result as any)).toBe("");
+    });
+
+    it("should handle component returning a plain string", () => {
+      const StrComp = () => "just a string";
+      expect(renderToString(jsx(StrComp, {}))).toBe("just a string");
+    });
+
+    it("should handle component returning null", () => {
+      const NullComp = () => null;
+      expect(renderToString(jsx(NullComp, {}))).toBe("");
+    });
+
+    it("should handle h() with multiple children arguments", () => {
+      const result = h("div", {}, "a", "b", "c");
+      expect(renderToString(result)).toBe("<div>abc</div>");
+    });
+
+    it("should handle dangerouslySetInnerHTML with null", () => {
+      expect(
+        jsx("div", {
+          dangerouslySetInnerHTML: null as any,
+        }).toString(),
+      ).toBe("<div></div>");
+    });
+
+    it("should sanitize attribute names with spaces", () => {
+      // @ts-ignore
+      expect(renderToString(jsx("div", { "data foo": "bar" }))).toBe(
+        "<div></div>",
+      );
+    });
+
+    it("should allow srcset with data: image", () => {
+      expect(
+        renderToString(jsx("img", { srcset: "data:image/png;base64,abc 1x" })),
+      ).toBe('<img srcset="data:image/png;base64,abc 1x">');
     });
   });
 });

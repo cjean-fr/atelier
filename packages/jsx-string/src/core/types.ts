@@ -23,10 +23,12 @@ export interface JSXElement {
 }
 
 /**
- * Truly autonomous CSSProperties that merges with React if present.
+ * CSS Properties that allow any property name, including CSS variables,
+ * while still providing autocomplete for standard properties.
  */
-export interface CSSProperties extends Record<string, any> {}
-export interface CSSProperties extends React.CSSProperties {}
+export interface CSSProperties extends React.CSSProperties {
+  [key: string]: any;
+}
 
 /**
  * Map React's functional event handlers to static strings.
@@ -47,7 +49,7 @@ export type ToStatic<T> = Omit<
 > & {
   class?: string;
   className?: string;
-  style?: string | CSSProperties | any;
+  style?: string | CSSProperties | Promise<string | CSSProperties>;
   children?: JSXChild;
   dangerouslySetInnerHTML?: { __html: string };
 } & StringEventHandlers;
@@ -78,7 +80,7 @@ export type JSXChild =
   | null
   | undefined
   | JSXElement
-  | Promise<any>
+  | Promise<JSXChild>
   | JSXChild[];
 
 export type FunctionalComponent<P = {}> = (
@@ -105,7 +107,7 @@ export namespace JSX {
   }
   export interface IntrinsicAttributes
     extends React.Attributes, StandardAttributes {
-    key?: string | number | any;
+    key?: string | number | null | undefined;
   }
   export interface ElementAttributesProperty {
     props: {};
@@ -125,7 +127,7 @@ declare global {
       [key: string]: any;
     }
     interface IntrinsicAttributes extends React.Attributes, StandardAttributes {
-      key?: string | number | any;
+      key?: string | number | null | undefined;
     }
   }
 }

@@ -1,7 +1,7 @@
-import { Await } from "./Await.js";
+import { htmxAdapter } from "./adapters/htmx.js";
+import { Island } from "./components/Island.js";
 import { renderToStream } from "./renderToStream.js";
-import { htmxStrategy } from "./strategies.js";
-import { withContext, useContext } from "@cjean-fr/jsx-string";
+import { withContext } from "@cjean-fr/jsx-string";
 import { describe, it, expect, mock } from "bun:test";
 
 declare module "@cjean-fr/jsx-string" {
@@ -27,18 +27,18 @@ async function streamToString(stream: ReadableStream): Promise<string> {
 
 describe("jsx-string Context Architecture", () => {
   it("should isolate contexts with interleaved async operations", async () => {
-    const p1 = withContext(async () => {
+    const p1 = withContext(async (ctx) => {
       await new Promise((r) => setTimeout(r, 20));
-      useContext().name = "Christophe";
+      ctx.name = "Christophe";
       await new Promise((r) => setTimeout(r, 20));
-      return useContext().name;
+      return ctx.name;
     });
 
-    const p2 = withContext(async () => {
+    const p2 = withContext(async (ctx) => {
       await new Promise((r) => setTimeout(r, 5));
-      useContext().name = "Anna";
+      ctx.name = "Anna";
       await new Promise((r) => setTimeout(r, 20));
-      return useContext().name;
+      return ctx.name;
     });
 
     const [r1, r2] = await Promise.all([p1, p2]);
@@ -47,45 +47,45 @@ describe("jsx-string Context Architecture", () => {
   });
 
   it("should work with synchronous callbacks", async () => {
-    const result = await withContext(() => {
-      useContext().value = "sync";
-      return useContext().value;
+    const result = await withContext((ctx) => {
+      ctx.value = "sync";
+      return ctx.value;
     });
     expect(result).toBe("sync");
   });
 
   it("should create entirely new sandbox for nested withContext", async () => {
-    const parent = await withContext(async () => {
-      useContext().value = "parent";
+    const parent = await withContext(async (ctx) => {
+      ctx.value = "parent";
 
-      const child = await withContext(async () => {
-        useContext().value = "child";
-        return useContext().value;
+      const child = await withContext(async (c) => {
+        c.value = "child";
+        return c.value;
       });
 
       expect(child).toBe("child");
-      expect(useContext().value).toBe("parent");
-      return useContext().value;
+      expect(ctx.value).toBe("parent");
+      return ctx.value;
     });
 
     expect(parent).toBe("parent");
   });
 });
 
-describe("jsx-string-await Plugin", () => {
+describe("jsx-string-island Plugin", () => {
   it("should render fallback first and resolve correctly", async () => {
     const App = () => (
       <div>
-        <Await id="test-1" fallback={<span>Loading...</span>}>
+        <Island id="test-1" fallback={<span>Loading...</span>}>
           {async () => {
             await new Promise((r) => setTimeout(r, 10));
             return <span>Resolved!</span>;
           }}
-        </Await>
+        </Island>
       </div>
     );
 
-    const stream = renderToStream(() => <App />, { strategy: htmxStrategy });
+    const stream = renderToStream(() => <App />, { adapter: htmxAdapter });
     const result = await streamToString(stream);
 
     expect(result).toContain(
@@ -98,7 +98,7 @@ describe("jsx-string-await Plugin", () => {
 
   it("should handle error gracefully", async () => {
     const App = () => (
-      <Await
+      <Island
         id="test-error"
         fallback={<span>Loading...</span>}
         errorFallback={<span>Error occurred</span>}
@@ -106,10 +106,10 @@ describe("jsx-string-await Plugin", () => {
         {async () => {
           throw new Error("Failed");
         }}
-      </Await>
+      </Island>
     );
 
-    const stream = renderToStream(() => <App />, { strategy: htmxStrategy });
+    const stream = renderToStream(() => <App />, { adapter: htmxAdapter });
     const result = await streamToString(stream);
 
     expect(result).toContain(
@@ -124,7 +124,7 @@ describe("jsx-string-await Plugin", () => {
     const onTimeout = mock(() => {});
 
     const App = () => (
-      <Await
+      <Island
         id="test-timeout"
         fallback={<span>Loading...</span>}
         errorFallback={<span>Timed out</span>}
@@ -135,10 +135,10 @@ describe("jsx-string-await Plugin", () => {
           await new Promise((r) => setTimeout(r, 50));
           return <span>Too late!</span>;
         }}
-      </Await>
+      </Island>
     );
 
-    const stream = renderToStream(() => <App />, { strategy: htmxStrategy });
+    const stream = renderToStream(() => <App />, { adapter: htmxAdapter });
     const result = await streamToString(stream);
 
     expect(result).toContain(

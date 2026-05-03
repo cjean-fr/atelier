@@ -70,11 +70,11 @@ Need to render JSX?
 │   │
 │   ├─ Need shared state across tree? → withContext() / useContext()
 │   │
-│   └─ Need streaming / deferred rendering? → @cjean-fr/jsx-string-await
+│   └─ Need streaming / deferred rendering? → @cjean-fr/jsx-string-island
 │       │
-│       ├─ Show fallback then swap? → <Await /> + renderToStream()
+│       ├─ Show fallback then swap? → <Island /> + renderToStream()
 │       │
-│       └─ Strategy? → htmxStrategy or hotwireStrategy
+│       └─ Adapter? → htmxAdapter or hotwireAdapter
 │
 └─ No → Use template literals or string interpolation
 ```
@@ -104,12 +104,12 @@ Code stays compatible with React - just follow these rules.
 
 ### Rules
 
-| Rule                                     | Why                           |
-| ---------------------------------------- | ----------------------------- |
-| No hooks (`useState`, `useEffect`, etc.) | Static rendering only         |
+| Rule                                     | Why                            |
+| ---------------------------------------- | ------------------------------ |
+| No hooks (`useState`, `useEffect`, etc.) | Static rendering only          |
 | No React context (`createContext`, etc.) | Use `withContext`/`useContext` |
-| No event handlers in render              | Static HTML, no interactivity |
-| No refs                                  | No DOM access                 |
+| No event handlers in render              | Static HTML, no interactivity  |
+| No refs                                  | No DOM access                  |
 
 ### Pattern: Extract Data Before Render
 
@@ -201,15 +201,14 @@ const Header = () => (
 );
 
 // Wrap your render in an isolated context scope
-const html = await withContext(async () => {
-  const ctx = useContext();
+const html = await withContext(async (ctx) => {
   ctx.user = await fetchUser(id);
 
   return renderToStringAsync(<Header />);
 });
 ```
 
-The `Context` interface is extensible via TypeScript module augmentation — plugins like `@cjean-fr/jsx-string-await` use this to attach their own state (e.g. `strategy`, `await` entries).
+The `Context` interface is extensible via TypeScript module augmentation — plugins like `@cjean-fr/jsx-string-island` use this to attach their own state (e.g. `strategy`, `await` entries).
 
 ## Error Handling
 
@@ -260,31 +259,30 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
 };
 ```
 
-## Ecosystem: Streaming with `@cjean-fr/jsx-string-await`
+## Ecosystem: Streaming with `@cjean-fr/jsx-string-island`
 
-For deferred / streamed rendering, use the official `@cjean-fr/jsx-string-await` plugin.
-It provides an `<Await />` component that renders a fallback synchronously and swaps in the real content once the async work resolves, streamed over a `ReadableStream`.
+For deferred / streamed rendering, use the official `@cjean-fr/jsx-string-island` plugin.
+It provides an `<Island />` component that renders a fallback synchronously and swaps in the real content once the async work resolves, streamed over a `ReadableStream`.
 
 ```bash
-npm install @cjean-fr/jsx-string-await
+npm install @cjean-fr/jsx-string-island
 ```
 
-### `<Await />` Component
+### `<Island />` Component
 
 ```tsx
-import { Await } from "@cjean-fr/jsx-string-await";
+import { Island } from "@cjean-fr/jsx-string-island";
 
 const Page = () => (
   <main>
     <h1>Dashboard</h1>
-    <Await fallback={<p>Loading user…</p>}>
-      {() => <UserCard id="1" />}
-    </Await>
+    <Island fallback={<p>Loading user…</p>}>{() => <UserCard id="1" />}</Island>
   </main>
 );
 ```
 
 **Props:**
+
 - `fallback` (required) — JSX shown immediately while the async tree resolves.
 - `children` (required) — A **thunk** `() => JSXChild` that returns the deferred content.
 - `errorFallback` — JSX shown if the async tree rejects.
@@ -294,13 +292,13 @@ const Page = () => (
 
 ### `renderToStream()`
 
-Renders the shell synchronously, then streams resolved `<Await />` chunks.
+Renders the shell synchronously, then streams resolved `<Island />` chunks.
 
 ```typescript
-import { renderToStream, htmxStrategy, hotwireStrategy } from "@cjean-fr/jsx-string-await";
+import { renderToStream, htmxAdapter, hotwireAdapter } from "@cjean-fr/jsx-string-island";
 
 const stream = renderToStream(<Page />, {
-  strategy: htmxStrategy,   // or hotwireStrategy
+  adapter: htmxAdapter,   // or hotwireAdapter
 });
 
 // Use with any Web Streams-compatible runtime (Bun, Deno, Node 18+)
@@ -309,14 +307,14 @@ return new Response(stream, {
 });
 ```
 
-### Built-in Strategies
+### Built-in Adapters
 
-| Strategy          | Swap mechanism                               |
-| ----------------- | -------------------------------------------- |
-| `htmxStrategy`    | `hx-swap-oob="true"` on resolved `<div>`     |
-| `hotwireStrategy` | `<turbo-stream action="replace">` wrappers   |
+| Adapter          | Swap mechanism                             |
+| ---------------- | ------------------------------------------ |
+| `htmxAdapter`    | `hx-swap-oob="true"` on resolved `<div>`   |
+| `hotwireAdapter` | `<turbo-stream action="replace">` wrappers |
 
-You can implement `RenderStrategy` for custom swap logic.
+You can implement `RenderAdapter` for custom swap logic.
 
 ## Testing
 

@@ -160,7 +160,11 @@ renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
 `@cjean-fr/jsx-string` exposes a type-safe Async Context API (`withContext` and `useContext`) backed by `AsyncLocalStorage`. It allows sharing data (like user sessions or configuration) deeply across the entire rendering tree without prop-drilling.
 
 ```tsx
-import { withContext, useContext, renderToStringAsync } from "@cjean-fr/jsx-string";
+import {
+  withContext,
+  useContext,
+  renderToStringAsync,
+} from "@cjean-fr/jsx-string";
 
 // 1. Read from context anywhere in the tree
 const UserProfile = () => {
@@ -169,10 +173,9 @@ const UserProfile = () => {
 };
 
 // 2. Wrap your render in an isolated context scope
-const html = await withContext(async () => {
-  const ctx = useContext();
+const html = await withContext(async (ctx) => {
   ctx.user = "Alice"; // Mutate the current scope safely
-  
+
   return renderToStringAsync(<UserProfile />);
 });
 // => "<div>Welcome, Alice</div>"
@@ -182,7 +185,7 @@ const html = await withContext(async () => {
 
 Extend `@cjean-fr/jsx-string` with official plugins:
 
-- **`@cjean-fr/jsx-string-await`**: A streaming solution offering an `<Await />` component to render fallbacks synchronously while deferring complex async trees. It streams resolved chunks via Web Streams using strategies like Hotwire or HTMX (`renderToStream`).
+- **`@cjean-fr/jsx-string-island`**: A streaming solution offering an `<Island />` component to render fallbacks synchronously while deferring complex async trees. It streams resolved chunks via Web Streams using adapters like Hotwire or HTMX (`renderToStream`).
 
 ## AI-Friendly
 

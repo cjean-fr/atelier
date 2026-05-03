@@ -42,16 +42,6 @@ const ATTRIBUTE_NAME_MAP = new Map<string, string>([
   ["dateTime", "datetime"],
 ]);
 
-const hasPromise = (v: unknown): boolean => {
-  if (v instanceof Promise) return true;
-  if (Array.isArray(v)) {
-    for (let i = 0; i < v.length; i++) {
-      if (hasPromise(v[i])) return true;
-    }
-  }
-  return false;
-};
-
 const hasNestedPromise = (v: unknown): boolean => {
   if (!v) return false;
   if (v instanceof Promise) return true;
@@ -134,25 +124,49 @@ export function renderAttributes(
   if (!props) return "";
 
   const keys = Object.keys(props);
+  const pending = new Map<string, Promise<unknown>>();
+
+  // Single pass: detect AND collect promises
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    const value = key ? (props as any)[key] : undefined;
-    if (
-      key &&
-      (hasPromise(value) ||
-        (key === "style" &&
-          typeof value === "object" &&
-          hasNestedPromise(value)))
+    if (key === undefined) continue;
+    const value = (props as any)[key];
+
+    if (value instanceof Promise) {
+      pending.set(key, value);
+    } else if (Array.isArray(value)) {
+      for (let j = 0; j < value.length; j++) {
+        if (value[j] instanceof Promise) {
+          pending.set(key, Promise.all(value.map((v) => Promise.resolve(v))));
+          break;
+        }
+      }
+    } else if (
+      key === "style" &&
+      typeof value === "object" &&
+      hasNestedPromise(value)
     ) {
-      return Promise.all(keys.map(async (k) => [k, await (props as any)[k]]))
-        .then((entries) => resolveNestedPromises(Object.fromEntries(entries)))
-        .then((resolved) =>
-          renderAttributesSync(resolved as StandardAttributes),
-        );
+      pending.set(key, resolveNestedPromises(value));
     }
   }
 
-  return renderAttributesSync(props);
+  // Fast-path sync: no async work
+  if (pending.size === 0) {
+    return renderAttributesSync(props);
+  }
+
+  // Resolve only async values, keep sync ones as-is
+  const asyncEntries = Array.from(pending.entries()).map(
+    async ([key, promise]) => [key, await promise] as [string, unknown],
+  );
+
+  return Promise.all(asyncEntries).then((resolved) => {
+    const resolvedProps = { ...props };
+    for (const [key, value] of resolved) {
+      resolvedProps[key] = value;
+    }
+    return renderAttributesSync(resolvedProps);
+  });
 }
 
 /**
