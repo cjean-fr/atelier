@@ -10,7 +10,7 @@
     "catalog": {
       "@cjean-fr/i18n-tiny": "workspace:*",
       "@cjean-fr/jsx-string": "workspace:*",
-      "@cjean-fr/jsx-string-await": "workspace:*",
+      "@cjean-fr/jsx-string-island": "workspace:*",
       "@cjean-fr/eslint-plugin-jsx-string": "workspace:*",
       "@iconify-icons/tabler": "latest",
       "@tailwindcss/vite": "latest",

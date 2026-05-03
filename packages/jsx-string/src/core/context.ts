@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-// Extensible interface — plugins (e.g. jsx-string-await) augment this via module augmentation
+// Extensible interface — plugins (e.g. jsx-string-island) augment this via module augmentation
 export interface Context {}
 
 /**
@@ -24,8 +24,11 @@ export const context: ContextVariable<Context> = new ContextVariable<Context>();
 /**
  * Initializes a new isolated context scope and runs the callback inside it.
  */
-export async function withContext<T>(cb: () => T | Promise<T>): Promise<T> {
-  return context.run({}, cb);
+export async function withContext<T>(
+  cb: (ctx: Context) => T | Promise<T>,
+): Promise<T> {
+  const ctx: Context = {};
+  return context.run(ctx, () => cb(ctx));
 }
 
 /**

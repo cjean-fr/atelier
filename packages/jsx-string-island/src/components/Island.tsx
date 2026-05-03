@@ -1,14 +1,12 @@
-import { useAwaitEntries, useIdGenerator } from "./hooks.js";
-import type { AwaitEntry } from "./types.js";
+import { useIslandEntries, useIdGenerator } from "../hooks.js";
+import type { IslandEntry } from "../types.js";
 import {
   useContext,
   type JSXChild,
   renderToStringAsync,
-  renderToString,
-  raw,
 } from "@cjean-fr/jsx-string";
 
-export interface AwaitProps {
+export interface IslandProps {
   id?: string;
   fallback: JSXChild;
   errorFallback?: JSXChild;
@@ -18,7 +16,7 @@ export interface AwaitProps {
   children: () => JSXChild;
 }
 
-export function Await({
+export function Island({
   id,
   fallback,
   errorFallback,
@@ -26,31 +24,29 @@ export function Await({
   onTimeout,
   onError,
   children,
-}: AwaitProps) {
+}: IslandProps): any {
   const ctx = useContext();
-  const entries = useAwaitEntries();
+  const entries = useIslandEntries();
   const generator = useIdGenerator();
 
-  if (!ctx.strategy) {
+  if (!ctx.adapter) {
     throw new Error(
-      "[jsx-string-await] Missing RenderStrategy in Context. Use renderToStream().",
+      "[jsx-string-island] Missing RenderAdapter in Context. Use renderToStream().",
     );
   }
 
-  const awaitId = id || generator.next();
+  const islandId = id || generator.next();
 
   // Thunk to render children
   const renderPromise = async () => {
     return renderToStringAsync(children());
   };
 
-  const entry: AwaitEntry = {
-    id: awaitId,
+  const entry: IslandEntry = {
+    id: islandId,
     status: "pending",
     render: renderPromise,
-    errorFallback: errorFallback
-      ? () => renderToString(errorFallback)
-      : () => "",
+    errorFallback: errorFallback ? () => errorFallback : () => "",
     onTimeout,
     onError,
     // promise will be assigned below to ensure it handles race conditions properly
@@ -93,6 +89,5 @@ export function Await({
   entry.promise = executeRender();
   entries.push(entry);
 
-  const fallbackStr = renderToString(fallback);
-  return raw(ctx.strategy.wrapFallback(awaitId, fallbackStr));
+  return ctx.adapter.wrapFallback(islandId, fallback);
 }

@@ -9,8 +9,7 @@ Personal collection of high-performance, type-safe tools and themes.
 | Package                                                                     | Description                                                 |
 | :-------------------------------------------------------------------------- | :---------------------------------------------------------- |
 | [`@cjean-fr/jsx-string`](./packages/jsx-string)                             | High-performance, secure JSX-to-HTML string renderer.       |
-| [`@cjean-fr/jsx-string-await`](./packages/jsx-string-await)                 | Async streaming and defer plugin for jsx-string.            |
-| [`@cjean-fr/jsx-string-postcss`](./packages/jsx-string-postcss)             | PostCSS plugin for scoped CSS extraction in jsx-string.     |
+| [`@cjean-fr/jsx-string-island`](./packages/jsx-string-island)                 | Async streaming and defer plugin for jsx-string.            |
 | [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for secure and valid jsx-string usage.         |
 
 ### Other Tools
