@@ -1,7 +1,7 @@
 {
   "name": "@cjean-fr/jsx-string-island",
-  "version": "1.0.0",
-  "description": "Async streaming and defer plugin for @cjean-fr/jsx-string",
+  "version": "0.1.0",
+  "description": "Islands plugin for @cjean-fr/jsx-string",
   "author": "Christophe Jean",
   "license": "MIT",
   "type": "module",
@@ -19,7 +19,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bunup src/index.ts --format esm --minify",
+    "build": "bun build src/index.ts --format esm --minify --outdir ./dist",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"
