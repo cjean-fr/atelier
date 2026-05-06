@@ -157,13 +157,19 @@ renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Trusted</b>" }} />);
 
 ### 4. Context API
 
-`@cjean-fr/jsx-string` exposes a type-safe Async Context API (`withContext` and `useContext`) backed by `AsyncLocalStorage`. It allows sharing data (like user sessions or configuration) deeply across the entire rendering tree without prop-drilling.
+`@cjean-fr/jsx-string` exposes a type-safe Async Context API (`withContext` and `useContext`) backed by `node:async_hooks` `AsyncLocalStorage`. It allows sharing data (like user sessions, translations, or configuration) deeply across the entire rendering tree without prop-drilling.
+
+#### Basic Usage
+
+Unlike React Context, there is no `<Provider>` component. `withContext` automatically creates a fresh, isolated context object (`{}`) for its scope. You inject data by simply mutating this object before rendering. 
+
+If `useContext()` is called outside of a `withContext` scope, it will safely throw an error rather than silently returning `undefined`.
 
 ```tsx
 import {
   withContext,
   useContext,
-  renderToStringAsync,
+  renderToString,
 } from "@cjean-fr/jsx-string";
 
 // 1. Read from context anywhere in the tree
@@ -173,13 +179,33 @@ const UserProfile = () => {
 };
 
 // 2. Wrap your render in an isolated context scope
-const html = await withContext(async (ctx) => {
-  ctx.user = "Alice"; // Mutate the current scope safely
+const html = await withContext((ctx) => {
+  ctx.user = "Alice"; // Inject data by mutating the fresh context object
 
-  return renderToStringAsync(<UserProfile />);
+  // Works seamlessly with both renderToString and renderToStringAsync
+  return renderToString(<UserProfile />);
 });
 // => "<div>Welcome, Alice</div>"
 ```
+
+#### Strong Typing via Module Augmentation
+
+By default, the `Context` interface is empty. You can extend it globally in your project using TypeScript's module augmentation. This ensures full type-safety across your entire application when reading from `useContext()` or writing to `withContext()`.
+
+Create a declaration file (e.g., `jsx-string.d.ts`) in your project:
+
+```ts
+import "@cjean-fr/jsx-string";
+
+declare module "@cjean-fr/jsx-string" {
+  export interface Context {
+    user?: string;
+    theme?: "light" | "dark";
+  }
+}
+```
+
+Once defined, `ctx.user` and `ctx.theme` will be strongly typed with autocomplete support anywhere in your codebase!
 
 ## Ecosystem
 
@@ -228,13 +254,13 @@ Note: `dangerouslySetInnerHTML` always bypasses escaping by design.
 
 ## API Reference
 
-- `renderToString(node)` — Hybrid renderer (returns `string | Promise<string>`).
+- `renderToString(node)` — Hybrid renderer (returns `string`).
+- `renderToStringAsync(node)` — Hybrid renderer (returns `Promise<string>`).
+- `withContext(callback, context)` — Creates a new context and runs the callback inside it.
+- `useContext()` — Hook to read the current context.
 - `raw(string)` — Helper function to create `RawString` instances.
 - `RawString` — Instances created using `raw()` for raw HTML strings.
 - `Fragment` — Standard JSX Fragment component.
-- `jsx/jsxs/h` — Internal JSX factories.
-- `StandardAttributes` — Base types for HTML elements (includes `style`, `class`, `className`, etc).
-- `JSXChild` — Recursive type for any valid JSX child (string, number, element, promise, array).
 
 ## Contributing
 

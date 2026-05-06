@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0
+
+### Added
+
+- **Async Context API**: Added `withContext` and `useContext` for type-safe async context.
+
 ## 1.3.0
 
 ### Added

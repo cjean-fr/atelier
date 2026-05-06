@@ -19,7 +19,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bun build src/index.ts --format esm --minify --outdir ./dist",
+    "build": "bunup src/index.ts --format esm --minify --jsx.import-source @cjean-fr/jsx-string",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"
