@@ -42,10 +42,10 @@
   /* Timeline dot/marker */
   .timeline-item::before {
     @apply border-primary absolute top-1.5 -left-[34px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white content-[''] md:block;
+  }
 
-    .dark & {
-      @apply bg-slate-900/95;
-    }
+  .dark .timeline-item::before {
+    @apply bg-slate-900/95;
   }
 
   .timeline-item-secondary::before {
