@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/jsx-string",
-  "version": "1.4.0",
+  "version": "1.4.2",
   "description": "The small, safe way to render JSX into HTML strings. Zero dependencies. Fully typed.",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -34,19 +34,19 @@
       "default": "./dist/index.js"
     },
     "./jsx-runtime": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/jsx-runtime.d.ts",
+      "default": "./dist/jsx-runtime.js"
     },
     "./jsx-dev-runtime": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/jsx-runtime.d.ts",
+      "default": "./dist/jsx-runtime.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "bunup src/index.ts --format esm --minify",
+    "build": "bunup src/index.tsx src/jsx-runtime.ts --format esm --minify",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"
@@ -70,5 +70,8 @@
     "README.md",
     "LICENSE",
     "skills"
-  ]
+  ],
+  "browser": {
+    "node:async_hooks": false
+  }
 }

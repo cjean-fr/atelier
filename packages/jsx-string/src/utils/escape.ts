@@ -71,3 +71,9 @@ export const isSafeUrl = (url: string): boolean => {
 export const isValidAttrName = (name: string): boolean => {
   return REGEX_VALID_ATTR_NAME.test(name);
 };
+
+const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
+
+export const isValidTagName = (name: string): boolean => {
+  return REGEX_VALID_TAG_NAME.test(name);
+};

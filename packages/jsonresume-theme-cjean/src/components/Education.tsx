@@ -2,9 +2,9 @@ import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import Period from "./Period.js";
 import Section from "./Section.js";
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface EducationProps extends StandardAttributes {
+interface EducationProps extends HTMLAttributes {
   education: Resume["education"];
   certificates: Resume["certificates"];
 }

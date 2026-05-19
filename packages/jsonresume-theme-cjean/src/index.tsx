@@ -3,7 +3,6 @@ import { init } from "./lib/i18n.js";
 import { getLogoFromUrl, getPictureFromEmail } from "./lib/image.js";
 import { ResumeSchema } from "./schema.js";
 import css from "./styles/tailwind.input.css?inline";
-import { renderToStringAsync } from "@cjean-fr/jsx-string";
 
 /**
  *
@@ -32,5 +31,5 @@ export async function render(resumeData: unknown): Promise<string> {
     resume.basics.image = await getPictureFromEmail(resume.basics.email);
   }
 
-  return renderToStringAsync(<Layout resume={resume} css={css} />);
+  return (await (<Layout resume={resume} css={css} />)).toString();
 }

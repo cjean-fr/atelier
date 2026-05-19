@@ -1,7 +1,7 @@
 import { getIcon } from "./Icons.js";
-import { type StandardAttributes } from "@cjean-fr/jsx-string";
+import { type HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface FloatingButtonProps extends StandardAttributes {
+interface FloatingButtonProps extends HTMLAttributes {
   text: string;
   url: string;
   icon?: Parameters<typeof getIcon>[0];

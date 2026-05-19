@@ -1,7 +1,7 @@
 import { dateFormatter } from "../lib/i18n.js";
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
-export interface DateTimeProps extends StandardAttributes {
+export interface DateTimeProps extends HTMLAttributes {
   date: Date | string;
   format?: Parameters<typeof dateFormatter.format>[1];
   children?: any;

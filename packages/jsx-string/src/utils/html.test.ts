@@ -1,6 +1,7 @@
 import {
   renderAttributes,
   renderChild,
+  renderElement,
   renderStyle,
   RawString,
   raw,
@@ -120,21 +121,15 @@ describe("html utilities", () => {
       );
     });
 
-    it("should convert kebab-case data-* and aria-* attributes", () => {
+    it("should pass through data-* and aria-* attributes verbatim", () => {
       expect(
         renderAttributes({ "data-test-id": "123", "aria-label": "test" }),
       ).toBe(' data-test-id="123" aria-label="test"');
     });
 
-    it("should preserve camelCase data-* attributes as-is", () => {
+    it("should pass through unknown attributes verbatim regardless of casing", () => {
       expect(renderAttributes({ dataTestId: "123", ariaLabel: "test" })).toBe(
         ' dataTestId="123" ariaLabel="test"',
-      );
-    });
-
-    it("should preserve kebab-case data-* attributes", () => {
-      expect(renderAttributes({ "data-test-id": "123" })).toBe(
-        ' data-test-id="123"',
       );
     });
 
@@ -169,6 +164,19 @@ describe("html utilities", () => {
     it("should convert camelCase to kebab-case", () => {
       expect(renderStyle({ backgroundColor: "red", "--custom": "blue" })).toBe(
         "background-color:red;--custom:blue",
+      );
+    });
+
+    it("should convert multi-capital camelCase to kebab-case", () => {
+      expect(
+        renderStyle({
+          borderTopColor: "red",
+          borderTopLeftRadius: "4px",
+          listStyleType: "disc",
+          textDecorationLine: "underline",
+        }),
+      ).toBe(
+        "border-top-color:red;border-top-left-radius:4px;list-style-type:disc;text-decoration-line:underline",
       );
     });
 
@@ -250,6 +258,34 @@ describe("html utilities", () => {
         Promise.resolve(Promise.resolve("deep")),
       ]);
       expect((result as RawString).value).toBe("deep");
+    });
+  });
+
+  describe("renderElement — tag name validation", () => {
+    it("should render valid HTML tags", () => {
+      expect((renderElement("div", {}, []) as RawString).value).toBe(
+        "<div></div>",
+      );
+    });
+
+    it("should render custom elements with hyphens", () => {
+      expect((renderElement("my-component", {}, []) as RawString).value).toBe(
+        "<my-component></my-component>",
+      );
+    });
+
+    it("should block tag names with spaces", () => {
+      expect(
+        (renderElement('div class="injected"', {}, []) as RawString).value,
+      ).toBe("");
+    });
+
+    it("should block tag names starting with a digit", () => {
+      expect((renderElement("1div", {}, []) as RawString).value).toBe("");
+    });
+
+    it("should block tag names with angle brackets", () => {
+      expect((renderElement("<script>", {}, []) as RawString).value).toBe("");
     });
   });
 

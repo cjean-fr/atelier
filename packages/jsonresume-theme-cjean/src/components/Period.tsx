@@ -1,8 +1,8 @@
 import { t } from "../lib/i18n.js";
 import DateTime, { type DateTimeProps } from "./DateTime.js";
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface PeriodProps extends StandardAttributes {
+interface PeriodProps extends HTMLAttributes {
   startDate?: string | Date;
   endDate?: string | Date;
   format?: DateTimeProps["format"];

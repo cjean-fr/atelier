@@ -1,6 +1,6 @@
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface SectionProps extends StandardAttributes {
+interface SectionProps extends HTMLAttributes {
   name?: string;
 }
 

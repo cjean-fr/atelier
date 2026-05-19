@@ -1,9 +1,7 @@
 import type { RawString } from "../utils/html.js";
 
-/**
- * Support for React type augmentation.
- * We override standard attributes to allow strings/RawStrings.
- */
+// Augment React's types when @types/react is installed,
+// so jsx-string attributes (class, string event handlers) are accepted there too.
 declare module "react" {
   interface HTMLAttributes<T> {
     class?: string;
@@ -15,99 +13,162 @@ declare module "react" {
   }
 }
 
-/**
- * Common interface for all JSX elements.
- */
-export interface JSXElement {
+interface JSXElement {
   toString(): string;
 }
 
 /**
- * CSS Properties that allow any property name, including CSS variables,
- * while still providing autocomplete for standard properties.
+ * CSS Properties that allow any property name, including CSS variables.
+ * When @types/react is installed, style autocompletion comes from React.CSSProperties
+ * via the normal tsconfig jsxImportSource chain — no extra setup needed.
  */
-export interface CSSProperties extends React.CSSProperties {
-  [key: string]: any;
+export interface CSSProperties {
+  [key: string]: string | number | undefined;
 }
 
 /**
- * Map React's functional event handlers to static strings.
+ * Event handlers expressed as static strings instead of functions.
+ * Common handlers are listed explicitly for dot-notation access;
+ * all others are covered by the [key: string]: any index signature on HTMLAttributes.
  */
 export type StringEventHandlers = {
-  [K in keyof React.DOMAttributes<any> as K extends `on${string}`
-    ? K
-    : never]?: string;
+  onClick?: string;
+  onChange?: string;
+  onInput?: string;
+  onSubmit?: string;
+  onFocus?: string;
+  onBlur?: string;
+  onKeyDown?: string;
+  onKeyUp?: string;
+  onKeyPress?: string;
+  onMouseEnter?: string;
+  onMouseLeave?: string;
+  onMouseOver?: string;
+  onMouseOut?: string;
+  onMouseMove?: string;
+  onMouseDown?: string;
+  onMouseUp?: string;
+  onTouchStart?: string;
+  onTouchEnd?: string;
+  onTouchMove?: string;
+  onPaste?: string;
+  onCopy?: string;
+  onCut?: string;
+  onScroll?: string;
+  onLoad?: string;
+  onError?: string;
+  onSelect?: string;
+  onDrag?: string;
+  onDrop?: string;
+  onDragOver?: string;
+  onDragStart?: string;
+  onDragEnd?: string;
+  onContextMenu?: string;
+  onDoubleClick?: string;
+  onWheel?: string;
+  onResize?: string;
+  onAbort?: string;
+  onCanPlay?: string;
+  onPlay?: string;
+  onPause?: string;
+  onEnded?: string;
 };
 
 /**
- * Transform a React attribute set into a static-friendly one.
- * Strips functional events, and adds back children/style/class.
+ * Strip event handlers and layout props from T, then reattach them as static-friendly versions.
+ * Works standalone — does not require @types/react.
  */
-export type ToStatic<T> = Omit<
-  T,
-  keyof React.DOMAttributes<any> | "children" | "style" | "class" | "className"
-> & {
+export type ToStatic<T = {}> = {
+  [K in keyof T as K extends
+    | `on${string}`
+    | "children"
+    | "style"
+    | "class"
+    | "className"
+    ? never
+    : K]: T[K];
+} & {
   class?: string;
   className?: string;
   style?: string | CSSProperties | Promise<string | CSSProperties>;
-  children?: JSXChild;
+  children?: JSXNode;
   dangerouslySetInnerHTML?: { __html: string };
 } & StringEventHandlers;
 
 /**
  * Base attributes shared by all HTML elements.
+ * Permissive by default: [key: string]: any allows any valid HTML attribute.
+ * When @types/react is installed, ToStatic<React.HTMLAttributes<any>> gives richer autocomplete.
  */
-export interface HTMLAttributes extends ToStatic<React.HTMLAttributes<any>> {
-  /** Catch-all for other HTML attributes */
+export interface HTMLAttributes extends ToStatic {
+  id?: string;
+  class?: string;
+  className?: string;
+  style?: string | CSSProperties | Promise<string | CSSProperties>;
+  children?: JSXNode;
+  dangerouslySetInnerHTML?: { __html: string };
+  lang?: string;
+  dir?: "ltr" | "rtl" | "auto";
+  role?: string;
+  tabIndex?: number;
+  tabindex?: number;
+  title?: string;
+  hidden?: boolean | string;
+  slot?: string;
+  /** Catch-all for any other HTML or data attribute */
   [key: string]: any;
 }
 
 /**
  * Base attributes shared by all SVG elements.
  */
-export interface SVGAttributes extends ToStatic<React.SVGAttributes<any>> {
-  /** Catch-all for other SVG attributes */
-  [key: string]: any;
+export interface SVGAttributes extends HTMLAttributes {
+  viewBox?: string;
+  xmlns?: string;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: string | number;
+  width?: string | number;
+  height?: string | number;
+  d?: string;
+  cx?: string | number;
+  cy?: string | number;
+  r?: string | number;
+  x?: string | number;
+  y?: string | number;
 }
 
 /**
  * Types of children that can be passed to a JSX element.
  */
-export type JSXChild =
+export type JSXNode =
   | string
   | number
   | boolean
   | null
   | undefined
   | JSXElement
-  | Promise<JSXChild>
-  | JSXChild[];
+  | Promise<JSXNode>
+  | JSXNode[];
 
-export type FunctionalComponent<P = {}> = (
-  props: P & StandardAttributes & { children?: JSXChild },
-) => JSXChild;
-
-/**
- * Internal type for mapping React intrinsic elements to static ones.
- */
-type StaticIntrinsicElements = {
-  [K in keyof React.JSX.IntrinsicElements]: ToStatic<
-    React.JSX.IntrinsicElements[K]
-  >;
-};
+export type Component<P = {}> = (
+  props: P & HTMLAttributes & { children?: JSXNode },
+) => JSXNode;
 
 /**
  * JSX Namespace for the internal factory.
+ * IntrinsicElements is permissive ([tag: string]: HTMLAttributes).
+ * Per-element attribute checking (img → src, a → href, …) is available
+ * automatically when @types/react is installed, via the jsxImportSource chain.
  */
 export namespace JSX {
-  /** The result of a JSX expression is a RawString or a Promise thereof. */
   export type Element = RawString | Promise<RawString>;
-  export interface IntrinsicElements extends StaticIntrinsicElements {
-    [key: string]: any;
+  export interface IntrinsicElements {
+    [tag: string]: HTMLAttributes;
   }
-  export interface IntrinsicAttributes
-    extends React.Attributes, StandardAttributes {
+  export interface IntrinsicAttributes {
     key?: string | number | null | undefined;
+    [key: string]: any;
   }
   export interface ElementAttributesProperty {
     props: {};
@@ -117,19 +178,15 @@ export namespace JSX {
   }
 }
 
-/**
- * Global merge for external tools/React.
- */
 declare global {
   namespace JSX {
     interface Element extends RawString {}
-    interface IntrinsicElements extends StaticIntrinsicElements {
-      [key: string]: any;
+    interface IntrinsicElements {
+      [tag: string]: HTMLAttributes;
     }
-    interface IntrinsicAttributes extends React.Attributes, StandardAttributes {
+    interface IntrinsicAttributes {
       key?: string | number | null | undefined;
+      [key: string]: any;
     }
   }
 }
-
-export type StandardAttributes = HTMLAttributes;

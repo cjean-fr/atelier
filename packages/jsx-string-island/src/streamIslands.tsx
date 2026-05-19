@@ -1,8 +1,8 @@
 import type { IslandAdapter } from "./adapters";
-import { type JSXChild, renderToStringAsync } from "@cjean-fr/jsx-string";
+import { type JSXNode, renderToString } from "@cjean-fr/jsx-string";
 
 export async function streamIslands(
-  islands: Map<string, () => JSXChild>,
+  islands: Map<string, () => JSXNode>,
   adapter: IslandAdapter,
   callback: (id: string, html: string) => void | Promise<void>,
 ): Promise<void> {
@@ -10,7 +10,7 @@ export async function streamIslands(
   for (const [id, children] of islands) {
     const run = async (): Promise<void> => {
       try {
-        const html = await renderToStringAsync(
+        const html = await renderToString(
           adapter.Fragment({ id, children: children() }),
         );
         await callback(id, html);

@@ -2,9 +2,9 @@ import { t } from "../lib/i18n.js";
 import { type Resume } from "../schema.js";
 import Period from "./Period.js";
 import Section from "./Section.js";
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface WorkExperienceProps extends StandardAttributes {
+interface WorkExperienceProps extends HTMLAttributes {
   works: Resume["work"];
   showLogos?: boolean;
 }

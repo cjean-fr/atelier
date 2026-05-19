@@ -11,9 +11,9 @@ import { ProfilePageJsonLd } from "./ProfilePageJsonLd.js";
 import SEO from "./SEO.js";
 import Skills from "./Skills.js";
 import WorkExperience from "./WorkExperience.js";
-import { raw, type StandardAttributes } from "@cjean-fr/jsx-string";
+import { raw, type HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface LayoutProps extends StandardAttributes {
+interface LayoutProps extends HTMLAttributes {
   resume: Resume;
   css: string;
 }

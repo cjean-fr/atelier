@@ -1,45 +1,59 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-// Extensible interface — plugins (e.g. jsx-string-island) augment this via module augmentation
-export interface Context {}
+declare const __brand: unique symbol;
 
-/**
- * Shim for AsyncContext.Variable — future migration path to TC39 AsyncContext
- */
-export class ContextVariable<T = Context> {
-  private als = new AsyncLocalStorage<T>();
-
-  run<R>(value: T, callback: () => R | Promise<R>): Promise<R> {
-    return this.als.run(value as any, callback) as Promise<R>;
-  }
-
-  get(): T | undefined {
-    return this.als.getStore() as T;
-  }
+export interface Context<T> {
+  readonly [__brand]: T;
 }
 
-// Singleton rendering context variable
-export const context: ContextVariable<Context> = new ContextVariable<Context>();
-
-/**
- * Initializes a new isolated context scope and runs the callback inside it.
- */
-export async function withContext<T>(
-  cb: (ctx: Context) => T | Promise<T>,
-): Promise<T> {
-  const ctx: Context = {};
-  return context.run(ctx, () => cb(ctx));
+export interface ScopeOptions {
+  seed?: Map<Context<unknown>, unknown>;
 }
 
-/**
- * Returns the current context — throws if called outside a withContext() scope.
- */
-export function useContext(): Context {
-  const ctx = context.get();
-  if (!ctx) {
+type ScopeMap = Map<Context<unknown>, unknown>;
+
+let storage: AsyncLocalStorage<ScopeMap> | null = null;
+
+export function context<T>(): Context<T> {
+  return Symbol() as unknown as Context<T>;
+}
+
+export function setContext<T>(ctx: Context<T>, value: T): void {
+  const map = storage?.getStore();
+  if (!map)
     throw new Error(
-      "[jsx-string] useContext() called outside of a withContext() scope.",
+      "[jsx-string] setContext() called outside of a withScope() scope.",
+    );
+  map.set(ctx as Context<unknown>, value);
+}
+
+export function useContext<T>(ctx: Context<T>): T {
+  const map = storage?.getStore();
+  if (!map)
+    throw new Error(
+      "[jsx-string] useContext() called outside of a withScope() scope.",
+    );
+  if (!map.has(ctx as Context<unknown>)) {
+    throw new Error(
+      "[jsx-string] useContext() — context not found in current scope. Did you call setContext() in this withScope?",
     );
   }
-  return ctx;
+  return map.get(ctx as Context<unknown>) as T;
+}
+
+export async function withScope<T>(
+  fn: () => T | Promise<T>,
+  options?: ScopeOptions,
+): Promise<T> {
+  if (!storage) storage = new AsyncLocalStorage();
+  return storage.run(new Map(options?.seed), fn);
+}
+
+export function snapshot(): Map<Context<unknown>, unknown> {
+  const map = storage?.getStore();
+  if (!map)
+    throw new Error(
+      "[jsx-string] snapshot() called outside of a withScope() scope.",
+    );
+  return new Map(map);
 }

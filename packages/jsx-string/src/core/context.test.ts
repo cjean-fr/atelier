@@ -1,128 +1,142 @@
-import { withContext, useContext, ContextVariable } from "./context.js";
+import {
+  context,
+  setContext,
+  useContext,
+  withScope,
+  snapshot,
+} from "./context.js";
 import { expect, describe, it } from "bun:test";
 
+const UserToken = context<{ name: string }>();
+const PluginToken = context<{ items: string[] }>();
+
 describe("context", () => {
-  describe("useContext", () => {
-    it("should throw when called outside of withContext", () => {
-      expect(() => useContext()).toThrow(
-        "[jsx-string] useContext() called outside of a withContext() scope.",
+  describe("useContext / setContext", () => {
+    it("throws outside withScope", () => {
+      expect(() => useContext(UserToken)).toThrow(
+        "[jsx-string] useContext() called outside of a withScope() scope.",
+      );
+      expect(() => setContext(UserToken, { name: "x" })).toThrow(
+        "[jsx-string] setContext() called outside of a withScope() scope.",
       );
     });
 
-    it("should return the context when inside withContext", async () => {
-      await withContext((ctx) => {
-        expect(useContext()).toBe(ctx);
+    it("throws when context not found in scope", async () => {
+      await withScope(() => {
+        expect(() => useContext(UserToken)).toThrow(
+          "[jsx-string] useContext() — context not found in current scope.",
+        );
       });
     });
 
-    it("should return context in nested async calls", async () => {
-      await withContext(async (ctx) => {
-        await new Promise((r) => setTimeout(r, 1));
-        expect(useContext()).toBe(ctx);
+    it("reads back what was written", async () => {
+      await withScope(() => {
+        setContext(UserToken, { name: "Alice" });
+        expect(useContext(UserToken)).toEqual({ name: "Alice" });
+      });
+    });
+
+    it("propagates through async continuations", async () => {
+      await withScope(async () => {
+        setContext(UserToken, { name: "Bob" });
+        await new Promise((r) => setTimeout(r, 5));
+        expect(useContext(UserToken).name).toBe("Bob");
+      });
+    });
+
+    it("mutations persist within same scope", async () => {
+      await withScope(async () => {
+        setContext(UserToken, { name: "Alice" });
         await Promise.resolve();
-        expect(useContext()).toBe(ctx);
+        useContext(UserToken).name = "Alice Updated";
+        await Promise.resolve();
+        expect(useContext(UserToken).name).toBe("Alice Updated");
       });
     });
   });
 
-  describe("withContext", () => {
-    it("should create an isolated context for each call", async () => {
-      const contexts: unknown[] = [];
-      await Promise.all([
-        withContext((ctx) => {
-          contexts.push(ctx);
-        }),
-        withContext((ctx) => {
-          contexts.push(ctx);
-        }),
-      ]);
-      expect(contexts[0]).not.toBe(contexts[1]);
-    });
-
-    it("should persist mutations within the same scope", async () => {
-      await withContext(async (ctx) => {
-        (ctx as any).testValue = "hello";
-        await Promise.resolve();
-        expect((useContext() as any).testValue).toBe("hello");
-      });
-    });
-
-    it("should not leak mutations between concurrent scopes", async () => {
+  describe("withScope", () => {
+    it("isolates concurrent scopes", async () => {
       const results = await Promise.all([
-        withContext(async (ctx) => {
-          (ctx as any).id = "A";
+        withScope(async () => {
+          setContext(UserToken, { name: "A" });
           await new Promise((r) => setTimeout(r, 10));
-          return (useContext() as any).id;
+          return useContext(UserToken).name;
         }),
-        withContext(async (ctx) => {
-          (ctx as any).id = "B";
+        withScope(async () => {
+          setContext(UserToken, { name: "B" });
           await Promise.resolve();
-          return (useContext() as any).id;
+          return useContext(UserToken).name;
         }),
       ]);
-      expect(results[0]).toBe("A");
-      expect(results[1]).toBe("B");
+      expect(results).toEqual(["A", "B"]);
     });
 
-    it("should return the result of the callback", async () => {
-      const result = await withContext(() => "done");
-      expect(result).toBe("done");
-    });
-
-    it("should return the result of an async callback", async () => {
-      const result = await withContext(async () => {
-        await Promise.resolve();
-        return 42;
-      });
+    it("returns callback result", async () => {
+      const result = await withScope(() => 42);
       expect(result).toBe(42);
     });
+
+    it("sub-scope is empty without seed", async () => {
+      await withScope(async () => {
+        setContext(UserToken, { name: "Parent" });
+        await withScope(() => {
+          expect(() => useContext(UserToken)).toThrow(
+            "not found in current scope",
+          );
+        });
+      });
+    });
   });
 
-  describe("ContextVariable", () => {
-    it("should return undefined when no value has been set", () => {
-      const cv = new ContextVariable();
-      expect(cv.get()).toBeUndefined();
-    });
+  describe("snapshot / seed", () => {
+    it("seed pre-fills sub-scope", async () => {
+      await withScope(async () => {
+        setContext(UserToken, { name: "Parent" });
+        const seed = snapshot();
 
-    it("should return the value inside run", async () => {
-      const cv = new ContextVariable();
-      await cv.run({ foo: "bar" }, async () => {
-        expect(cv.get()).toEqual({ foo: "bar" });
+        await withScope(
+          () => {
+            expect(useContext(UserToken).name).toBe("Parent");
+          },
+          { seed },
+        );
       });
     });
 
-    it("should isolate values between concurrent runs", async () => {
-      const cv = new ContextVariable<{ id: string }>();
-      const results = await Promise.all([
-        cv.run({ id: "X" }, async () => {
-          await new Promise((r) => setTimeout(r, 5));
-          return cv.get()?.id;
-        }),
-        cv.run({ id: "Y" }, async () => {
-          await Promise.resolve();
-          return cv.get()?.id;
-        }),
-      ]);
-      expect(results[0]).toBe("X");
-      expect(results[1]).toBe("Y");
+    it("child mutation does not affect parent", async () => {
+      await withScope(async () => {
+        setContext(UserToken, { name: "Parent" });
+        const seed = snapshot();
+
+        await withScope(
+          () => {
+            setContext(UserToken, { name: "Child" });
+            expect(useContext(UserToken).name).toBe("Child");
+          },
+          { seed },
+        );
+
+        expect(useContext(UserToken).name).toBe("Parent");
+      });
     });
 
-    it("should return the result of run", async () => {
-      const cv = new ContextVariable();
-      const result = await cv.run(null as any, () => 123);
-      expect(result).toBe(123);
+    it("snapshot throws outside withScope", () => {
+      expect(() => snapshot()).toThrow(
+        "[jsx-string] snapshot() called outside of a withScope() scope.",
+      );
     });
   });
 
-  describe("module augmentation", () => {
-    it("should allow adding custom properties to Context via plugin pattern", async () => {
-      // Simulates what jsx-string-island does: ctx.islands, ctx.adapter, etc.
-      await withContext(async (ctx) => {
-        (ctx as any).customPluginData = { enabled: true };
-        await Promise.resolve();
-        expect((useContext() as any).customPluginData).toEqual({
-          enabled: true,
-        });
+  describe("inter-plugin communication", () => {
+    it("plugins share same scope", async () => {
+      await withScope(() => {
+        setContext(UserToken, { name: "Alice" });
+        setContext(PluginToken, { items: [] });
+
+        useContext(PluginToken).items.push(useContext(UserToken).name);
+
+        expect(useContext(PluginToken).items).toEqual(["Alice"]);
       });
     });
   });

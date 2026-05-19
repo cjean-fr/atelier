@@ -3,7 +3,7 @@
  * These elements cannot have children and do not require a closing slash in HTML5.
  * https://html.spec.whatwg.org/multipage/syntax.html#void-elements
  */
-export const VOID_ELEMENTS = new Set([
+export const VOID_ELEMENTS = new Set<string>([
   "area",
   "base",
   "br",

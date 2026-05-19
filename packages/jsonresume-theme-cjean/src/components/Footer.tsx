@@ -1,9 +1,9 @@
 import { dateFormatter, tx } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import DateTime from "./DateTime.js";
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface FooterProps extends StandardAttributes {
+interface FooterProps extends HTMLAttributes {
   meta: Resume["meta"];
   bgTiles: string;
 }
