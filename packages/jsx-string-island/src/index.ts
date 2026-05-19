@@ -5,6 +5,7 @@
  */
 
 export { Island } from "./components/Island.js";
-export { withIslandsPlugin, useIslandsContext } from "./context.js";
+export { initIslands, Islands } from "./context.js";
 export { streamIslands } from "./streamIslands.js";
-export { TurboAdapter, HtmxAdapter } from "./adapters.js";
+export { type IslandAdapter, TurboAdapter, HtmxAdapter, NativeAdapter } from "./adapters.js";
+export { render, renderToReadableStream, renderToStatic } from "./render.js";

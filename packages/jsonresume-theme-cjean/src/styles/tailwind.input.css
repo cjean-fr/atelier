@@ -12,9 +12,11 @@
   --min-width-30: 7.5rem;
 }
 
-.dark {
-  /* Lower lightness and chroma (saturation) for a softer look on dark backgrounds */
-  --color-primary: oklch(from var(--theme-primary) calc(l * 0.9) calc(c * 0.7) h);
+@variant dark {
+  @theme {
+    /* Lower lightness and chroma (saturation) for a softer look on dark backgrounds */
+    --color-primary: oklch(from var(--theme-primary) calc(l * 0.9) calc(c * 0.7) h);
+  }
 }
 
 @utility kerning-* {
@@ -39,7 +41,11 @@
 
   /* Timeline dot/marker */
   .timeline-item::before {
-    @apply border-primary absolute top-1.5 -left-[34px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white dark:bg-slate-900/95 content-[''] md:block;
+    @apply border-primary absolute top-1.5 -left-[34px] hidden h-4 w-4 -translate-x-1/2 rounded-full border-[3px] bg-white content-[''] md:block;
+
+    .dark & {
+      @apply bg-slate-900/95;
+    }
   }
 
   .timeline-item-secondary::before {

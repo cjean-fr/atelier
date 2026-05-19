@@ -1,7 +1,7 @@
 import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import { getIcon } from "./Icons.js";
-import type { StandardAttributes } from "@cjean-fr/jsx-string";
+import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
 function buildMapsUri(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -15,7 +15,7 @@ async function getProfileIcon(network: string) {
   }
 }
 
-const BasicsItem = ({ children, ...props }: StandardAttributes) => (
+const BasicsItem = ({ children, ...props }: HTMLAttributes) => (
   <li className="inline-flex items-center gap-x-1" {...props}>
     {children}
   </li>

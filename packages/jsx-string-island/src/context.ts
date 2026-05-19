@@ -1,5 +1,5 @@
-import type { IslandAdapter } from "./adapters";
-import { useContext, type JSXChild } from "@cjean-fr/jsx-string";
+import type { IslandAdapter } from "./adapters.js";
+import { context, setContext, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type Config =
   | {
@@ -17,36 +17,17 @@ export type Config =
 
 export interface IslandsPluginContext {
   config: Config;
-  collected: Map<string, () => JSXChild>;
+  collected: Map<string, () => JSXNode>;
   nextId: () => string;
 }
 
-const ISLANDS_CONTEXT_KEY = "@jsx-string-island";
+export const Islands = context<IslandsPluginContext>();
 
-declare module "@cjean-fr/jsx-string" {
-  interface Context {
-    [ISLANDS_CONTEXT_KEY]?: IslandsPluginContext;
-  }
-}
-
-export function useIslandsContext(): IslandsPluginContext {
-  const ctx = useContext();
-  if (!ctx[ISLANDS_CONTEXT_KEY]) {
-    throw new Error(
-      "Islands plugin not initialized. Call withIslandsPlugin(config) before renderToStringAsync.",
-    );
-  }
-  return ctx[ISLANDS_CONTEXT_KEY]!;
-}
-
-export function withIslandsPlugin(config: Config): void {
-  const ctx = useContext();
-  ctx[ISLANDS_CONTEXT_KEY] = {
+export function initIslands(config: Config): void {
+  let id = 0;
+  setContext(Islands, {
     config,
     collected: new Map(),
-    nextId: (function () {
-      let id = 0;
-      return () => `${config.idPrefix ?? "island-"}${++id}`;
-    })(),
-  };
+    nextId: () => `${config.idPrefix ?? "island-"}${++id}`,
+  });
 }

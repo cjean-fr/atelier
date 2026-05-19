@@ -4,42 +4,43 @@ import { describe, it, expect } from "bun:test";
 
 describe("package exports", () => {
   describe("main entry point", () => {
-    it("should export RawString", () => {
-      expect(Main.RawString).toBeDefined();
-      expect(new Main.RawString("test").toString()).toBe("test");
+    it("should export renderToString", () => {
+      expect(typeof Main.renderToString).toBe("function");
     });
 
-    it("should export raw utility", () => {
-      expect(Main.raw).toBeDefined();
+    it("should export raw", () => {
       expect(Main.raw("test").toString()).toBe("test");
-    });
-
-    it("should export hyperscript factory (h)", () => {
-      expect(Main.h).toBeDefined();
-      expect(typeof Main.h).toBe("function");
     });
 
     it("should export Fragment", () => {
       expect(Main.Fragment).toBeDefined();
     });
 
-    it("should export html/svg tag helpers (StandardAttributes)", () => {
-      expect(Main).toBeDefined();
+    it("should export scope API", () => {
+      expect(typeof Main.withScope).toBe("function");
+      expect(typeof Main.snapshot).toBe("function");
+    });
+
+    it("should export context API", () => {
+      expect(typeof Main.context).toBe("function");
+      expect(typeof Main.setContext).toBe("function");
+      expect(typeof Main.useContext).toBe("function");
+    });
+
+    it("should NOT export internal details", () => {
+      expect((Main as any).jsx).toBeUndefined();
+      expect((Main as any).jsxs).toBeUndefined();
+      expect((Main as any).h).toBeUndefined();
+      expect((Main as any).RawString).toBeUndefined();
+      expect((Main as any).isRawString).toBeUndefined();
+      expect((Main as any).useScope).toBeUndefined();
     });
   });
 
   describe("jsx-runtime entry point", () => {
-    it("should export jsx", () => {
-      expect(JSXRuntime.jsx).toBeDefined();
+    it("should export jsx, jsxs, Fragment", () => {
       expect(typeof JSXRuntime.jsx).toBe("function");
-    });
-
-    it("should export jsxs", () => {
-      expect(JSXRuntime.jsxs).toBeDefined();
       expect(typeof JSXRuntime.jsxs).toBe("function");
-    });
-
-    it("should export Fragment", () => {
       expect(JSXRuntime.Fragment).toBeDefined();
     });
   });

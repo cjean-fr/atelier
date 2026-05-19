@@ -1,21 +1,18 @@
-import type {
-  CSSProperties,
-  JSXChild,
-  StandardAttributes,
-} from "../core/types.js";
+import type { CSSProperties, JSXNode, HTMLAttributes } from "../core/types.js";
 import {
   escape,
   isSafeUrl,
   isValidAttrName,
+  isValidTagName,
   sanitize,
   URL_ATTRIBUTES,
 } from "./escape.js";
 import { VOID_ELEMENTS } from "./void-elements.js";
 
-const REGEX_CAMEL_TO_KEBAB = /[A-Z]/;
+const REGEX_CAMEL_TO_KEBAB = /[A-Z]/g;
 const REGEX_EVENT_HANDLER = /^on[a-z]/i;
 const REGEX_CSS_UNSAFE = /expression\s*\(|javascript\s*:/i;
-const INTERNAL_PROPS = new Set([
+const INTERNAL_PROPS = new Set<string>([
   "children",
   "dangerouslySetInnerHTML",
   "key",
@@ -40,37 +37,36 @@ const ATTRIBUTE_NAME_MAP = new Map<string, string>([
   ["encType", "enctype"],
   ["noValidate", "novalidate"],
   ["dateTime", "datetime"],
+  ["srcSet", "srcset"],
 ]);
 
-const hasNestedPromise = (v: unknown): boolean => {
-  if (!v) return false;
-  if (v instanceof Promise) return true;
-  if (Array.isArray(v)) {
-    for (let i = 0; i < v.length; i++) {
-      if (hasNestedPromise(v[i])) return true;
-    }
-    return false;
-  }
-  if (typeof v === "object") {
-    for (const value of Object.values(v as Record<string, unknown>)) {
-      if (hasNestedPromise(value)) return true;
-    }
-  }
-  return false;
-};
-
-const resolveNestedPromises = async (value: unknown): Promise<unknown> => {
-  if (value instanceof Promise) return resolveNestedPromises(await value);
+const resolveNestedPromises = (value: unknown): unknown | Promise<unknown> => {
+  if (value instanceof Promise) return value.then(resolveNestedPromises);
   if (Array.isArray(value)) {
-    return Promise.all(value.map((item) => resolveNestedPromises(item)));
+    let hasAsync = false;
+    const results = new Array(value.length);
+    for (let i = 0; i < value.length; i++) {
+      const r = resolveNestedPromises(value[i]);
+      if (r instanceof Promise) hasAsync = true;
+      results[i] = r;
+    }
+    if (!hasAsync) return value;
+    return Promise.all(results);
   }
   if (value && typeof value === "object") {
-    const entries = await Promise.all(
-      Object.entries(value as Record<string, unknown>).map(
-        async ([key, item]) => [key, await resolveNestedPromises(item)],
-      ),
-    );
-    return Object.fromEntries(entries);
+    const entries = Object.entries(value as Record<string, unknown>);
+    let hasAsync = false;
+    const resolved = new Array(entries.length) as [string, unknown][];
+    for (let i = 0; i < entries.length; i++) {
+      const [k, v] = entries[i]!;
+      const r = resolveNestedPromises(v);
+      if (r instanceof Promise) hasAsync = true;
+      resolved[i] = [k, r];
+    }
+    if (!hasAsync) return value;
+    return Promise.all(
+      resolved.map(async ([k, v]) => [k, await v] as [string, unknown]),
+    ).then(Object.fromEntries);
   }
   return value;
 };
@@ -87,7 +83,6 @@ const isSafeCssValue = (value: string): boolean => {
 };
 
 export class RawString {
-  readonly __isRawString = true;
   readonly value: string;
   constructor(value: string) {
     this.value = value;
@@ -97,11 +92,8 @@ export class RawString {
   }
 }
 
-/**
- * Robust check for RawString instance, even across different versions or module resolutions.
- */
-export function isRawString(value: any): value is RawString {
-  return value instanceof RawString || (value && value.__isRawString === true);
+export function isRawString(value: unknown): value is RawString {
+  return value instanceof RawString;
 }
 
 /**
@@ -119,7 +111,7 @@ export type RenderResult = RawString | Promise<RawString>;
  * @returns The HTML attribute string
  */
 export function renderAttributes(
-  props: StandardAttributes | null | undefined,
+  props: HTMLAttributes | null | undefined,
 ): string | Promise<string> {
   if (!props) return "";
 
@@ -141,12 +133,9 @@ export function renderAttributes(
           break;
         }
       }
-    } else if (
-      key === "style" &&
-      typeof value === "object" &&
-      hasNestedPromise(value)
-    ) {
-      pending.set(key, resolveNestedPromises(value));
+    } else if (key === "style" && typeof value === "object") {
+      const r = resolveNestedPromises(value);
+      if (r instanceof Promise) pending.set(key, r);
     }
   }
 
@@ -178,7 +167,7 @@ export function renderAttributes(
  * @param props - The props object to convert into HTML attributes
  * @returns A string containing the rendered HTML attributes (prefixed with a space for each attribute), or an empty string if no attributes are produced
  */
-function renderAttributesSync(props: StandardAttributes): string {
+function renderAttributesSync(props: HTMLAttributes): string {
   let attrs = "";
   const classes = new Set<string>();
 
@@ -201,8 +190,6 @@ function renderAttributesSync(props: StandardAttributes): string {
 
     if (mapped) {
       name = mapped;
-    } else if (key.startsWith("data-") || key.startsWith("aria-")) {
-      name = sanitize(key).replace(REGEX_CAMEL_TO_KEBAB, "-$&").toLowerCase();
     } else {
       name = sanitize(key);
     }
@@ -234,7 +221,8 @@ function renderAttributesSync(props: StandardAttributes): string {
       attrs += ` ${name}`;
     } else {
       let str = String(value);
-      if (URL_ATTRIBUTES.has(name) && !isSafeUrl(str)) str = "#blocked";
+      if (URL_ATTRIBUTES.has(name.toLowerCase()) && !isSafeUrl(str))
+        str = "#blocked";
       attrs += ` ${name}="${escape(str, "attr")}"`;
     }
   }
@@ -256,12 +244,10 @@ function renderAttributesSync(props: StandardAttributes): string {
  * @returns A semicolon-delimited CSS declaration string (e.g., `color:red;margin-top:1px`)
  */
 export function renderStyle(style: CSSProperties): string | Promise<string> {
-  if (hasNestedPromise(style)) {
-    return Promise.resolve(resolveNestedPromises(style)).then((resolved) =>
-      renderStyleSync(resolved as CSSProperties),
-    );
+  const resolved = resolveNestedPromises(style);
+  if (resolved instanceof Promise) {
+    return resolved.then((r) => renderStyleSync(r as CSSProperties));
   }
-
   return renderStyleSync(style);
 }
 
@@ -283,10 +269,12 @@ function renderStyleSync(style: CSSProperties): string {
  * Convert a JSX child (primitive, RawString, array, or Promise) into HTML-safe rendered content.
  *
  * @param child - The JSX child to render; may be null, boolean, a RawString, a Promise, an array of children, or any primitive value.
- * @returns A `string`, `RawString`, or `Promise<RawString>`: `string` for simple primitive values, `RawString` for synchronously rendered content, or `Promise<RawString>` when any nested child is asynchronous.
+ * @returns A `string`, `RawString`, or `Promise<RawString>`.
+ * **Callers must escape the `string` case** — a plain `string` return means an unescaped primitive
+ * (e.g. `"hello"` or `"42"`). Use `isRawString(r) ? r.value : escape(String(r))` at every call-site.
  */
 export function renderChild(
-  child: JSXChild,
+  child: JSXNode,
 ): string | RawString | Promise<RawString> {
   if (child == null || child === true || child === false) return "";
   if (isRawString(child)) return child;
@@ -344,9 +332,15 @@ export function renderChild(
  */
 export function renderElement(
   tag: string,
-  props: StandardAttributes,
-  children: JSXChild[],
+  props: HTMLAttributes,
+  children: JSXNode[],
 ): RenderResult {
+  if (!isValidTagName(tag)) {
+    console.warn(
+      `[jsx-string] Invalid tag name "${tag}" was skipped. Tag names must start with a letter and contain only letters, digits, or hyphens.`,
+    );
+    return new RawString("");
+  }
   const attrsResult = renderAttributes(props);
   const contentResult = props.dangerouslySetInnerHTML
     ? new RawString(

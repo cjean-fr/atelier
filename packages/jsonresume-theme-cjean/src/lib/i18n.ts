@@ -4,7 +4,7 @@ import {
   type Translator,
   defineTranslations,
 } from "@cjean-fr/i18n-tiny";
-import { raw, type JSXChild } from "@cjean-fr/jsx-string";
+import { raw, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type ThemeSpec = {
   work_experience: readonly [];
@@ -83,7 +83,7 @@ export const t: Translator<ThemeSpec> = (key, ...args) => {
  * @param args The arguments to pass to the translator.
  * @returns The translated string as a RawString.
  */
-export const tx: Translator<ThemeSpec, JSXChild> = (key, ...args) => {
+export const tx: Translator<ThemeSpec, JSXNode> = (key, ...args) => {
   return raw(t(key, ...(args as any)));
 };
 

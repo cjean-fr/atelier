@@ -1,42 +1,35 @@
+// @jsxImportSource @cjean-fr/jsx-string
 import {
-  withIslandsPlugin,
+  initIslands,
   Island,
   streamIslands,
   TurboAdapter,
   HtmxAdapter,
-  useIslandsContext,
+  Islands,
 } from "./index.js";
-import {
-  withContext,
-  renderToStringAsync,
-  useContext,
-} from "@cjean-fr/jsx-string";
+import { withScope, renderToString, useContext } from "@cjean-fr/jsx-string";
 import { describe, it, expect } from "bun:test";
 
-// --- withIslandsPlugin + useIslandsPlugin ---
-
-describe("withIslandsPlugin", () => {
+describe("initIslands", () => {
   it("should initialize plugin context", async () => {
-    await withContext(async () => {
-      withIslandsPlugin({ adapter: TurboAdapter, mode: "streaming" });
-      expect(() => useContext()).not.toThrow();
+    await withScope(async () => {
+      initIslands({ adapter: TurboAdapter, mode: "streaming" });
+      expect(() => useContext(Islands)).not.toThrow();
     });
   });
 
-  it("should throw when used outside withContext", () => {
+  it("should throw when used outside withScope", () => {
     expect(() =>
-      withIslandsPlugin({ adapter: TurboAdapter, mode: "streaming" }),
+      initIslands({ adapter: TurboAdapter, mode: "streaming" }),
     ).toThrow();
   });
 });
 
-// --- Island (branched via types) ---
-
 describe("Island", () => {
   it("should render locale island with fallback in streaming mode", async () => {
-    await withContext(async () => {
-      withIslandsPlugin({ adapter: TurboAdapter, mode: "streaming" });
-      const html = await renderToStringAsync(
+    await withScope(async () => {
+      initIslands({ adapter: TurboAdapter, mode: "streaming" });
+      const html = await renderToString(
         <Island fallback={<div>loading...</div>}>
           {() => <span>content</span>}
         </Island>,
@@ -47,9 +40,9 @@ describe("Island", () => {
   });
 
   it("should render external island with explicit src", async () => {
-    await withContext(async () => {
-      withIslandsPlugin({ adapter: TurboAdapter, mode: "streaming" });
-      const html = await renderToStringAsync(
+    await withScope(async () => {
+      initIslands({ adapter: TurboAdapter, mode: "streaming" });
+      const html = await renderToString(
         <Island src="/api/fragment" fallback={<div>loading...</div>} />,
       );
       expect(html).toContain('src="/api/fragment"');
@@ -57,13 +50,13 @@ describe("Island", () => {
   });
 
   it("should generate src in static mode", async () => {
-    await withContext(async () => {
-      withIslandsPlugin({
+    await withScope(async () => {
+      initIslands({
         adapter: TurboAdapter,
         mode: "static",
         generatePath: (id) => `/f/${id}.html`,
       });
-      const html = await renderToStringAsync(
+      const html = await renderToString(
         <Island fallback={<div>loading...</div>}>
           {() => <span>content</span>}
         </Island>,
@@ -73,20 +66,18 @@ describe("Island", () => {
   });
 
   it("should collect factories for streaming", async () => {
-    await withContext(async () => {
-      withIslandsPlugin({ adapter: TurboAdapter, mode: "streaming" });
-      await renderToStringAsync(
+    await withScope(async () => {
+      initIslands({ adapter: TurboAdapter, mode: "streaming" });
+      await renderToString(
         <Island fallback={<div>loading...</div>}>
           {() => <span>content</span>}
         </Island>,
       );
-      const { collected } = useIslandsContext();
+      const { collected } = useContext(Islands);
       expect(collected.size).toBe(1);
     });
   });
 });
-
-// --- streamIslands ---
 
 describe("streamIslands", () => {
   it("should call callback for each island", async () => {
@@ -99,7 +90,6 @@ describe("streamIslands", () => {
     });
 
     expect(results.length).toBe(1);
-    expect(results[0]).toBeDefined();
     expect(results[0]![1]).toContain("Hello");
   });
 
@@ -115,51 +105,49 @@ describe("streamIslands", () => {
       results.push([id, html]);
     });
 
-    expect(results.length).toBe(1); // only "good" should succeed
-    expect(results[0]).toBeDefined();
+    expect(results.length).toBe(1);
     expect(results[0]![0]).toBe("good");
   });
 });
 
-// --- Adapters ---
-
 describe("adapters", () => {
   it("TurboAdapter should render placeholder with turbo-frame", async () => {
-    const result = TurboAdapter.Placeholder({
-      id: "test-id",
-      src: "/src",
-      children: "fallback",
-    });
-    const html = await renderToStringAsync(result);
+    const html = await renderToString(
+      TurboAdapter.Placeholder({
+        id: "test-id",
+        src: "/src",
+        children: "fallback",
+      }),
+    );
     expect(html).toContain("turbo-frame");
     expect(html).toContain('id="test-id"');
     expect(html).toContain('src="/src"');
   });
 
   it("TurboAdapter should render fragment with turbo-stream", async () => {
-    const result = TurboAdapter.Fragment({
-      id: "test-id",
-      children: "content",
-    });
-    const html = await renderToStringAsync(result);
+    const html = await renderToString(
+      TurboAdapter.Fragment({ id: "test-id", children: "content" }),
+    );
     expect(html).toContain("turbo-stream");
     expect(html).toContain('target="test-id"');
   });
 
   it("HtmxAdapter should render placeholder with hx-get", async () => {
-    const result = HtmxAdapter.Placeholder({
-      id: "test-id",
-      src: "/src",
-      children: "fallback",
-    });
-    const html = await renderToStringAsync(result);
+    const html = await renderToString(
+      HtmxAdapter.Placeholder({
+        id: "test-id",
+        src: "/src",
+        children: "fallback",
+      }),
+    );
     expect(html).toContain("hx-get");
     expect(html).toContain('id="test-id"');
   });
 
   it("HtmxAdapter should render fragment with hx-swap-oob", async () => {
-    const result = HtmxAdapter.Fragment({ id: "test-id", children: "content" });
-    const html = await renderToStringAsync(result);
+    const html = await renderToString(
+      HtmxAdapter.Fragment({ id: "test-id", children: "content" }),
+    );
     expect(html).toContain('hx-swap-oob="true"');
     expect(html).toContain('id="test-id"');
   });

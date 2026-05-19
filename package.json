@@ -12,6 +12,7 @@
       "@cjean-fr/jsx-string": "workspace:*",
       "@cjean-fr/jsx-string-island": "workspace:*",
       "@cjean-fr/eslint-plugin-jsx-string": "workspace:*",
+      "@cjean-fr/eleventy-plugin-jsx-string": "workspace:*",
       "@iconify-icons/tabler": "latest",
       "@tailwindcss/vite": "latest",
       "@types/node": "latest",
@@ -29,11 +30,12 @@
       "@typescript-eslint/parser": "latest",
       "@typescript-eslint/eslint-plugin": "latest",
       "@typescript-eslint/utils": "latest",
-      "@typescript-eslint/rule-tester": "latest"
+      "@typescript-eslint/rule-tester": "latest",
+      "esbuild": "latest"
     }
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.4",
+    "@tailwindcss/postcss": "^4.3.0",
     "@trivago/prettier-plugin-sort-imports": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
@@ -41,7 +43,7 @@
     "eslint": "latest",
     "prettier": "latest",
     "prettier-plugin-tailwindcss": "latest",
-    "tailwindcss": "^4.2.4",
+    "tailwindcss": "^4.3.0",
     "turbo": "latest",
     "typescript-eslint": "latest"
   },

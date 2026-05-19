@@ -7,16 +7,19 @@ compatibility: Node.js, Bun, Deno, Vite, esbuild, TypeScript
 
 # @cjean-fr/jsx-string
 
-Zero-dependency JSX-to-HTML renderer with built-in XSS protection.
+Async-first JSX-to-HTML renderer with built-in XSS protection and concurrent-safe context. Zero runtime dependencies.
 
 ## Install
 
 ```bash
 npm install @cjean-fr/jsx-string
-npm install -D @types/react
 ```
 
+`@types/react` is optional — install it for enhanced HTML attribute autocomplete.
+
 ## Quick Setup
+
+`tsconfig.json`:
 
 ```json
 {
@@ -27,129 +30,157 @@ npm install -D @types/react
 }
 ```
 
-### ESLint (Recommended)
+Vite / esbuild:
 
-To ensure your code stays compatible with static rendering, use our official ESLint plugin:
-
-```bash
-bun add -D @cjean-fr/eslint-plugin-jsx-string
-```
-
-#### ESLint Flat Config (`eslint.config.js`)
-
-```javascript
-import jsxString from "@cjean-fr/eslint-plugin-jsx-string";
-
-export default [
-  jsxString.configs.recommended,
-  {
-    rules: {
-      // You can override rules if needed
-      "@cjean-fr/jsx-string/no-unsafe-event-handlers": "warn",
-    },
-  },
-];
+```ts
+esbuild: {
+  jsx: "automatic",
+  jsxImportSource: "@cjean-fr/jsx-string",
+}
 ```
 
 ## Decision Tree
 
 ```
-Need to render JSX?
+Need to render JSX to HTML?
 │
-├─ Yes ──────────────────────────────────────────
-│   │
-│   ├─ Email / PDF / Static content? → renderToString()
-│   │
-│   ├─ Need async data? ───────────────────────
-│   │   │
-│   │   ├─ Multiple fetches? → Promise.all()
-│   │   │
-│   │   └─ Single fetch? → await inside component
-│   │
-│   ├─ Need shared state across tree? → withContext() / useContext()
-│   │
-│   └─ Need streaming / deferred rendering? → @cjean-fr/jsx-string-island
+├─ Static content / Email / SSG? → renderToString()
 │
-└─ No → Use template literals or string interpolation
+├─ Components that fetch data? → async components (native support)
+│
+├─ Shared data across the tree? → context() + withScope() + setContext() / useContext()
+│
+└─ Streaming / client-side hydration? → @cjean-fr/jsx-string-island
 ```
 
 ## Core API
 
 ```typescript
-import { renderToString } from "@cjean-fr/jsx-string";
+import { renderToString, raw } from "@cjean-fr/jsx-string";
 
-// Sync
-const html = renderToString(<div>Hello</div>);
+// renderToString ALWAYS returns Promise<string> — even for sync components
+const html = await renderToString(<div>Hello</div>);
 
-// Async - when component contains await
-const html = await renderToString(<AsyncComponent />);
+// Trusted HTML — bypasses escaping
+const html = await renderToString(<div>{raw("<b>Bold</b>")}</div>);
 
-// Pre-sanitized HTML
-import { raw } from "@cjean-fr/jsx-string";
-renderToString(<div>{raw("<b>Bold</b>")}</div>);
-
-// Raw HTML (bypasses escaping - dangerous!)
-renderToString(<div dangerouslySetInnerHTML={{ __html: "<b>Bold</b>" }} />);
+// Or via dangerouslySetInnerHTML
+const html = await renderToString(
+  <div dangerouslySetInnerHTML={{ __html: "<b>Bold</b>" }} />,
+);
 ```
 
-## Migration from React
-
-Code stays compatible with React - just follow these rules.
-
-### Rules
-
-| Rule                                     | Why                            |
-| ---------------------------------------- | ------------------------------ |
-| No hooks (`useState`, `useEffect`, etc.) | Static rendering only          |
-| No React context (`createContext`, etc.) | Use `withContext`/`useContext` |
-| No event handlers in render              | Static HTML, no interactivity  |
-| No refs                                  | No DOM access                  |
-
-### Pattern: Extract Data Before Render
-
-```typescript
-// Instead of hooks
-const Page = () => {
-  const [data, setData] = useState(null);
-  useEffect(() => { setData(fetchData()); }, []);
-  if (!data) return <Loading />;
-  return <Content data={data} />;
-};
-
-// Do this instead
-const Page = ({ data }: { data: Data }) => {
-  if (!data) return <Loading />;
-  return <Content data={data} />;
-};
-
-// React: <Page data={useHook()} />
-// jsx-string: <Page data={await fetchData()} />
-```
+> **`withScope` is optional.** Only wrap renders in `withScope()` when you need `context()` / `setContext()` / `useContext()`. For pure rendering, call `renderToString()` directly. Concurrent renders (`Promise.all`) work fine without it.
 
 ## Async Patterns
 
-```typescript
-// ✅ GOOD: await before return, like React
-const UserCard = ({ id }: { id: string }) => {
+Every component can be `async`. Promise children are supported natively. The renderer resolves all async work concurrently.
+
+```tsx
+// ✅ Async component — await inside, return JSX
+const UserCard = async ({ id }: { id: string }) => {
   const user = await fetchUser(id);
   return <div>{user.name}</div>;
 };
 
-// ✅ GOOD: Parallel fetches for independent data
-const Dashboard = ({ userId }: { userId: string }) => {
-  const [user, posts] = await Promise.all([
-    fetchUser(userId),
-    fetchPosts(userId),
-  ]);
-  return <div>{/* ... */}</div>;
+// ✅ Parallel fetches for independent data
+const Dashboard = async ({ userId }: { userId: string }) => {
+  const [user, posts] = await Promise.all([fetchUser(userId), fetchPosts(userId)]);
+  return <div>{user.name} — {posts.length} posts</div>;
 };
 
-// ❌ BAD: Promise object rendered as text
-const Broken = () => <div>{fetchUser("1")}</div>;
+// ✅ Promise as child — resolved automatically
+const html = await renderToString(
+  <div>{Promise.resolve("async text")}</div>,
+);
+// => <div>async text</div>
 
-// ❌ BAD: Await in return (awkward)
-const AlsoBad = async ({ id }: { id: string }) =>
-  <div>{(await fetchUser(id)).name}</div>;
+// ❌ Rendering a Promise without await on renderToString — will hang
+const html = renderToString(<AsyncComponent />); // missing await
+```
+
+## Context API
+
+Typed, isolated scope for sharing data across the render tree without prop drilling. Backed by `AsyncLocalStorage` — concurrent requests never bleed into each other.
+
+```ts
+// Define a typed token — once, in its own module
+export const AuthContext = context<{ user: string; locale: string }>();
+```
+
+```tsx
+// Read it anywhere in the tree
+const Header = () => {
+  const { user, locale } = useContext(AuthContext);
+  return <header lang={locale}>Hello {user}</header>;
+};
+
+// Wrap your render in an isolated scope
+const html = await withScope(async () => {
+  setContext(AuthContext, { user: "Alice", locale: "fr" });
+  return renderToString(<Header />);
+});
+```
+
+`useContext` throws immediately if called outside a `withScope` or if the value was never set — no silent `undefined`.
+
+### Sub-scopes with snapshot
+
+```ts
+await withScope(async () => {
+  setContext(AuthContext, { user: "Alice", locale: "fr" });
+
+  // Child scope inherits parent data via snapshot()
+  await withScope(
+    async () => {
+      useContext(AuthContext).user; // ✅ "Alice"
+      setContext(AuthContext, { user: "Child", locale: "en" }); // local only
+    },
+    { seed: snapshot() },
+  );
+
+  useContext(AuthContext).user; // ✅ still "Alice"
+});
+```
+
+### Multiple context tokens
+
+Each feature declares its own typed token — no shared global object to pollute.
+
+```ts
+export const AuthContext = context<{ userId: string }>();
+export const ThemeContext = context<{ dark: boolean }>();
+
+await withScope(async () => {
+  setContext(AuthContext, { userId: "42" });
+  setContext(ThemeContext, { dark: true });
+  return renderToString(<App />);
+});
+```
+
+## Migration from React
+
+| React pattern                  | jsx-string equivalent                           |
+| ------------------------------ | ----------------------------------------------- |
+| `useState`, `useEffect`        | Fetch data before render, pass as props         |
+| `createContext` / `<Provider>` | `context<T>()` + `withScope()` + `setContext()` |
+| Event handler functions        | String values only (`onClick="alert(1)"`)       |
+| `ref`                          | Not supported                                   |
+| `className`                    | Both `class` and `className` accepted           |
+
+```tsx
+// React: hooks + useEffect
+const Page = () => {
+  const [data, setData] = useState(null);
+  useEffect(() => { setData(fetchData()); }, []);
+  return data ? <Content data={data} /> : <Loading />;
+};
+
+// jsx-string: async component
+const Page = async () => {
+  const data = await fetchData();
+  return <Content data={data} />;
+};
 ```
 
 ## SSG Pattern
@@ -163,119 +194,93 @@ const routes = [
   { path: "/about", component: <AboutPage /> },
 ];
 
-const build = async () => {
-  for (const route of routes) {
-    const html = await renderToString(route.component);
-    const filePath = route.path === "/" ? "dist/index.html" : `dist${route.path}/index.html`;
-    await mkdir(filePath.replace(/\/[^/]+$/, ""), { recursive: true });
-    await writeFile(filePath, `<!DOCTYPE html>${html}`);
-  }
-};
-```
-
-## Context API
-
-For deeply nested data access without prop drilling, use the built-in Context API backed by `AsyncLocalStorage`.
-Unlike React Context, there is no `<Provider>` component. `withContext()` automatically creates a fresh, empty context object (`{}`) for its scope. You inject data by simply mutating this object before rendering.
-
-If `useContext()` is called outside of a `withContext` scope, it safely throws an error rather than silently returning `undefined`.
-
-```typescript
-import { withContext, useContext, renderToStringAsync } from "@cjean-fr/jsx-string";
-
-// Read from context anywhere in the tree
-const UserBadge = () => {
-  const ctx = useContext();
-  if (!ctx.user) return <span>Guest</span>;
-  return <span>{ctx.user.name}</span>;
-};
-
-const Header = () => (
-  <nav>
-    <UserBadge />
-  </nav>
+await Promise.all(
+  routes.map(async ({ path, component }) => {
+    const html = await renderToString(component);
+    const file = path === "/" ? "dist/index.html" : `dist${path}/index.html`;
+    await mkdir(file.replace(/\/[^/]+$/, ""), { recursive: true });
+    await writeFile(file, `<!DOCTYPE html>${html}`);
+  }),
 );
-
-// Wrap your render in an isolated context scope
-const html = await withContext(async (ctx) => {
-  // Inject data by mutating the fresh context object
-  ctx.user = await fetchUser(id);
-
-  // Works seamlessly with both renderToString and renderToStringAsync
-  return renderToStringAsync(<Header />);
-});
-```
-
-The `Context` interface is empty by default and MUST be extended via TypeScript module augmentation for strong typing:
-
-```typescript
-declare module "@cjean-fr/jsx-string" {
-  export interface Context {
-    user?: User;
-  }
-}
-```
-
-Plugins like `@cjean-fr/jsx-string-island` also use this to attach their own internal state.
-
-## Testing
-
-Examples use Vitest, but work with Jest and bun:test.
-
-```typescript
-import { describe, it, expect, fn } from "vitest";
-import { renderToStringAsync } from "@cjean-fr/jsx-string";
-
-const UserCard = ({ name }) => <div>{name}</div>;
-
-describe("Component", () => {
-  it("renders correctly", async () => {
-    const html = await renderToStringAsync(<UserCard name="Alice" />);
-    expect(html).toContain("Alice");
-  });
-
-  it("escapes HTML", async () => {
-    const html = await renderToStringAsync(<UserCard name="<script>" />);
-    expect(html).toContain("&lt;script&gt;");
-  });
-
-  it("with mock fetch", async () => {
-    global.fetch = fn(async () => ({ json: () => ({ name: "Bob" }) }));
-    const html = await renderToStringAsync(<UserCard id="1" />);
-    expect(html).toContain("Bob");
-  });
-});
 ```
 
 ## Security (Built-in)
 
+No opt-in required — all output is OWASP-aligned by default.
+
+```tsx
+// Text content escaped
+<div>{"<script>alert(1)</script>"}</div>
+// => <div>&lt;script&gt;alert(1)&lt;/script&gt;</div>
+
+// javascript: blocked in URL attributes
+<a href="javascript:alert(1)">link</a>
+// => <a href="#blocked">link</a>
+
+// String event handlers supported, function event handlers blocked with warning
+<button onClick="alert(1)">btn</button>  // ✅ onclick="alert(1)"
+<button onClick={fn}>btn</button>         // ⚠️ warning, attribute dropped
+```
+
+## ESLint Plugin
+
+```bash
+npm install -D @cjean-fr/eslint-plugin-jsx-string
+```
+
+```js
+// eslint.config.js
+import jsxString from "@cjean-fr/eslint-plugin-jsx-string";
+
+export default [jsxString.configs.recommended];
+```
+
+Rules included: `no-react-hooks`, `no-react-imports`, `no-context` (React context), `no-refs`, `no-javascript-urls`, `no-unsafe-event-handlers`.
+
+## Testing
+
 ```typescript
-// All escaped by default
-renderToString(<div>{"<script>"}</div>); // &lt;script&gt;
+// @jsxImportSource @cjean-fr/jsx-string
+import { describe, it, expect } from "bun:test";
+import {
+  renderToString,
+  withScope,
+  context,
+  setContext,
+  useContext,
+} from "@cjean-fr/jsx-string";
 
-// javascript: blocked
-renderToString(<a href="javascript:alert(1)">link</a>); // href="#blocked";
+describe("Component", () => {
+  it("renders correctly", async () => {
+    const html = await renderToString(<div>Hello</div>);
+    expect(html).toBe("<div>Hello</div>");
+  });
 
-// Event handlers supported as strings
-renderToString(<button onClick="alert(1)">btn</button>); // <button onclick="alert(1)">btn</button>
-renderToString(<button onClick={fn}>btn</button>); // blocked with warning (functions not supported)
+  it("escapes HTML", async () => {
+    const html = await renderToString(<div>{"<script>"}</div>);
+    expect(html).toBe("<div>&lt;script&gt;</div>");
+  });
+
+  it("renders with context", async () => {
+    const Ctx = context<{ user: string }>();
+    const Greeting = () => <span>{useContext(Ctx).user}</span>;
+
+    const html = await withScope(async () => {
+      setContext(Ctx, { user: "Alice" });
+      return renderToString(<Greeting />);
+    });
+    expect(html).toBe("<span>Alice</span>");
+  });
+});
 ```
 
 ## Troubleshooting
 
-| Problem                    | Solution                                                       |
-| -------------------------- | -------------------------------------------------------------- |
-| "TypeScript errors on JSX" | Check tsconfig has `"jsxImportSource": "@cjean-fr/jsx-string"` |
-| "Promise in output"        | Missing `await` on renderToString or inside component          |
-| "Styles don't work"        | Use camelCase: `backgroundColor`, not `background-color`       |
-| "class doesn't work"       | Use `className` (JSX convention)                               |
-
-## Output Checklist
-
-1. ✅ `import { renderToString } from "@cjean-fr/jsx-string"`
-2. ✅ tsconfig configured
-3. ✅ Use `await` for async components
-4. ✅ Handle errors with try/catch
-5. ✅ Test with `await renderToStringAsync()`
-6. ❌ No React imports, hooks, or react-dom
-7. ✅ Code stays React-compatible (no vendor lock-in)
+| Problem                       | Solution                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| TypeScript errors on JSX      | Check `tsconfig.json` has `"jsxImportSource": "@cjean-fr/jsx-string"`     |
+| `[object Promise]` in output  | Missing `await` on `renderToString()`                                     |
+| `useContext` throws           | Call it inside a `withScope()` after `setContext()`                       |
+| Style not applied             | Use camelCase: `borderTopColor`, not `border-top-color`                   |
+| `class` not working           | Both `class` and `className` are accepted                                 |
+| JSX in test file not resolved | Add `// @jsxImportSource @cjean-fr/jsx-string` at top of `.tsx` test file |

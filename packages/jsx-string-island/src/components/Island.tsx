@@ -1,13 +1,17 @@
-import { useIslandsContext } from "../context.js";
-import type { JSXChild, StandardAttributes } from "@cjean-fr/jsx-string";
+import { Islands } from "../context.js";
+import {
+  useContext,
+  type JSXNode,
+  type HTMLAttributes,
+} from "@cjean-fr/jsx-string";
 
-interface IslandBase extends StandardAttributes {
+interface IslandBase extends HTMLAttributes {
   name?: string;
-  fallback: JSXChild;
+  fallback: JSXNode;
 }
 
 interface IslandWithChildren extends IslandBase {
-  children: () => JSXChild;
+  children: () => JSXNode;
   src?: never;
 }
 interface IslandWithSrc extends IslandBase {
@@ -18,7 +22,7 @@ interface IslandWithSrc extends IslandBase {
 export type IslandProps = IslandWithChildren | IslandWithSrc;
 
 export function Island({ name, fallback, children, src }: IslandProps): any {
-  const { config, nextId, collected } = useIslandsContext();
+  const { config, nextId, collected } = useContext(Islands);
 
   const id = name ?? nextId();
 

@@ -1,4 +1,5 @@
-import type { JSXChild } from "@cjean-fr/jsx-string";
+// @jsxImportSource @cjean-fr/jsx-string
+import { raw, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type IslandAdapter = {
   Placeholder({
@@ -8,9 +9,9 @@ export type IslandAdapter = {
   }: {
     id: string;
     src: string | null;
-    children: JSXChild;
+    children: JSXNode;
   }): any;
-  Fragment({ id, children }: { id: string; children: JSXChild }): any;
+  Fragment({ id, children }: { id: string; children: JSXNode }): any;
 };
 
 export const TurboAdapter: IslandAdapter = {
@@ -29,6 +30,23 @@ export const TurboAdapter: IslandAdapter = {
       <template>{children}</template>
     </turbo-stream>
   ),
+};
+
+export const NativeAdapter: IslandAdapter = {
+  Placeholder: function ({ id, src, children }) {
+    const open = raw(`<?start name="${id}">`);
+    const close = raw(`<?end>`);
+    if (src) {
+      const safeJsonSrc = JSON.stringify(src).replace(/<\//g, "<\\/");
+      const script = raw(
+        `<script>(function(){fetch(${safeJsonSrc}).then(function(r){document.body.streamAppendHTML(r.body)})})();</script>`,
+      );
+      return [open, children, close, script];
+    }
+    return [open, children, close];
+  },
+
+  Fragment: ({ id, children }) => <template htmlFor={id}>{children}</template>,
 };
 
 export const HtmxAdapter: IslandAdapter = {
