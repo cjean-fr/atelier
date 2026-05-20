@@ -1,5 +1,5 @@
 import type { JSXNode } from "./core/types.js";
-import { escape } from "./utils/escape.js";
+import { escapeContent } from "./utils/escape.js";
 import { isRawString, renderChild } from "./utils/html.js";
 
 export { raw } from "./utils/html.js";
@@ -17,5 +17,7 @@ export {
 
 export async function renderToString(node: JSXNode): Promise<string> {
   const result = await renderChild(node);
-  return isRawString(result) ? result.toString() : escape(String(result));
+  return isRawString(result)
+    ? result.toString()
+    : escapeContent(String(result));
 }

@@ -1,5 +1,5 @@
 import type { Component, JSXNode, HTMLAttributes } from "./core/types.js";
-import { escape } from "./utils/escape.js";
+import { escapeContent } from "./utils/escape.js";
 import {
   isRawString,
   raw,
@@ -17,33 +17,27 @@ export function jsx<P extends {} = {}>(
   props: P,
   ...childrenArgs: any[]
 ): RenderResult {
-  const finalProps = { ...(props || {}) } as P & { children?: any };
+  const p = (props ?? {}) as P & { children?: any };
 
-  if (childrenArgs.length > 0 && finalProps.children === undefined) {
-    finalProps.children =
-      childrenArgs.length === 1 ? childrenArgs[0] : childrenArgs;
-  }
-
-  const childProp = finalProps.children;
-  const children = Array.isArray(childProp)
-    ? childProp
-    : childProp !== undefined
-      ? [childProp]
-      : [];
+  const hasArgChildren = childrenArgs.length > 0 && p.children === undefined;
+  const childProp = hasArgChildren
+    ? childrenArgs.length === 1
+      ? childrenArgs[0]
+      : childrenArgs
+    : p.children;
 
   if (typeof tag === "function") {
-    const result = renderChild(tag(finalProps));
+    const componentProps: P & { children?: any } = hasArgChildren
+      ? { ...p, children: childProp }
+      : p;
+    const result = renderChild(tag(componentProps));
     if (result instanceof Promise || isRawString(result)) {
       return result as RenderResult;
     }
-    return raw(escape(String(result)));
+    return raw(escapeContent(String(result)));
   }
 
-  return renderElement(
-    tag,
-    finalProps as HTMLAttributes,
-    children as JSXNode[],
-  );
+  return renderElement(tag, p as HTMLAttributes, childProp as JSXNode);
 }
 
 export const jsxs: typeof jsx = jsx;
@@ -69,7 +63,10 @@ export function Fragment({
  * `className` is rewritten to `class`. When a value is a Promise (e.g. from
  * an async source), returns `Promise<string>` so `jsxTemplate` can await it.
  */
-export function jsxAttr(name: string, value: unknown): string | Promise<string> {
+export function jsxAttr(
+  name: string,
+  value: unknown,
+): string | Promise<string> {
   return renderAttribute(name, value);
 }
 
@@ -92,15 +89,22 @@ export function jsxEscape(value: unknown): unknown {
   if (value instanceof Promise) return value.then(jsxEscape);
   if (Array.isArray(value)) {
     let hasAsync = false;
-    const out: unknown[] = new Array(value.length);
     for (let i = 0; i < value.length; i++) {
-      const r = jsxEscape(value[i]);
-      if (r instanceof Promise) hasAsync = true;
-      out[i] = r;
+      if (value[i] instanceof Promise) {
+        hasAsync = true;
+        break;
+      }
     }
-    return hasAsync ? Promise.all(out) : out;
+    if (!hasAsync) {
+      const out: unknown[] = new Array(value.length);
+      for (let i = 0; i < value.length; i++) {
+        out[i] = jsxEscape(value[i]);
+      }
+      return out;
+    }
+    return Promise.all(value.map(jsxEscape));
   }
-  return escape(String(value));
+  return escapeContent(String(value));
 }
 
 /**
@@ -125,7 +129,7 @@ export function jsxTemplate(
     }
   }
   if (!hasAsync) return new RawString(joinTemplate(templates, exprs));
-  return Promise.all(exprs.map((e) => Promise.resolve(e))).then(
+  return Promise.all(exprs).then(
     (resolved) => new RawString(joinTemplate(templates, resolved)),
   );
 }

@@ -27,9 +27,12 @@ export const URL_ATTRIBUTES = new Set([
   "srcset",
 ]);
 
-const REGEX_CONTENT = /[&<>]/g;
-const REGEX_ATTR = /[&<>"]/g;
-const REGEX_OTHER_UNICODE_CHARS = /\p{C}/gu;
+const REGEX_CONTENT_TEST = /[&<>]/;
+const REGEX_CONTENT_REPLACE = /[&<>]/g;
+const REGEX_ATTR_TEST = /[&<>"]/;
+const REGEX_ATTR_REPLACE = /[&<>"]/g;
+const REGEX_OTHER_UNICODE_CHARS_TEST = /\p{C}/u;
+const REGEX_OTHER_UNICODE_CHARS_REPLACE = /\p{C}/gu;
 const REGEX_VALID_ATTR_NAME = /^[^\s"'>/=]+$/u;
 const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 const REGEX_UNSAFE_PROTOCOLS = /^(?:java|vb)script:/i;
@@ -39,25 +42,38 @@ const REGEX_NON_IMAGE_DATA_URI = /^data:(?!image\/)/i;
  * Strips all 'Other' Unicode characters (controls, invisible formatters, etc.).
  */
 export const sanitize = (str: string): string => {
-  if (!REGEX_OTHER_UNICODE_CHARS.test(str)) {
+  if (!REGEX_OTHER_UNICODE_CHARS_TEST.test(str)) {
     return str;
   }
-  return str.replace(REGEX_OTHER_UNICODE_CHARS, "");
+  return str.replace(REGEX_OTHER_UNICODE_CHARS_REPLACE, "");
 };
 
 /**
- * Escapes a string for HTML content or attributes.
+ * Escapes a string for HTML content.
  * Focused only on encoding characters that have special meaning in HTML.
  */
-export const escape = (
-  str: string,
-  type: "content" | "attr" = "content",
-): string => {
-  const regex = type === "attr" ? REGEX_ATTR : REGEX_CONTENT;
-  if (!regex.test(str)) {
+export const escapeContent = (str: string): string => {
+  if (!REGEX_CONTENT_TEST.test(str)) {
     return str;
   }
-  return str.replaceAll(regex, (char) => ESC_CHAR_MAP[char] ?? char);
+  return str.replaceAll(
+    REGEX_CONTENT_REPLACE,
+    (char) => ESC_CHAR_MAP[char] ?? char,
+  );
+};
+
+/**
+ * Escapes a string for HTML attributes.
+ * Focused only on encoding characters that have special meaning in HTML.
+ */
+export const escapeAttr = (str: string): string => {
+  if (!REGEX_ATTR_TEST.test(str)) {
+    return str;
+  }
+  return str.replaceAll(
+    REGEX_ATTR_REPLACE,
+    (char) => ESC_CHAR_MAP[char] ?? char,
+  );
 };
 
 /**

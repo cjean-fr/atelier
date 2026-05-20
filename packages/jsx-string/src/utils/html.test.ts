@@ -133,7 +133,6 @@ describe("html utilities", () => {
       expect(result).toBe(' title="async title"');
     });
 
-
     it("should handle mixed sync/async in same props object", async () => {
       const result = await renderAttributes({
         id: "static",
@@ -174,7 +173,6 @@ describe("html utilities", () => {
         }),
       ).toBe("color:red");
     });
-
   });
 
   describe("renderChild", () => {

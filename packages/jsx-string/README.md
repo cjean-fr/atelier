@@ -182,7 +182,7 @@ import { raw } from "@cjean-fr/jsx-string";
 
 ## Ecosystem
 
-- **`@cjean-fr/jsx-string-island`** 🚧 *Early / v0.1.0*: Streaming and partial hydration via the islands pattern. The `<Island />` component defers heavy rendering — the initial HTML ships a placeholder, then each island is rendered concurrently and delivered to the client via Turbo Streams, HTMX, or the browser's native Declarative Partial Updates API.
+- **`@cjean-fr/jsx-string-island`** 🚧 _Early / v0.1.0_: Streaming and partial hydration via the islands pattern. The `<Island />` component defers heavy rendering — the initial HTML ships a placeholder, then each island is rendered concurrently and delivered to the client via Turbo Streams, HTMX, or the browser's native Declarative Partial Updates API.
 
 ## License
 
