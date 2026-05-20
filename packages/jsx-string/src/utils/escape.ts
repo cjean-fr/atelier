@@ -3,13 +3,13 @@
 /**
  * OWASP Rule #2: Attribute Encode
  */
-const ESC_CHAR_MAP: ReadonlyMap<string, string> = new Map([
-  ["&", "&amp;"],
-  ["<", "&lt;"],
-  [">", "&gt;"],
-  ['"', "&quot;"],
-  ["'", "&#x27;"],
-]);
+const ESC_CHAR_MAP: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
 
 /**
  * Attributes that expect a URL and should be sanitized.
@@ -31,6 +31,7 @@ const REGEX_CONTENT = /[&<>]/g;
 const REGEX_ATTR = /[&<>"]/g;
 const REGEX_OTHER_UNICODE_CHARS = /\p{C}/gu;
 const REGEX_VALID_ATTR_NAME = /^[^\s"'>/=]+$/u;
+const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 const REGEX_UNSAFE_PROTOCOLS = /^(?:java|vb)script:/i;
 const REGEX_NON_IMAGE_DATA_URI = /^data:(?!image\/)/i;
 
@@ -38,6 +39,9 @@ const REGEX_NON_IMAGE_DATA_URI = /^data:(?!image\/)/i;
  * Strips all 'Other' Unicode characters (controls, invisible formatters, etc.).
  */
 export const sanitize = (str: string): string => {
+  if (!REGEX_OTHER_UNICODE_CHARS.test(str)) {
+    return str;
+  }
   return str.replace(REGEX_OTHER_UNICODE_CHARS, "");
 };
 
@@ -50,7 +54,10 @@ export const escape = (
   type: "content" | "attr" = "content",
 ): string => {
   const regex = type === "attr" ? REGEX_ATTR : REGEX_CONTENT;
-  return str.replaceAll(regex, (char) => ESC_CHAR_MAP.get(char) ?? char);
+  if (!regex.test(str)) {
+    return str;
+  }
+  return str.replaceAll(regex, (char) => ESC_CHAR_MAP[char] ?? char);
 };
 
 /**
@@ -71,8 +78,6 @@ export const isSafeUrl = (url: string): boolean => {
 export const isValidAttrName = (name: string): boolean => {
   return REGEX_VALID_ATTR_NAME.test(name);
 };
-
-const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 
 export const isValidTagName = (name: string): boolean => {
   return REGEX_VALID_TAG_NAME.test(name);
