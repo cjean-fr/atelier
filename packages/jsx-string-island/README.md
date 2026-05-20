@@ -1,97 +1,134 @@
 # @cjean-fr/jsx-string-island
 
-Islands plugin for [@cjean-fr/jsx-string](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string).
+> 🚧 **Early development — API may change.** Version 0.1.0.
 
-## Boundary with `jsx-string`
+Islands extension for [@cjean-fr/jsx-string](../jsx-string). Adds deferred rendering and streaming or static fragment delivery on top of a standard `renderToString` response.
 
-| `@cjean-fr/jsx-string`    | `@cjean-fr/jsx-string-island`                  |
-| ------------------------- | ---------------------------------------------- |
-| Renders JSX → HTML string | Streams HTML + client-side hydration           |
-| Server-only, zero runtime | Emits `<script>` placeholders + hydration code |
-| `renderToString()`        | `<Island />` deferred rendering                |
-| Context via `withScope()` | Adapters (Turbo, HTMX) for DOM orchestration   |
+## When to use
 
-Use `jsx-string` alone for SSG, emails, pure SSR. Add `jsx-string-island` when you need progressive enhancement or partial hydration on the client.
+Use `jsx-string` alone for SSG, emails, and pure SSR. Add `jsx-string-island` when you need **progressive enhancement**: the initial HTML loads fast with placeholders, and heavy components are rendered separately and swapped in without a full-page reload.
 
-## Features
+| `@cjean-fr/jsx-string`      | `@cjean-fr/jsx-string-island`                   |
+| --------------------------- | ----------------------------------------------- |
+| Renders JSX → HTML string   | Adds `<Island>` placeholders + fragment streams |
+| Server-only, zero runtime   | Emits adapter-specific markup for DOM updates   |
+| `renderToString()`          | `renderToReadableStream()` / `renderToStatic()`  |
+| Context via `withScope()`   | Adapters: Turbo Streams, HTMX, NativeDOM        |
 
-- **Two render modes**: `streaming` (server pushes fragments) and `static` (client fetches each fragment via `src`)
-- **Interchangeable adapters**: Turbo Streams, HTMX, or any DOM orchestrator
-- **Islands pattern**: Deferred rendering of JSX components via `<Island>`
-
-## Installation
+## Install
 
 ```bash
 bun add @cjean-fr/jsx-string-island
 ```
 
+## Concepts
+
+### Islands
+
+An `<Island>` is a component whose rendering is deferred. During the initial render it emits a placeholder (managed by the adapter). After the main HTML is sent, each island is rendered concurrently and its fragment is delivered to the client.
+
+```tsx
+import { Island } from "@cjean-fr/jsx-string-island";
+
+// Static mode: client fetches the fragment from `src`
+<Island src="/fragments/heavy" fallback={<Spinner />} />
+
+// Streaming mode: server pushes the fragment in the same response
+<Island fallback={<Spinner />}>
+  {() => <HeavyComponent />}
+</Island>
+```
+
+### Adapters
+
+Adapters control how placeholders and fragments are expressed in HTML.
+
+| Adapter        | Placeholder              | Fragment delivery       |
+| -------------- | ------------------------ | ----------------------- |
+| `TurboAdapter` | `<turbo-frame>`          | `<turbo-stream>`        |
+| `HtmxAdapter`  | `<div hx-get>`           | `<div hx-swap-oob>`     |
+| `NativeAdapter`| `<?start name>…<?end>`   | `<template for>`        |
+
+`NativeAdapter` uses Chrome's [Declarative Partial Updates](https://developer.chrome.com/blog/declarative-partial-updates) (Chrome 130+). For broader support add [`template-for-polyfill`](https://www.npmjs.com/package/template-for-polyfill) and [`html-setters-polyfill`](https://www.npmjs.com/package/html-setters-polyfill).
+
 ## Usage
 
-### Configuration
+### Streaming (server pushes fragments)
+
+```ts
+import { renderToReadableStream, TurboAdapter } from "@cjean-fr/jsx-string-island";
+import { Island } from "@cjean-fr/jsx-string-island";
+
+const stream = await renderToReadableStream(
+  () => (
+    <main>
+      <header>Fast</header>
+      <Island fallback={<p>Loading…</p>}>
+        {() => <HeavyDashboard />}
+      </Island>
+    </main>
+  ),
+  TurboAdapter,
+);
+
+// stream is a ReadableStream<string> — pipe it to the HTTP response
+```
+
+### Static (client fetches fragments)
 
 ```ts
 import {
-  defineConfig,
-  withIslandsPlugin,
-  Island,
+  renderToStatic,
+  streamIslands,
+  NativeAdapter,
 } from "@cjean-fr/jsx-string-island";
+import { renderToString } from "@cjean-fr/jsx-string";
 
-const config = defineConfig({
-  adapter: TurboAdapter,
-  mode: "streaming",
-});
+const { pages, fragments } = await renderToStatic(
+  async ({ collected, generatePath }) => {
+    const html = await renderToString(
+      <Island src={generatePath("dashboard")} fallback={<p>Loading…</p>} />,
+    );
+    const fragments = new Map<string, string>();
+    await streamIslands(collected, NativeAdapter, (id, html) => {
+      fragments.set(generatePath(id), html);
+    });
+    return { pages: new Map([["/index.html", html]]), fragments };
+  },
+  NativeAdapter,
+  (id) => `/fragments/${id}.html`,
+);
 ```
 
-### Rendering
+### Low-level: manual scope
 
 ```ts
-import { withContext, renderToStringAsync } from "@cjean-fr/jsx-string";
-import { withIslandsPlugin, Island } from "@cjean-fr/jsx-string-island";
+import {
+  initIslands,
+  streamIslands,
+  TurboAdapter,
+} from "@cjean-fr/jsx-string-island";
+import { withScope, renderToString } from "@cjean-fr/jsx-string";
 
-await withContext(async () => {
-  withIslandsPlugin(config);
-
-  const html = await renderToStringAsync(
-    <Island fallback={<Spinner />}>
-      {() => <HeavyComponent />}
-    </Island>
-  );
+const html = await withScope(async () => {
+  initIslands({ adapter: TurboAdapter, mode: "streaming" });
+  return renderToString(<App />);
 });
 ```
 
-### Streaming
+## API
 
-```ts
-import { streamIslands } from "@cjean-fr/jsx-string-island";
-
-await withContext(async () => {
-  withIslandsPlugin(config);
-  await renderToStringAsync(<App />);
-
-  const { useIslands } = require("@cjean-fr/jsx-string-island");
-  const islands = useIslands();
-
-  await streamIslands(islands, config.adapter, (id, html) => {
-    // push to stream
-  });
-});
-```
-
-## Adapters
-
-- `TurboAdapter` — Turbo Streams
-- `HtmxAdapter` — HTMX
-- `NativeAdapter` — [Chrome Declarative Partial Updates](https://developer.chrome.com/blog/declarative-partial-updates)
-
-### NativeAdapter
-
-Uses the browser's native declarative partial updates API — no framework dependency required.
-
-**Streaming mode** — the server pushes `<template for="id">` fragments in the same HTTP stream, and the browser replaces `<?start name="id">…<?end>` placeholders declaratively.
-
-**Static mode** — each island placeholder emits a `<script>` that calls `fetch(src)` and streams the response into the document via `document.body.streamAppendHTML()`. The server route at `src` must return a `<template for="id">…</template>` fragment.
-
-> **Browser support**: requires Chrome 130+ or the [`template-for-polyfill`](https://www.npmjs.com/package/template-for-polyfill) and [`html-setters-polyfill`](https://www.npmjs.com/package/html-setters-polyfill) packages.
+| Export                           | Description                                                         |
+| -------------------------------- | ------------------------------------------------------------------- |
+| `Island`                         | Component that registers a deferred render slot                     |
+| `initIslands(config)`            | Initializes island context in the current `withScope`               |
+| `render(handler, config)`        | Runs `handler` inside an isolated scope with islands initialized    |
+| `renderToReadableStream(fn, adapter)` | Streams shell + island fragments as a `ReadableStream<string>`  |
+| `renderToStatic(handler, adapter, generatePath)` | Renders shell + island routes for static output   |
+| `streamIslands(collected, adapter, cb)` | Renders collected islands and calls `cb(id, html)` for each  |
+| `TurboAdapter`                   | Adapter for Hotwire Turbo Streams                                   |
+| `HtmxAdapter`                    | Adapter for HTMX                                                    |
+| `NativeAdapter`                  | Adapter for Chrome Declarative Partial Updates                      |
 
 ## License
 
