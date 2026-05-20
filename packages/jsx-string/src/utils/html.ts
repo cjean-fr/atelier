@@ -1,6 +1,7 @@
 import type { CSSProperties, JSXNode, HTMLAttributes } from "../core/types.js";
 import {
-  escape,
+  escapeContent,
+  escapeAttr,
   isSafeUrl,
   isValidAttrName,
   isValidTagName,
@@ -85,37 +86,21 @@ export function renderAttributes(
 ): string | Promise<string> {
   if (!props) return "";
 
-  const keys = Object.keys(props);
-  const pending = new Map<string, Promise<unknown>>();
+  let out = "";
+  let pending: Promise<string>[] | null = null;
 
-  // Single pass: detect AND collect promises
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    if (key === undefined) continue;
-    const value = (props as any)[key];
-
-    if (value instanceof Promise) {
-      pending.set(key, value);
+  for (const key of Object.keys(props)) {
+    const r = renderAttribute(key, (props as any)[key]);
+    if (r instanceof Promise) {
+      (pending ??= []).push(r.then((s) => (s ? ` ${s}` : "")));
+    } else {
+      if (r) out += ` ${r}`;
     }
   }
 
-  // Fast-path sync: no async work
-  if (pending.size === 0) {
-    return renderAttributesSync(props);
-  }
-
-  // Resolve only async values, keep sync ones as-is
-  const asyncEntries = Array.from(pending.entries()).map(
-    async ([key, promise]) => [key, await promise] as [string, unknown],
-  );
-
-  return Promise.all(asyncEntries).then((resolved) => {
-    const resolvedProps = { ...props };
-    for (const [key, value] of resolved) {
-      resolvedProps[key] = value;
-    }
-    return renderAttributesSync(resolvedProps);
-  });
+  return pending
+    ? Promise.all(pending).then((parts) => out + parts.join(""))
+    : out;
 }
 
 /**
@@ -152,13 +137,13 @@ function renderAttributeSync(name: string, value: unknown): string {
   if (attrName === "style") {
     let style: string;
     if (value !== null && typeof value === "object") {
-      style = renderStyleSync(value as CSSProperties);
+      style = renderStyle(value as CSSProperties);
     } else {
       style = String(value);
       if (!isSafeCssValue(style)) return "";
     }
     if (!style) return "";
-    return `style="${escape(style, "attr")}"`;
+    return `style="${escapeAttr(style)}"`;
   }
 
   if (value === true) return attrName;
@@ -166,7 +151,7 @@ function renderAttributeSync(name: string, value: unknown): string {
   let str = String(value);
   if (URL_ATTRIBUTES.has(attrName.toLowerCase()) && !isSafeUrl(str))
     str = "#blocked";
-  return `${attrName}="${escape(str, "attr")}"`;
+  return `${attrName}="${escapeAttr(str)}"`;
 }
 
 export function renderAttribute(
@@ -180,30 +165,6 @@ export function renderAttribute(
 }
 
 /**
- * Render HTML attributes from a props object into a single attribute string.
- *
- * Skips internal props (e.g., children, key, ref), omits null/undefined/false
- * values, renames `className` to `class`, serializes `style` objects, renders
- * boolean `true` attributes without a value, and sanitizes attribute names and
- * URL-valued attributes. Multiple `class`/`className` props render as separate
- * attributes (no merging) for parity with the precompile transform.
- *
- * @param props - The props object to convert into HTML attributes
- * @returns A string containing the rendered HTML attributes (prefixed with a space for each attribute), or an empty string if no attributes are produced
- */
-function renderAttributesSync(props: HTMLAttributes): string {
-  let attrs = "";
-  const keys = Object.keys(props);
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    if (!key) continue;
-    const rendered = renderAttributeSync(key, (props as any)[key]);
-    if (rendered) attrs += ` ${rendered}`;
-  }
-  return attrs;
-}
-
-/**
  * Serialize a CSS properties object into an inline CSS declaration string.
  *
  * Converts camelCase property names to kebab-case, preserves CSS custom properties
@@ -213,10 +174,6 @@ function renderAttributesSync(props: HTMLAttributes): string {
  * @returns A semicolon-delimited CSS declaration string (e.g., `color:red;margin-top:1px`)
  */
 export function renderStyle(style: CSSProperties): string {
-  return renderStyleSync(style);
-}
-
-function renderStyleSync(style: CSSProperties): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(style)) {
     if (value == null) continue;
@@ -228,6 +185,38 @@ function renderStyleSync(style: CSSProperties): string {
     parts.push(`${prop}:${str}`);
   }
   return parts.join(";");
+}
+
+function renderChildArrayAsync(
+  arr: JSXNode[],
+  startIndex: number,
+  prefix: string,
+  pendingPromise?: Promise<RawString>,
+): Promise<RawString> {
+  const len = arr.length;
+  const rendered: (string | RawString | Promise<RawString>)[] = [];
+
+  if (prefix) {
+    rendered.push(new RawString(prefix));
+  }
+
+  if (pendingPromise) {
+    rendered.push(pendingPromise);
+  }
+
+  const startOffset = pendingPromise ? startIndex + 1 : startIndex;
+  for (let i = startOffset; i < len; i++) {
+    rendered.push(renderChild(arr[i]));
+  }
+
+  return Promise.all(rendered).then((items) => {
+    let out = "";
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      out += isRawString(item) ? item.value : escapeContent(String(item));
+    }
+    return new RawString(out);
+  });
 }
 
 /**
@@ -246,38 +235,25 @@ export function renderChild(
   if (child instanceof Promise)
     return child
       .then(renderChild)
-      .then((r) => (isRawString(r) ? r : new RawString(escape(String(r)))));
+      .then((r) =>
+        isRawString(r) ? r : new RawString(escapeContent(String(r))),
+      );
 
   if (Array.isArray(child)) {
     const len = child.length;
-    const rendered: (string | RawString | Promise<RawString>)[] = new Array(
-      len,
-    );
-    let hasAsync = false;
-
+    let out = "";
     for (let i = 0; i < len; i++) {
-      const r = renderChild(child[i]);
-      rendered[i] = r;
-      if (r instanceof Promise) hasAsync = true;
-    }
-
-    if (!hasAsync) {
-      let out = "";
-      for (let i = 0; i < len; i++) {
-        const r = rendered[i] as string | RawString;
-        out += isRawString(r) ? r.value : escape(String(r));
+      const item = child[i];
+      if (item instanceof Promise) {
+        return renderChildArrayAsync(child, i, out);
       }
-      return new RawString(out);
-    }
-
-    return Promise.all(rendered).then((items) => {
-      let out = "";
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        out += isRawString(item) ? item.value : escape(String(item));
+      const r = renderChild(item);
+      if (r instanceof Promise) {
+        return renderChildArrayAsync(child, i, out, r);
       }
-      return new RawString(out);
-    });
+      out += isRawString(r) ? r.value : escapeContent(String(r));
+    }
+    return new RawString(out);
   }
 
   return String(child);
@@ -298,7 +274,7 @@ export function renderChild(
 export function renderElement(
   tag: string,
   props: HTMLAttributes,
-  children: JSXNode[],
+  children: JSXNode,
 ): RenderResult {
   if (!isValidTagName(tag)) {
     console.warn(
@@ -338,6 +314,8 @@ function toRawElement(
   content: string | RawString,
 ): RawString {
   if (VOID_ELEMENTS.has(tag)) return new RawString(`<${tag}${attrs}>`);
-  const inner = isRawString(content) ? content.value : escape(String(content));
+  const inner = isRawString(content)
+    ? content.value
+    : escapeContent(String(content));
   return new RawString(`<${tag}${attrs}>${inner}</${tag}>`);
 }

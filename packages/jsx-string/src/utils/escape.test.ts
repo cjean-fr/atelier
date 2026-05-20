@@ -1,18 +1,27 @@
-import { escape, isSafeUrl, isValidAttrName, sanitize } from "./escape.js";
+import {
+  escapeContent,
+  escapeAttr,
+  isSafeUrl,
+  isValidAttrName,
+  sanitize,
+} from "./escape.js";
 import { describe, it, expect } from "bun:test";
 
 describe("escape utilities", () => {
-  describe("escape", () => {
-    it("should escape for HTML content and attributes", () => {
-      // Content
-      expect(escape("<b>\"Hello\" & 'World'</b>", "content")).toBe(
+  describe("escapeContent", () => {
+    it("should escape for HTML content", () => {
+      expect(escapeContent("<b>\"Hello\" & 'World'</b>")).toBe(
         "&lt;b&gt;\"Hello\" &amp; 'World'&lt;/b&gt;",
       );
-      // Attributes
-      const attr = escape("\"><script>'", "attr");
+      expect(escapeContent("Hello 123")).toBe("Hello 123");
+    });
+  });
+
+  describe("escapeAttr", () => {
+    it("should escape for HTML attributes", () => {
+      const attr = escapeAttr("\"><script>'");
       expect(attr).toBe("&quot;&gt;&lt;script&gt;'");
-      // Untouched
-      expect(escape("Hello 123")).toBe("Hello 123");
+      expect(escapeAttr("Hello 123")).toBe("Hello 123");
     });
   });
 

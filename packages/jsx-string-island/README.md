@@ -8,12 +8,12 @@ Islands extension for [@cjean-fr/jsx-string](../jsx-string). Adds deferred rende
 
 Use `jsx-string` alone for SSG, emails, and pure SSR. Add `jsx-string-island` when you need **progressive enhancement**: the initial HTML loads fast with placeholders, and heavy components are rendered separately and swapped in without a full-page reload.
 
-| `@cjean-fr/jsx-string`      | `@cjean-fr/jsx-string-island`                   |
-| --------------------------- | ----------------------------------------------- |
-| Renders JSX → HTML string   | Adds `<Island>` placeholders + fragment streams |
-| Server-only, zero runtime   | Emits adapter-specific markup for DOM updates   |
-| `renderToString()`          | `renderToReadableStream()` / `renderToStatic()`  |
-| Context via `withScope()`   | Adapters: Turbo Streams, HTMX, NativeDOM        |
+| `@cjean-fr/jsx-string`    | `@cjean-fr/jsx-string-island`                   |
+| ------------------------- | ----------------------------------------------- |
+| Renders JSX → HTML string | Adds `<Island>` placeholders + fragment streams |
+| Server-only, zero runtime | Emits adapter-specific markup for DOM updates   |
+| `renderToString()`        | `renderToReadableStream()` / `renderToStatic()` |
+| Context via `withScope()` | Adapters: Turbo Streams, HTMX, NativeDOM        |
 
 ## Install
 
@@ -43,11 +43,11 @@ import { Island } from "@cjean-fr/jsx-string-island";
 
 Adapters control how placeholders and fragments are expressed in HTML.
 
-| Adapter        | Placeholder              | Fragment delivery       |
-| -------------- | ------------------------ | ----------------------- |
-| `TurboAdapter` | `<turbo-frame>`          | `<turbo-stream>`        |
-| `HtmxAdapter`  | `<div hx-get>`           | `<div hx-swap-oob>`     |
-| `NativeAdapter`| `<?start name>…<?end>`   | `<template for>`        |
+| Adapter         | Placeholder            | Fragment delivery   |
+| --------------- | ---------------------- | ------------------- |
+| `TurboAdapter`  | `<turbo-frame>`        | `<turbo-stream>`    |
+| `HtmxAdapter`   | `<div hx-get>`         | `<div hx-swap-oob>` |
+| `NativeAdapter` | `<?start name>…<?end>` | `<template for>`    |
 
 `NativeAdapter` uses Chrome's [Declarative Partial Updates](https://developer.chrome.com/blog/declarative-partial-updates) (Chrome 130+). For broader support add [`template-for-polyfill`](https://www.npmjs.com/package/template-for-polyfill) and [`html-setters-polyfill`](https://www.npmjs.com/package/html-setters-polyfill).
 
@@ -118,17 +118,17 @@ const html = await withScope(async () => {
 
 ## API
 
-| Export                           | Description                                                         |
-| -------------------------------- | ------------------------------------------------------------------- |
-| `Island`                         | Component that registers a deferred render slot                     |
-| `initIslands(config)`            | Initializes island context in the current `withScope`               |
-| `render(handler, config)`        | Runs `handler` inside an isolated scope with islands initialized    |
-| `renderToReadableStream(fn, adapter)` | Streams shell + island fragments as a `ReadableStream<string>`  |
-| `renderToStatic(handler, adapter, generatePath)` | Renders shell + island routes for static output   |
-| `streamIslands(collected, adapter, cb)` | Renders collected islands and calls `cb(id, html)` for each  |
-| `TurboAdapter`                   | Adapter for Hotwire Turbo Streams                                   |
-| `HtmxAdapter`                    | Adapter for HTMX                                                    |
-| `NativeAdapter`                  | Adapter for Chrome Declarative Partial Updates                      |
+| Export                                           | Description                                                      |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| `Island`                                         | Component that registers a deferred render slot                  |
+| `initIslands(config)`                            | Initializes island context in the current `withScope`            |
+| `render(handler, config)`                        | Runs `handler` inside an isolated scope with islands initialized |
+| `renderToReadableStream(fn, adapter)`            | Streams shell + island fragments as a `ReadableStream<string>`   |
+| `renderToStatic(handler, adapter, generatePath)` | Renders shell + island routes for static output                  |
+| `streamIslands(collected, adapter, cb)`          | Renders collected islands and calls `cb(id, html)` for each      |
+| `TurboAdapter`                                   | Adapter for Hotwire Turbo Streams                                |
+| `HtmxAdapter`                                    | Adapter for HTMX                                                 |
+| `NativeAdapter`                                  | Adapter for Chrome Declarative Partial Updates                   |
 
 ## License
 
