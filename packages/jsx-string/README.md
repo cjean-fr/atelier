@@ -45,6 +45,26 @@ esbuild: {
 
 > TypeScript users with `@types/react` installed get enhanced attribute autocomplete for free. It is not required.
 
+### Deno (`jsx: "precompile"`)
+
+Deno ships a JSX transform that analyses your tree statically and bakes the static HTML into template strings at compile time — [7-20x faster](https://docs.deno.com/runtime/reference/jsx/) than the standard transform on the server side. `@cjean-fr/jsx-string` exports the `jsxTemplate` / `jsxAttr` / `jsxEscape` runtime functions Deno's compiler emits, so you can opt in by adding to `deno.json`:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "precompile",
+    "jsxImportSource": "@cjean-fr/jsx-string"
+  }
+}
+```
+
+All the security guarantees (URL scheme blocking, attribute escaping, valid name checks) and async semantics (Promise children, async components, concurrent resolution) still apply — dynamic attribute Promises and async expressions are awaited before the final string is assembled.
+
+**Limitations of precompile mode** (intrinsic to the contract — each attribute is rendered in isolation):
+
+- `dangerouslySetInnerHTML` is dropped silently. Use `{raw(html)}` as a child instead.
+- `class` and `className` are not merged across the same element. `<div class={a} className={b} />` emits two `class="..."` attributes instead of one merged value. To keep behavior identical, the standard transform no longer merges them either — use a single prop.
+
 ## Async components, natively
 
 Every component can be `async`. Promise children work too. The renderer resolves everything concurrently — no sequential waterfall.

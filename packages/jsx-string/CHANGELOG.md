@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Deno `jsx: "precompile"` support**: New `jsxTemplate`, `jsxAttr`, `jsxEscape` exports on `/jsx-runtime`. Deno's compiler bakes static HTML into template strings at compile time and only calls these runtime helpers for dynamic slots — typically 7-20x faster than the standard transform. All security checks (URL scheme blocking, attribute escaping, name validation) and async semantics (Promise children, async components, concurrent resolution) carry over. Configure with `"jsx": "precompile"` + `"jsxImportSource": "@cjean-fr/jsx-string"` in `deno.json`.
+
+### Changed
+
+- **BREAKING — `class` / `className` no longer merged**: When both props are present on the same element, they now render as separate `class="..."` attributes instead of being merged into one (e.g. `<div class={a} className={b}>` → `<div class="a_value" class="b_value">`). This matches the precompile transform's per-attribute contract; the same behavior now applies in standard mode for parity. To migrate, use a single `class` (or `className`) prop with a pre-joined string.
+
 ## 1.4.2
 
 ### Fixed

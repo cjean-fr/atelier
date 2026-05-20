@@ -20,6 +20,7 @@ const INTERNAL_PROPS = new Set<string>([
 ]);
 const ATTRIBUTE_NAME_MAP = new Map<string, string>([
   ["htmlFor", "for"],
+  ["className", "class"],
   ["acceptCharset", "accept-charset"],
   ["httpEquiv", "http-equiv"],
   ["xlinkHref", "xlink:href"],
@@ -39,37 +40,6 @@ const ATTRIBUTE_NAME_MAP = new Map<string, string>([
   ["dateTime", "datetime"],
   ["srcSet", "srcset"],
 ]);
-
-const resolveNestedPromises = (value: unknown): unknown | Promise<unknown> => {
-  if (value instanceof Promise) return value.then(resolveNestedPromises);
-  if (Array.isArray(value)) {
-    let hasAsync = false;
-    const results = new Array(value.length);
-    for (let i = 0; i < value.length; i++) {
-      const r = resolveNestedPromises(value[i]);
-      if (r instanceof Promise) hasAsync = true;
-      results[i] = r;
-    }
-    if (!hasAsync) return value;
-    return Promise.all(results);
-  }
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    let hasAsync = false;
-    const resolved = new Array(entries.length) as [string, unknown][];
-    for (let i = 0; i < entries.length; i++) {
-      const [k, v] = entries[i]!;
-      const r = resolveNestedPromises(v);
-      if (r instanceof Promise) hasAsync = true;
-      resolved[i] = [k, r];
-    }
-    if (!hasAsync) return value;
-    return Promise.all(
-      resolved.map(async ([k, v]) => [k, await v] as [string, unknown]),
-    ).then(Object.fromEntries);
-  }
-  return value;
-};
 
 const isSafeCssValue = (value: string): boolean => {
   const sanitized = sanitize(value);
@@ -126,16 +96,6 @@ export function renderAttributes(
 
     if (value instanceof Promise) {
       pending.set(key, value);
-    } else if (Array.isArray(value)) {
-      for (let j = 0; j < value.length; j++) {
-        if (value[j] instanceof Promise) {
-          pending.set(key, Promise.all(value.map((v) => Promise.resolve(v))));
-          break;
-        }
-      }
-    } else if (key === "style" && typeof value === "object") {
-      const r = resolveNestedPromises(value);
-      if (r instanceof Promise) pending.set(key, r);
     }
   }
 
@@ -159,78 +119,87 @@ export function renderAttributes(
 }
 
 /**
+ * Render a single HTML attribute into its serialized form (no leading space).
+ *
+ * Returns `""` if the attribute should be skipped (invalid name, null/false value,
+ * unsafe event-handler function, empty/unsafe style). Returns `name` alone for
+ * boolean `true`, otherwise `name="escaped value"`. URL attributes with
+ * `javascript:` / `vbscript:` schemes are replaced with `#blocked`.
+ *
+ * Caller is responsible for adding any whitespace separator between attributes.
+ * `className` is rewritten to `class`; multiple `class`/`className` props in the
+ * same element render as separate attributes (no merge) — this matches Deno's
+ * precompile transform where each attribute is rendered in isolation.
+ */
+function renderAttributeSync(name: string, value: unknown): string {
+  if (INTERNAL_PROPS.has(name) || value === false || value == null) return "";
+  let attrName = sanitize(name);
+  attrName = ATTRIBUTE_NAME_MAP.get(attrName) ?? attrName;
+  if (!isValidAttrName(attrName)) return "";
+
+  if (REGEX_EVENT_HANDLER.test(attrName)) {
+    if (typeof value === "function") {
+      console.warn(
+        `[jsx-string] Event handler "${attrName}" was passed a function. ` +
+          `This is not supported in static HTML rendering. Use a string instead.`,
+      );
+      return "";
+    }
+    if (typeof value !== "string") return "";
+    attrName = attrName.toLowerCase();
+  }
+
+  if (attrName === "style") {
+    let style: string;
+    if (value !== null && typeof value === "object") {
+      style = renderStyleSync(value as CSSProperties);
+    } else {
+      style = String(value);
+      if (!isSafeCssValue(style)) return "";
+    }
+    if (!style) return "";
+    return `style="${escape(style, "attr")}"`;
+  }
+
+  if (value === true) return attrName;
+
+  let str = String(value);
+  if (URL_ATTRIBUTES.has(attrName.toLowerCase()) && !isSafeUrl(str))
+    str = "#blocked";
+  return `${attrName}="${escape(str, "attr")}"`;
+}
+
+export function renderAttribute(
+  name: string,
+  value: unknown,
+): string | Promise<string> {
+  if (value instanceof Promise) {
+    return value.then((v) => renderAttribute(name, v));
+  }
+  return renderAttributeSync(name, value);
+}
+
+/**
  * Render HTML attributes from a props object into a single attribute string.
  *
- * Skips internal props (e.g., children, key, ref), omits null/undefined/false values, merges `class`/`className` values, serializes `style` objects, renders boolean `true` attributes without a value, and sanitizes attribute names and URL-valued attributes.
+ * Skips internal props (e.g., children, key, ref), omits null/undefined/false
+ * values, renames `className` to `class`, serializes `style` objects, renders
+ * boolean `true` attributes without a value, and sanitizes attribute names and
+ * URL-valued attributes. Multiple `class`/`className` props render as separate
+ * attributes (no merging) for parity with the precompile transform.
  *
- * @param tag - The element tag name
  * @param props - The props object to convert into HTML attributes
  * @returns A string containing the rendered HTML attributes (prefixed with a space for each attribute), or an empty string if no attributes are produced
  */
 function renderAttributesSync(props: HTMLAttributes): string {
   let attrs = "";
-  const classes = new Set<string>();
-
   const keys = Object.keys(props);
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     if (!key) continue;
-    const value = (props as any)[key];
-    if (INTERNAL_PROPS.has(key) || value === false || value == null) continue;
-
-    if (key === "class" || key === "className") {
-      if (typeof value === "string") {
-        for (const c of value.split(/\s+/)) if (c) classes.add(c);
-      }
-      continue;
-    }
-
-    const mapped = ATTRIBUTE_NAME_MAP.get(key);
-    let name: string;
-
-    if (mapped) {
-      name = mapped;
-    } else {
-      name = sanitize(key);
-    }
-    if (!isValidAttrName(name)) continue;
-    if (REGEX_EVENT_HANDLER.test(name)) {
-      if (typeof value === "function") {
-        console.warn(
-          `[jsx-string] Event handler "${name}" was passed a function. ` +
-            `This is not supported in static HTML rendering. Use a string instead.`,
-        );
-        continue;
-      }
-      if (typeof value !== "string") continue;
-      name = name.toLowerCase();
-    }
-
-    if (name === "style") {
-      if (typeof value === "object") {
-        const style = renderStyleSync(value as CSSProperties);
-        if (!style) continue;
-        attrs += ` style="${escape(style, "attr")}"`;
-      } else {
-        const style = String(value);
-        if (!isSafeCssValue(style)) continue;
-        if (!style) continue;
-        attrs += ` style="${escape(style, "attr")}"`;
-      }
-    } else if (value === true) {
-      attrs += ` ${name}`;
-    } else {
-      let str = String(value);
-      if (URL_ATTRIBUTES.has(name.toLowerCase()) && !isSafeUrl(str))
-        str = "#blocked";
-      attrs += ` ${name}="${escape(str, "attr")}"`;
-    }
+    const rendered = renderAttributeSync(key, (props as any)[key]);
+    if (rendered) attrs += ` ${rendered}`;
   }
-
-  if (classes.size > 0) {
-    attrs = ` class="${escape([...classes].join(" "), "attr")}"` + attrs;
-  }
-
   return attrs;
 }
 
@@ -243,11 +212,7 @@ function renderAttributesSync(props: HTMLAttributes): string {
  * @param style - An object mapping CSS property names to values
  * @returns A semicolon-delimited CSS declaration string (e.g., `color:red;margin-top:1px`)
  */
-export function renderStyle(style: CSSProperties): string | Promise<string> {
-  const resolved = resolveNestedPromises(style);
-  if (resolved instanceof Promise) {
-    return resolved.then((r) => renderStyleSync(r as CSSProperties));
-  }
+export function renderStyle(style: CSSProperties): string {
   return renderStyleSync(style);
 }
 
