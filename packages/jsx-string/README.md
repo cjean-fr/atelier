@@ -1,5 +1,7 @@
 # @cjean-fr/jsx-string
 
+[![CI](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml/badge.svg)](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml)
+
 **JSX → HTML strings. Async-first. Secure by default. Zero runtime dependencies.**
 
 The JSX-to-string renderer built for async components and concurrent-safe context — without React.
@@ -171,9 +173,16 @@ import { raw } from "@cjean-fr/jsx-string";
 | `withScope(fn, options?)`  | Creates an isolated async scope. **Only needed when using `context()` / `setContext()` / `useContext()`.** For pure rendering without context, call `renderToString()` directly. |
 | `snapshot()`               | Captures current scope state for seeding sub-scopes                                                                                                                              |
 
+## When NOT to use
+
+- **Client-side rendering or hydration** — this library is server-only. Use Preact, Solid, or Astro for rich client-side interactivity.
+- **Existing React component ecosystems** — component libraries (MUI, Radix, etc.) and hooks (React Query, React Hook Form) require React's runtime and won't work here.
+- **Next.js App Router / React Server Components** — jsx-string is not RSC-aware and cannot run inside Next.js's async server component model.
+- **Teams not ready for component-level data fetching** — async components shift data ownership into the render tree, which is a different mental model than loaders or middleware.
+
 ## Ecosystem
 
-- **`@cjean-fr/jsx-string-island`**: Streaming and client-side hydration. The `<Island />` component defers heavy rendering — the initial HTML ships a placeholder, then islands are rendered concurrently and streamed to the client for hydration. Use it when you need progressive enhancement or partial hydration on top of `jsx-string`.
+- **`@cjean-fr/jsx-string-island`** 🚧 *Early / v0.1.0*: Streaming and partial hydration via the islands pattern. The `<Island />` component defers heavy rendering — the initial HTML ships a placeholder, then each island is rendered concurrently and delivered to the client via Turbo Streams, HTMX, or the browser's native Declarative Partial Updates API.
 
 ## License
 
