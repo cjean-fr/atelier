@@ -43,5 +43,11 @@ describe("package exports", () => {
       expect(typeof JSXRuntime.jsxs).toBe("function");
       expect(JSXRuntime.Fragment).toBeDefined();
     });
+
+    it("should export the Deno precompile runtime trio", () => {
+      expect(typeof JSXRuntime.jsxTemplate).toBe("function");
+      expect(typeof JSXRuntime.jsxAttr).toBe("function");
+      expect(typeof JSXRuntime.jsxEscape).toBe("function");
+    });
   });
 });

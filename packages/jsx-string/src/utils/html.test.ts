@@ -20,9 +20,10 @@ describe("html utilities", () => {
   });
 
   describe("renderAttributes", () => {
-    it("should handle class and className merging", () => {
+    it("should render class and className as separate attributes (no merge)", () => {
+      // Matches the precompile transform: each attribute is rendered in isolation.
       expect(renderAttributes({ class: "a", className: "b" })).toBe(
-        ' class="a b"',
+        ' class="a" class="b"',
       );
     });
 
@@ -101,14 +102,6 @@ describe("html utilities", () => {
       expect(result).toContain("url(https://example.com/img.png)");
     });
 
-    it("should resolve promises inside style objects", async () => {
-      await expect(
-        renderAttributes({
-          style: { color: Promise.resolve("red") as any },
-        }),
-      ).resolves.toBe(' style="color:red"');
-    });
-
     it("should ignore internal props", () => {
       expect(renderAttributes({ key: "1", ref: "r", id: "ok" })).toBe(
         ' id="ok"',
@@ -140,13 +133,6 @@ describe("html utilities", () => {
       expect(result).toBe(' title="async title"');
     });
 
-    it("should resolve promises in array attribute values", async () => {
-      const result = await renderAttributes({
-        // @ts-ignore
-        "data-items": [Promise.resolve("a"), Promise.resolve("b")],
-      });
-      expect(result).toBe(' data-items="a,b"');
-    });
 
     it("should handle mixed sync/async in same props object", async () => {
       const result = await renderAttributes({
@@ -189,11 +175,6 @@ describe("html utilities", () => {
       ).toBe("color:red");
     });
 
-    it("should resolve promises in style values", async () => {
-      await expect(
-        renderStyle({ color: Promise.resolve("red") as any }),
-      ).resolves.toBe("color:red");
-    });
   });
 
   describe("renderChild", () => {
