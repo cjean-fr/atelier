@@ -13,6 +13,7 @@ import { VOID_ELEMENTS } from "./void-elements.js";
 const REGEX_CAMEL_TO_KEBAB = /[A-Z]/g;
 const REGEX_EVENT_HANDLER = /^on[a-z]/i;
 const REGEX_CSS_UNSAFE = /expression\s*\(|javascript\s*:/i;
+const REGEX_HAS_UPPER = /[A-Z]/;
 const INTERNAL_PROPS = new Set<string>([
   "children",
   "dangerouslySetInnerHTML",
@@ -68,8 +69,36 @@ export function isRawString(value: unknown): value is RawString {
 }
 
 /**
- * Creates a RawString from a value, which will be rendered without escaping.
- * Use with caution to avoid XSS vulnerabilities.
+ * Mark an HTML string as trusted: it will be rendered verbatim without HTML
+ * escaping. Use this for HTML you generated yourself or from a source you
+ * fully trust — typically a Markdown renderer's output or a templating helper.
+ *
+ * **Common mistake — `raw()` is *not* for rendering user text.** If you have
+ * a string and just want it to appear on the page (with `<`, `>`, `&`
+ * displayed as characters), embed it directly — the default behavior already
+ * HTML-escapes for you:
+ *
+ * ```tsx
+ * <p>{userText}</p>   // ✅ safe — `<`/`>`/`&` shown as text
+ * <p>{raw(userText)}</p>  // ❌ XSS if userText contains <script>...
+ * ```
+ *
+ * ⚠️ **For untrusted HTML that must render *as HTML*** (e.g. forum posts
+ * that allow basic formatting), escaping alone is not enough — you need an
+ * HTML *sanitizer* (a different tool: it strips dangerous tags/attrs
+ * structurally, instead of encoding them). Use
+ * [`DOMPurify`](https://github.com/cure53/DOMPurify) or
+ * [`sanitize-html`](https://github.com/apostrophecms/sanitize-html) and pass
+ * their output to `raw()`.
+ *
+ * @example
+ * ```tsx
+ * import { raw } from "@cjean-fr/jsx-string";
+ *
+ * // Trusted source: server-side Markdown renderer.
+ * const html = await renderMarkdown(post.body);
+ * return <article>{raw(html)}</article>;
+ * ```
  */
 export const raw = (value: string): RawString => new RawString(value);
 
@@ -86,15 +115,17 @@ export function renderAttributes(
 ): string | Promise<string> {
   if (!props) return "";
 
+  const keys = Object.keys(props);
   let out = "";
   let pending: Promise<string>[] | null = null;
 
-  for (const key of Object.keys(props)) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]!;
     const r = renderAttribute(key, (props as any)[key]);
-    if (r instanceof Promise) {
-      (pending ??= []).push(r.then((s) => (s ? ` ${s}` : "")));
-    } else {
+    if (typeof r === "string") {
       if (r) out += ` ${r}`;
+    } else {
+      (pending ??= []).push(r.then((s) => (s ? ` ${s}` : "")));
     }
   }
 
@@ -118,11 +149,30 @@ export function renderAttributes(
  */
 function renderAttributeSync(name: string, value: unknown): string {
   if (INTERNAL_PROPS.has(name) || value === false || value == null) return "";
-  let attrName = sanitize(name);
-  attrName = ATTRIBUTE_NAME_MAP.get(attrName) ?? attrName;
-  if (!isValidAttrName(attrName)) return "";
 
-  if (REGEX_EVENT_HANDLER.test(attrName)) {
+  // `isValidAttrName` rejects whitespace, quotes, brackets, `=`, `/`, AND
+  // Unicode "Other" chars (controls, ZWSP, LRM, etc.) in one regex test —
+  // the latter would otherwise leak verbatim into the output. Clean ASCII
+  // names pass on the first try; only names that fail get re-sanitized so
+  // hidden chars (`data​-id`) can still produce a usable `data-id`.
+  let attrName = name;
+  if (!isValidAttrName(attrName)) {
+    attrName = sanitize(attrName);
+    if (!isValidAttrName(attrName)) return "";
+  }
+
+  // Only camelCase attribute names ever need remapping (the map keys all have
+  // an uppercase letter). Skip the Map lookup for the common lowercase case.
+  const hasUpper = REGEX_HAS_UPPER.test(attrName);
+  if (hasUpper) {
+    attrName = ATTRIBUTE_NAME_MAP.get(attrName) ?? attrName;
+  }
+  // Event-handler check: REGEX_EVENT_HANDLER is case-insensitive and must run
+  // regardless of casing — `onclick={fn}` is just as dangerous as
+  // `onClick={fn}`. Cheap pre-filter: only names starting with 'o'/'O' can
+  // possibly match, avoiding the regex test on every non-event attribute.
+  const c0 = attrName.charCodeAt(0);
+  if ((c0 === 79 || c0 === 111) && REGEX_EVENT_HANDLER.test(attrName)) {
     if (typeof value === "function") {
       console.warn(
         `[jsx-string] Event handler "${attrName}" was passed a function. ` +
@@ -131,7 +181,7 @@ function renderAttributeSync(name: string, value: unknown): string {
       return "";
     }
     if (typeof value !== "string") return "";
-    attrName = attrName.toLowerCase();
+    if (hasUpper) attrName = attrName.toLowerCase();
   }
 
   if (attrName === "style") {
@@ -148,9 +198,15 @@ function renderAttributeSync(name: string, value: unknown): string {
 
   if (value === true) return attrName;
 
-  let str = String(value);
-  if (URL_ATTRIBUTES.has(attrName.toLowerCase()) && !isSafeUrl(str))
-    str = "#blocked";
+  let str = typeof value === "string" ? value : String(value);
+  // URL_ATTRIBUTES is keyed lowercase. After remapping, mapped names are
+  // already lowercase, so only re-lowercase when the original had uppercase
+  // and survived without remapping (e.g. "HREF" written verbatim).
+  const urlKey =
+    hasUpper && REGEX_HAS_UPPER.test(attrName)
+      ? attrName.toLowerCase()
+      : attrName;
+  if (URL_ATTRIBUTES.has(urlKey) && !isSafeUrl(str)) str = "#blocked";
   return `${attrName}="${escapeAttr(str)}"`;
 }
 
@@ -187,135 +243,109 @@ export function renderStyle(style: CSSProperties): string {
   return parts.join(";");
 }
 
-function renderChildArrayAsync(
+function renderArrayAsync(
   arr: JSXNode[],
   startIndex: number,
   prefix: string,
-  pendingPromise?: Promise<RawString>,
-): Promise<RawString> {
-  const len = arr.length;
-  const rendered: (string | RawString | Promise<RawString>)[] = [];
-
-  if (prefix) {
-    rendered.push(new RawString(prefix));
+  pending: Promise<string>,
+): Promise<string> {
+  const tail: (string | Promise<string>)[] = [pending];
+  for (let i = startIndex + 1; i < arr.length; i++) {
+    tail.push(renderChild(arr[i]));
   }
-
-  if (pendingPromise) {
-    rendered.push(pendingPromise);
-  }
-
-  const startOffset = pendingPromise ? startIndex + 1 : startIndex;
-  for (let i = startOffset; i < len; i++) {
-    rendered.push(renderChild(arr[i]));
-  }
-
-  return Promise.all(rendered).then((items) => {
-    let out = "";
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      out += isRawString(item) ? item.value : escapeContent(String(item));
-    }
-    return new RawString(out);
+  return Promise.all(tail).then((parts) => {
+    let out = prefix;
+    for (let i = 0; i < parts.length; i++) out += parts[i];
+    return out;
   });
 }
 
 /**
- * Convert a JSX child (primitive, RawString, array, or Promise) into HTML-safe rendered content.
- *
- * @param child - The JSX child to render; may be null, boolean, a RawString, a Promise, an array of children, or any primitive value.
- * @returns A `string`, `RawString`, or `Promise<RawString>`.
- * **Callers must escape the `string` case** — a plain `string` return means an unescaped primitive
- * (e.g. `"hello"` or `"42"`). Use `isRawString(r) ? r.value : escape(String(r))` at every call-site.
+ * Convert a JSX child (primitive, RawString, array, or Promise) into rendered
+ * HTML text. The returned string is always already HTML-safe (escaped where
+ * needed, raw where trusted), so callers concatenate it directly without
+ * further escaping. Async children produce a `Promise<string>`.
  */
-export function renderChild(
-  child: JSXNode,
-): string | RawString | Promise<RawString> {
+export function renderChild(child: JSXNode): string | Promise<string> {
   if (child == null || child === true || child === false) return "";
-  if (isRawString(child)) return child;
-  if (child instanceof Promise)
-    return child
-      .then(renderChild)
-      .then((r) =>
-        isRawString(r) ? r : new RawString(escapeContent(String(r))),
-      );
-
+  if (typeof child === "string") return escapeContent(child);
+  if (child instanceof RawString) return child.value;
   if (Array.isArray(child)) {
-    const len = child.length;
     let out = "";
-    for (let i = 0; i < len; i++) {
-      const item = child[i];
-      if (item instanceof Promise) {
-        return renderChildArrayAsync(child, i, out);
+    for (let i = 0; i < child.length; i++) {
+      const c = child[i];
+      // Inline the two dominant cases (RawString from nested `jsx()` calls,
+      // primitive strings from JSX text nodes) to avoid the per-item recursive
+      // call overhead — the typical loop is a list of element-shaped children.
+      if (c instanceof RawString) {
+        out += c.value;
+        continue;
       }
-      const r = renderChild(item);
-      if (r instanceof Promise) {
-        return renderChildArrayAsync(child, i, out, r);
+      if (typeof c === "string") {
+        out += escapeContent(c);
+        continue;
       }
-      out += isRawString(r) ? r.value : escapeContent(String(r));
+      if (c == null || c === true || c === false) continue;
+      const r = renderChild(c);
+      if (typeof r === "string") out += r;
+      else return renderArrayAsync(child, i, out, r);
     }
-    return new RawString(out);
+    return out;
   }
-
-  return String(child);
+  if (child instanceof Promise) return child.then(renderChild);
+  return escapeContent(String(child));
 }
 
 /**
- * Render a JSX element into an HTML string.
+ * Render a JSX element into an HTML-safe `RawString`.
  *
- * When `props.dangerouslySetInnerHTML` is provided, its `__html` is used as the element content;
- * otherwise the provided children are rendered. Attributes and children may be asynchronous; in that case
- * the function returns a Promise resolving to the same RawString result.
+ * Returning a `RawString` (rather than a plain `string`) lets the result be
+ * dropped back into another element's children without being re-escaped — the
+ * single boundary that distinguishes "trusted, already-rendered HTML" from
+ * "untrusted user text" in the rest of the pipeline.
  *
- * @param tag - The element tag name
- * @param props - Element attributes and special props (e.g., `className`, `style`, `dangerouslySetInnerHTML`)
- * @param children - Child nodes to render inside the element
- * @returns A RawString containing the rendered element HTML
+ * When `props.dangerouslySetInnerHTML` is provided, its `__html` is used as
+ * the element content; otherwise the provided children are rendered.
+ * Attributes and children may be asynchronous; in that case the function
+ * returns a `Promise<RawString>`.
  */
+// Cache of tag names already proven safe. Tag names come from a tiny vocabulary
+// (HTML/SVG elements + a few user custom-elements) and are reused thousands of
+// times per render, so a cache avoids re-running the validation regex.
+const VALID_TAGS = new Set<string>();
+
 export function renderElement(
   tag: string,
   props: HTMLAttributes,
   children: JSXNode,
-): RenderResult {
-  if (!isValidTagName(tag)) {
-    console.warn(
-      `[jsx-string] Invalid tag name "${tag}" was skipped. Tag names must start with a letter and contain only letters, digits, or hyphens.`,
-    );
-    return new RawString("");
+): RawString | Promise<RawString> {
+  if (!VALID_TAGS.has(tag)) {
+    if (!isValidTagName(tag)) {
+      console.warn(
+        `[jsx-string] Invalid tag name "${tag}" was skipped. Tag names must start with a letter and contain only letters, digits, or hyphens.`,
+      );
+      return EMPTY_RAW;
+    }
+    VALID_TAGS.add(tag);
   }
-  const attrsResult = renderAttributes(props);
-  const contentResult = props.dangerouslySetInnerHTML
-    ? new RawString(
-        props.dangerouslySetInnerHTML.__html == null
-          ? ""
-          : String(props.dangerouslySetInnerHTML.__html),
-      )
+  const attrs = renderAttributes(props);
+  const content = props.dangerouslySetInnerHTML
+    ? props.dangerouslySetInnerHTML.__html == null
+      ? ""
+      : String(props.dangerouslySetInnerHTML.__html)
     : renderChild(children);
 
-  if (attrsResult instanceof Promise || contentResult instanceof Promise) {
-    return Promise.all([attrsResult, contentResult]).then(([attrs, content]) =>
-      toRawElement(tag, attrs, content),
-    );
+  if (typeof attrs === "string" && typeof content === "string") {
+    return new RawString(buildElement(tag, attrs, content));
   }
-
-  return toRawElement(tag, attrsResult, contentResult);
+  return Promise.all([attrs, content]).then(
+    ([a, c]) => new RawString(buildElement(tag, a, c)),
+  );
 }
 
-/**
- * Create a RawString containing an HTML element built from a tag, pre-rendered attributes, and content.
- *
- * @param tag - The element tag name (e.g., "div", "img"); void elements will not receive a closing tag.
- * @param attrs - Pre-rendered attribute string (leading space if attributes are present), inserted into the opening tag.
- * @param content - Inner content for the element; a `RawString` value is used verbatim, otherwise the value is escaped.
- * @returns A RawString holding the final HTML for the element. For void elements the result is the opening tag only.
- */
-function toRawElement(
-  tag: string,
-  attrs: string,
-  content: string | RawString,
-): RawString {
-  if (VOID_ELEMENTS.has(tag)) return new RawString(`<${tag}${attrs}>`);
-  const inner = isRawString(content)
-    ? content.value
-    : escapeContent(String(content));
-  return new RawString(`<${tag}${attrs}>${inner}</${tag}>`);
+const EMPTY_RAW = new RawString("");
+
+function buildElement(tag: string, attrs: string, content: string): string {
+  if (VOID_ELEMENTS.has(tag)) return `<${tag}${attrs}>`;
+  return `<${tag}${attrs}>${content}</${tag}>`;
 }

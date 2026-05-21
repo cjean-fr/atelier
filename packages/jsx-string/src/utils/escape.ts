@@ -1,17 +1,6 @@
 // https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
 
 /**
- * OWASP Rule #2: Attribute Encode
- */
-const ESC_CHAR_MAP: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
-/**
  * Attributes that expect a URL and should be sanitized.
  */
 export const URL_ATTRIBUTES = new Set([
@@ -28,12 +17,14 @@ export const URL_ATTRIBUTES = new Set([
 ]);
 
 const REGEX_CONTENT_TEST = /[&<>]/;
-const REGEX_CONTENT_REPLACE = /[&<>]/g;
 const REGEX_ATTR_TEST = /[&<>"]/;
-const REGEX_ATTR_REPLACE = /[&<>"]/g;
 const REGEX_OTHER_UNICODE_CHARS_TEST = /\p{C}/u;
 const REGEX_OTHER_UNICODE_CHARS_REPLACE = /\p{C}/gu;
-const REGEX_VALID_ATTR_NAME = /^[^\s"'>/=]+$/u;
+// Reject whitespace, quotes, brackets, `=`, `/`, AND any Unicode "Other"
+// codepoint (controls, formatters, surrogates, etc.) in one pass. This lets
+// `renderAttributeSync`'s hot path validate with a single regex test for
+// clean ASCII names — only names that fail need the slower `sanitize` retry.
+const REGEX_VALID_ATTR_NAME = /^[^\s"'>/=\p{C}]+$/u;
 const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 const REGEX_UNSAFE_PROTOCOLS = /^(?:java|vb)script:/i;
 const REGEX_NON_IMAGE_DATA_URI = /^data:(?!image\/)/i;
@@ -49,31 +40,72 @@ export const sanitize = (str: string): string => {
 };
 
 /**
- * Escapes a string for HTML content.
- * Focused only on encoding characters that have special meaning in HTML.
+ * Escape `&`, `<`, `>` for HTML text content.
+ *
+ * Two-stage strategy: an upfront `regex.test` (highly optimized native scan)
+ * short-circuits for strings with no escapable char — the common case for
+ * benign user text. Only when an escape is required do we walk the string
+ * with `charCodeAt` + `slice`, which is still faster than `replaceAll` with
+ * a callback (no per-match function dispatch).
  */
 export const escapeContent = (str: string): string => {
-  if (!REGEX_CONTENT_TEST.test(str)) {
-    return str;
+  if (!REGEX_CONTENT_TEST.test(str)) return str;
+  let out = "";
+  let last = 0;
+  for (let i = 0; i < str.length; i++) {
+    let rep: string;
+    switch (str.charCodeAt(i)) {
+      case 38: // &
+        rep = "&amp;";
+        break;
+      case 60: // <
+        rep = "&lt;";
+        break;
+      case 62: // >
+        rep = "&gt;";
+        break;
+      default:
+        continue;
+    }
+    if (i !== last) out += str.slice(last, i);
+    out += rep;
+    last = i + 1;
   }
-  return str.replaceAll(
-    REGEX_CONTENT_REPLACE,
-    (char) => ESC_CHAR_MAP[char] ?? char,
-  );
+  return out + str.slice(last);
 };
 
 /**
- * Escapes a string for HTML attributes.
- * Focused only on encoding characters that have special meaning in HTML.
+ * Escape `&`, `<`, `>`, `"` for HTML attribute values (which we always wrap in
+ * double quotes). Single quotes don't need escaping in double-quoted attrs.
+ * Same two-stage strategy as {@link escapeContent}.
  */
 export const escapeAttr = (str: string): string => {
-  if (!REGEX_ATTR_TEST.test(str)) {
-    return str;
+  if (!REGEX_ATTR_TEST.test(str)) return str;
+  let out = "";
+  let last = 0;
+  for (let i = 0; i < str.length; i++) {
+    let rep: string;
+    switch (str.charCodeAt(i)) {
+      case 38: // &
+        rep = "&amp;";
+        break;
+      case 60: // <
+        rep = "&lt;";
+        break;
+      case 62: // >
+        rep = "&gt;";
+        break;
+      case 34: // "
+        rep = "&quot;";
+        break;
+      default:
+        continue;
+    }
+    if (i !== last) out += str.slice(last, i);
+    out += rep;
+    last = i + 1;
   }
-  return str.replaceAll(
-    REGEX_ATTR_REPLACE,
-    (char) => ESC_CHAR_MAP[char] ?? char,
-  );
+  return out + str.slice(last);
 };
 
 /**

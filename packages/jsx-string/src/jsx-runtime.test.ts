@@ -1,0 +1,157 @@
+// @jsxImportSource @cjean-fr/jsx-string
+import { renderToString } from "./index.js";
+import * as JSXRuntime from "./jsx-runtime.js";
+import {
+  jsx,
+  jsxAttr,
+  jsxEscape,
+  jsxTemplate,
+  Fragment,
+} from "./jsx-runtime.js";
+import { describe, it, expect } from "bun:test";
+
+describe("JSX Runtime Export Contract", () => {
+  it("should export standard react-like transform factories and precompile trios", () => {
+    expect(typeof JSXRuntime.jsx).toBe("function");
+    expect(typeof JSXRuntime.jsxs).toBe("function");
+    expect(JSXRuntime.Fragment).toBeDefined();
+    expect(typeof JSXRuntime.jsxTemplate).toBe("function");
+    expect(typeof JSXRuntime.jsxAttr).toBe("function");
+    expect(typeof JSXRuntime.jsxEscape).toBe("function");
+  });
+});
+
+describe("Classic JSX Transform Engine (Factories)", () => {
+  it("should support standard jsx() factory invocations", () => {
+    expect(jsx("span", { children: "ok" }).toString()).toBe("<span>ok</span>");
+  });
+
+  it("should flatten multi-argument child parameter structures into continuous tags", async () => {
+    // @ts-ignore
+    const element = jsx(
+      "div",
+      { id: "p" },
+      jsx("span", {}, "1"),
+      jsx("span", {}, "2"),
+    );
+    expect(await renderToString(element)).toBe(
+      '<div id="p"><span>1</span><span>2</span></div>',
+    );
+  });
+
+  it("should prioritize formal props.children declarations over overlapping trailing arguments", async () => {
+    // @ts-ignore
+    const element = jsx("div", { children: "Props" }, "Extra");
+    expect(await renderToString(element)).toBe("<div>Props</div>");
+  });
+
+  it("should collapse nested Fragments structures into flat layout lines", async () => {
+    const result = jsx(Fragment, {
+      children: [jsx(Fragment, { children: "deep" })],
+    });
+    expect(await renderToString(result as any)).toBe("deep");
+  });
+});
+
+describe("Deno Precompile Target Runtime Pipeline", () => {
+  describe("jsxTemplate Core Compilation Mechanics", () => {
+    it("should map static chunks lacking dynamic injections", () => {
+      expect(jsxTemplate(["<h1>hello</h1>"]).toString()).toBe("<h1>hello</h1>");
+    });
+
+    it("should properly weave changing text slices and dynamic arguments together", () => {
+      const result = jsxTemplate(["<h1>Hello ", "!</h1>"], jsxEscape("Ada"));
+      expect(result.toString()).toBe("<h1>Hello Ada!</h1>");
+    });
+
+    it("should accept attributes and inline nested sub-trees into structural nodes", () => {
+      const child = jsx("span", { children: "x" });
+      const result = jsxTemplate(["<div>", "</div>"], child);
+      expect(result.toString()).toBe("<div><span>x</span></div>");
+    });
+  });
+
+  describe("jsxEscape Injection Sanitization Engine", () => {
+    it("should screen out raw script tags through thorough character conversion maps", () => {
+      const result = jsxTemplate(
+        ["<div>", "</div>"],
+        jsxEscape("<script>alert(1)</script>"),
+      );
+      expect(result.toString()).toBe(
+        "<div>&lt;script&gt;alert(1)&lt;/script&gt;</div>",
+      );
+    });
+
+    it("should wipe out invalid values like holes or conditions seamlessly", () => {
+      const result = jsxTemplate(
+        ["<div>", "</div>"],
+        jsxEscape([null, undefined, false, true]),
+      );
+      expect(result.toString()).toBe("<div></div>");
+    });
+  });
+
+  describe("jsxAttr Property Enforcement Layer", () => {
+    it("should drop empty configuration properties entirely from the string stream", () => {
+      const out = jsxTemplate(
+        ["<div ", " ", "></div>"],
+        jsxAttr("id", undefined),
+        jsxAttr("checked", false),
+      );
+      expect(out.toString()).toBe("<div  ></div>");
+    });
+
+    it("should safely double-escape quote sequences located inside value assignments", () => {
+      const result = jsxTemplate(
+        ["<a ", "></a>"],
+        jsxAttr("title", '"><script>x</script>'),
+      );
+      expect(result.toString()).toBe(
+        '<a title="&quot;&gt;&lt;script&gt;x&lt;/script&gt;"></a>',
+      );
+    });
+
+    it("should filter function types passed to listeners while maintaining string capability", () => {
+      const original = console.warn;
+      console.warn = () => {}; // Mute standard error trace
+      try {
+        const ok = jsxTemplate(
+          ["<button ", "></button>"],
+          jsxAttr("onClick", "alert(1)"),
+        );
+        expect(ok.toString()).toBe('<button onclick="alert(1)"></button>');
+
+        const dropped = jsxTemplate(
+          ["<button ", "></button>"],
+          jsxAttr("onClick", () => {}),
+        );
+        expect(dropped.toString()).toBe("<button ></button>");
+      } finally {
+        console.warn = original;
+      }
+    });
+  });
+
+  describe("Parallel Execution Loops", () => {
+    it("should unpack attribute properties and multi-node subtrees hidden inside pending promises", async () => {
+      const attrPromise = jsxAttr("href", Promise.resolve("/about"));
+      const result = jsxTemplate(["<a ", ">x</a>"], attrPromise);
+      expect(await result).toBeInstanceOf(Object); // RawString container
+      expect((await result).toString()).toBe('<a href="/about">x</a>');
+    });
+
+    it("should drive concurrent tasks simultaneously in a non-blocking map pattern", async () => {
+      const start = Date.now();
+      const slow = (v: string, ms: number) =>
+        new Promise<string>((r) => setTimeout(() => r(v), ms));
+      const result = jsxTemplate(
+        ["<p>", " - ", "</p>"],
+        jsxEscape(slow("a", 30)),
+        jsxEscape(slow("b", 20)),
+      );
+
+      expect((await result).toString()).toBe("<p>a - b</p>");
+      expect(Date.now() - start).toBeLessThan(35); // Verifies parallel execution loop
+    });
+  });
+});
