@@ -126,6 +126,45 @@ describe("html utilities", () => {
       );
     });
 
+    it("should block function values on lowercase event handlers (regression)", () => {
+      // Bug repro: a previous fast-path gated the event-handler check on
+      // "name has uppercase letters", which let `onclick={fn}` through even
+      // though REGEX_EVENT_HANDLER is case-insensitive — leaking the function
+      // source as a real attribute, i.e. XSS via inline handler.
+      expect(
+        renderAttributes({
+          onclick: (() => {}) as any,
+          onfocus: (() => {}) as any,
+          ONCLICK: (() => {}) as any,
+          id: "btn",
+        }),
+      ).toBe(' id="btn"');
+    });
+
+    it("should block non-string values on lowercase event handlers (regression)", () => {
+      // Event handlers require a string value (JS code). Numbers, booleans,
+      // objects, arrays are all meaningless here and must be dropped, even
+      // when the handler name is fully lowercase.
+      expect(
+        renderAttributes({
+          onclick: 42 as any,
+          onmouseover: true as any,
+          onkeydown: { handler: "x" } as any,
+          id: "btn",
+        }),
+      ).toBe(' id="btn"');
+    });
+
+    it("should strip invisible Unicode chars from attribute names (regression)", () => {
+      // Bug repro: a previous optim ran the validation regex before sanitize,
+      // and the validation regex doesn't reject `\p{C}` chars (ZWSP, LRM,
+      // NUL, etc.). Hidden control chars would then leak into attribute names
+      // verbatim instead of being stripped.
+      expect(renderAttributes({ "data​-id": "123" })).toBe(' data-id="123"');
+      expect(renderAttributes({ "cla‎ss": "x" })).toBe(' class="x"');
+      expect(renderAttributes({ "id\x00": "v" })).toBe(' id="v"');
+    });
+
     it("should resolve a direct Promise in an attribute", async () => {
       const result = await renderAttributes({
         title: Promise.resolve("async title") as any,
@@ -184,59 +223,45 @@ describe("html utilities", () => {
         "plain",
       ];
       const result = await renderChild(mixed);
-      expect(result instanceof RawString).toBe(true);
-      expect((result as RawString).value).toBe(
-        "<b>safe</b>raw &amp; text<i>also safe</i>plain",
-      );
+      expect(result).toBe("<b>safe</b>raw &amp; text<i>also safe</i>plain");
     });
 
     it("should handle a direct Promise child", async () => {
       const result = await renderChild(Promise.resolve("async text"));
-      expect(result instanceof RawString).toBe(true);
-      expect((result as RawString).value).toBe("async text");
+      expect(result).toBe("async text");
     });
 
     it("should handle a direct RawString child", () => {
       const result = renderChild(raw("<b>raw</b>"));
-      expect(result instanceof RawString).toBe(true);
-      expect((result as RawString).value).toBe("<b>raw</b>");
+      expect(result).toBe("<b>raw</b>");
     });
 
-    it("should handle a plain string child", () => {
-      const result = renderChild("hello");
-      expect(typeof result).toBe("string");
-      expect(result).toBe("hello");
+    it("should escape a plain string child", () => {
+      expect(renderChild("hello")).toBe("hello");
+      expect(renderChild("<b>")).toBe("&lt;b&gt;");
     });
 
     it("should handle a number child", () => {
-      const result = renderChild(42);
-      expect(typeof result).toBe("string");
-      expect(result).toBe("42");
+      expect(renderChild(42)).toBe("42");
     });
 
     it("should handle an empty array", () => {
-      const result = renderChild([]);
-      expect(result instanceof RawString).toBe(true);
-      expect((result as RawString).value).toBe("");
+      expect(renderChild([])).toBe("");
     });
 
     it("should handle a fully synchronous array", () => {
-      const result = renderChild(["a", "b", new RawString("<c>")]);
-      expect(result instanceof RawString).toBe(true);
-      expect((result as RawString).value).toBe("ab<c>");
+      expect(renderChild(["a", "b", new RawString("<c>")])).toBe("ab<c>");
     });
 
     it("should handle array with null/undefined/boolean values", () => {
-      const result = renderChild(["a", null, undefined, false, true, "b"]);
-      expect(result instanceof RawString).toBe(true);
-      expect((result as RawString).value).toBe("ab");
+      expect(renderChild(["a", null, undefined, false, true, "b"])).toBe("ab");
     });
 
     it("should handle deeply nested promises in array", async () => {
       const result = await renderChild([
         Promise.resolve(Promise.resolve("deep")),
       ]);
-      expect((result as RawString).value).toBe("deep");
+      expect(result).toBe("deep");
     });
   });
 
@@ -265,6 +290,13 @@ describe("html utilities", () => {
 
     it("should block tag names with angle brackets", () => {
       expect((renderElement("<script>", {}, []) as RawString).value).toBe("");
+    });
+
+    it("should supports nested renderElement", () => {
+      expect(
+        (renderElement("div", {}, [renderElement("span", {}, [])]) as RawString)
+          .value,
+      ).toBe("<div><span></span></div>");
     });
   });
 

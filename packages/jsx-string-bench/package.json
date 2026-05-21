@@ -12,13 +12,13 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/react": "catalog:",
-    "@types/react-dom": "^18",
-    "hono": "latest",
+    "@types/react-dom": "^19",
+    "hono": "^4",
     "mitata": "^1",
     "preact": "^10",
     "preact-render-to-string": "^6",
-    "react": "^18",
-    "react-dom": "^18",
+    "react": "^19",
+    "react-dom": "^19",
     "typescript": "catalog:"
   }
 }

@@ -1,8 +1,6 @@
 import type { Component, JSXNode, HTMLAttributes } from "./core/types.js";
-import { escapeContent } from "./utils/escape.js";
 import {
   isRawString,
-  raw,
   renderAttribute,
   renderChild,
   renderElement,
@@ -12,6 +10,10 @@ import {
 
 export type { JSX } from "./core/types.js";
 
+/**
+ * Standard JSX Transform function.
+ * Handles both functional components (sync/async) and standard HTML elements.
+ */
 export function jsx<P extends {} = {}>(
   tag: string | Component<P>,
   props: P,
@@ -31,10 +33,9 @@ export function jsx<P extends {} = {}>(
       ? { ...p, children: childProp }
       : p;
     const result = renderChild(tag(componentProps));
-    if (result instanceof Promise || isRawString(result)) {
-      return result as RenderResult;
-    }
-    return raw(escapeContent(String(result)));
+    return typeof result === "string"
+      ? new RawString(result)
+      : result.then((s) => new RawString(s));
   }
 
   return renderElement(tag, p as HTMLAttributes, childProp as JSXNode);
@@ -43,6 +44,25 @@ export function jsx<P extends {} = {}>(
 export const jsxs: typeof jsx = jsx;
 export const jsxDEV: typeof jsx = jsx;
 
+/**
+ * JSX Fragment — groups children without wrapping them in a DOM element.
+ *
+ * Use the shorthand `<>...</>` syntax in JSX; the runtime resolves it to this
+ * function. Returns its children unchanged, so they are flattened into the
+ * parent element's content during rendering.
+ *
+ * @example
+ * ```tsx
+ * const List = () => (
+ * <>
+ * <li>one</li>
+ * <li>two</li>
+ * </>
+ * );
+ * await renderToString(<ul><List /></ul>);
+ * // => "<ul><li>one</li><li>two</li></ul>"
+ * ```
+ */
 export function Fragment({
   children,
 }: {
@@ -80,13 +100,14 @@ export function jsxAttr(
  * - an escaped string for primitives,
  * - an array of escaped children (mirrors the JSX child-array shape),
  * - a `Promise` resolving to one of the above for async values — `jsxTemplate`
- *   detects it and awaits before concatenation.
+ * detects it and awaits before concatenation.
  */
 export function jsxEscape(value: unknown): unknown {
   if (value == null || value === false || value === true || value === "")
     return "";
   if (isRawString(value)) return value;
   if (value instanceof Promise) return value.then(jsxEscape);
+
   if (Array.isArray(value)) {
     let hasAsync = false;
     for (let i = 0; i < value.length; i++) {
@@ -104,7 +125,7 @@ export function jsxEscape(value: unknown): unknown {
     }
     return Promise.all(value.map(jsxEscape));
   }
-  return escapeContent(String(value));
+  return renderChild(value as JSXNode);
 }
 
 /**
@@ -134,6 +155,9 @@ export function jsxTemplate(
   );
 }
 
+/**
+ * Internal helper to join template strings and flattened expressions.
+ */
 function joinTemplate(templates: ArrayLike<string>, exprs: unknown[]): string {
   let out = templates[0] ?? "";
   for (let i = 0; i < exprs.length; i++) {
@@ -142,6 +166,9 @@ function joinTemplate(templates: ArrayLike<string>, exprs: unknown[]): string {
   return out;
 }
 
+/**
+ * Internal helper to flatten and stringify structural values (arrays, RawStrings).
+ */
 function flattenExpr(value: unknown): string {
   if (value == null || value === false || value === true) return "";
   if (isRawString(value)) return value.value;
