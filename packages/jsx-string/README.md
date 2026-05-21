@@ -47,6 +47,50 @@ esbuild: {
 
 > TypeScript users with `@types/react` installed get enhanced attribute autocomplete for free. It is not required.
 
+### Cloudflare Workers
+
+`@cjean-fr/jsx-string` works on Cloudflare Workers, including async components and `withScope` / `useContext`. The `nodejs_compat_v2` compatibility flag is required to enable `AsyncLocalStorage`.
+
+`wrangler.toml`:
+
+```toml
+name = "my-worker"
+main = "src/index.tsx"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat_v2"]
+```
+
+`tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@cjean-fr/jsx-string",
+    "types": ["@cloudflare/workers-types"]
+  }
+}
+```
+
+`src/index.tsx`:
+
+```tsx
+import { renderToString } from "@cjean-fr/jsx-string";
+
+/** @jsxImportSource @cjean-fr/jsx-string */
+
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const html = await renderToString(<h1>Hello from CF Workers</h1>);
+    return new Response("<!doctype html>" + html, {
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+  },
+} satisfies ExportedHandler;
+```
+
+> **Note:** `nodejs_compat` (v1) has a [known issue](https://github.com/cloudflare/workers-sdk/issues) with `node:async_hooks` resolution in Wrangler 4.x. Use `nodejs_compat_v2` instead.
+
 ### Deno (`jsx: "precompile"`)
 
 Deno ships a JSX transform that analyses your tree statically and bakes the static HTML into template strings at compile time — [7-20x faster](https://docs.deno.com/runtime/reference/jsx/) than the standard transform on the server side. `@cjean-fr/jsx-string` exports the `jsxTemplate` / `jsxAttr` / `jsxEscape` runtime functions Deno's compiler emits, so you can opt in by adding to `deno.json`:
