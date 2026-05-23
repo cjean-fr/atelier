@@ -182,6 +182,20 @@ describe("html utilities", () => {
       expect(result).toContain('class="static-class"');
       expect(result).toContain('title="async-title"');
     });
+
+    it("should enforce URL safety on a Promise-valued URL attribute", async () => {
+      const result = await renderAttributes({
+        href: Promise.resolve("javascript:alert(1)") as any,
+      });
+      expect(result).toBe(' href="#blocked"');
+    });
+
+    it("should accept a Promise<CSSProperties> as style", async () => {
+      const result = await renderAttributes({
+        style: Promise.resolve({ color: "red", marginTop: "4px" }) as any,
+      });
+      expect(result).toBe(' style="color:red;margin-top:4px"');
+    });
   });
 
   describe("renderStyle", () => {

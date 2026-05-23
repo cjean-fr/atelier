@@ -32,6 +32,7 @@ export const TurboAdapter: IslandAdapter = {
   ),
 };
 
+// https://github.com/WICG/declarative-partial-updates
 export const NativeAdapter: IslandAdapter = {
   Placeholder: function ({ id, src, children }) {
     const open = raw(`<?start name="${id}">`);
