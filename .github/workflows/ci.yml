@@ -43,3 +43,19 @@ jobs:
           test -f dist/index.d.ts || exit 1
           echo "✅ Build artifacts verified"
         working-directory: packages/jsx-string
+
+      - name: Type check jsx-string-island
+        run: bun run check
+        working-directory: packages/jsx-string-island
+
+      - name: Test jsx-string-island
+        run: bun test
+        working-directory: packages/jsx-string-island
+
+      - name: Type check eslint-plugin-jsx-string
+        run: bun run check
+        working-directory: packages/eslint-plugin-jsx-string
+
+      - name: Test eslint-plugin-jsx-string
+        run: bun test
+        working-directory: packages/eslint-plugin-jsx-string
