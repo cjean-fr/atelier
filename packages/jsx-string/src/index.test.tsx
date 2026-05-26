@@ -128,6 +128,11 @@ describe("Attribute Processing, Hardening & Sanitization", () => {
     expect(await renderToString(<img srcSet="javascript:alert(1) 1x" />)).toBe(
       '<img srcset="#blocked">',
     );
+    expect(
+      await renderToString(
+        <img srcSet="https://example.com/img.png 1x, javascript:alert(1) 2x" />,
+      ),
+    ).toBe('<img srcset="#blocked">');
   });
 
   it("should drop invalid structural attributes like spaces in naming descriptors", async () => {
