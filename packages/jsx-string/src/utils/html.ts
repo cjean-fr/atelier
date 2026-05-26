@@ -3,6 +3,7 @@ import {
   escapeContent,
   escapeAttr,
   isSafeUrl,
+  isSafeSrcset,
   isValidAttrName,
   isValidTagName,
   sanitize,
@@ -206,7 +207,9 @@ function renderAttributeSync(name: string, value: unknown): string {
     hasUpper && REGEX_HAS_UPPER.test(attrName)
       ? attrName.toLowerCase()
       : attrName;
-  if (URL_ATTRIBUTES.has(urlKey) && !isSafeUrl(str)) str = "#blocked";
+  if (urlKey === "srcset") {
+    if (!isSafeSrcset(str)) str = "#blocked";
+  } else if (URL_ATTRIBUTES.has(urlKey) && !isSafeUrl(str)) str = "#blocked";
   return `${attrName}="${escapeAttr(str)}"`;
 }
 

@@ -123,6 +123,22 @@ export const isSafeUrl = (url: string): boolean => {
   return true;
 };
 
+/**
+ * `srcset` is a comma-separated list of image candidates, not a single URL.
+ * Block if any candidate URL uses a dangerous scheme.
+ */
+export const isSafeSrcset = (srcset: string): boolean => {
+  const sanitized = sanitize(srcset).trim();
+  if (!sanitized) return true;
+
+  for (const candidate of sanitized.split(",")) {
+    const url = candidate.trimStart().split(/\s+/, 1)[0] ?? "";
+    if (!isSafeUrl(url)) return false;
+  }
+
+  return true;
+};
+
 export const isValidAttrName = (name: string): boolean => {
   return REGEX_VALID_ATTR_NAME.test(name);
 };

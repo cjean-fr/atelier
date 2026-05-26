@@ -1,6 +1,7 @@
 import {
   escapeContent,
   escapeAttr,
+  isSafeSrcset,
   isSafeUrl,
   isValidAttrName,
   sanitize,
@@ -40,6 +41,24 @@ describe("escape utilities", () => {
       expect(isSafeUrl("data:text/html,hack")).toBe(false);
       expect(isSafeUrl("java\tscript:alert(1)")).toBe(false);
       expect(isSafeUrl("java\nscript:alert(1)")).toBe(false);
+    });
+  });
+
+  describe("isSafeSrcset", () => {
+    it("should allow safe image candidate lists", () => {
+      expect(isSafeSrcset("image-1x.png 1x, image-2x.png 2x")).toBe(true);
+      expect(isSafeSrcset("data:image/png;base64,abc 1x")).toBe(true);
+    });
+
+    it("should block dangerous schemes in any candidate", () => {
+      expect(
+        isSafeSrcset("https://example.com/img.png 1x, javascript:alert(1) 2x"),
+      ).toBe(false);
+      expect(
+        isSafeSrcset(
+          "data:image/png;base64,abc 1x, data:text/html,<svg onload=alert(1)> 2x",
+        ),
+      ).toBe(false);
     });
   });
 
