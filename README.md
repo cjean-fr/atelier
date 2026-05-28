@@ -9,7 +9,7 @@ Personal collection of high-performance, type-safe tools and themes.
 | Package                                                                     | Description                                                 |
 | :-------------------------------------------------------------------------- | :---------------------------------------------------------- |
 | [`@cjean-fr/jsx-string`](./packages/jsx-string)                             | High-performance, secure JSX-to-HTML string renderer.       |
-| [`@cjean-fr/jsx-string-island`](./packages/jsx-string-island)                 | Async streaming and defer plugin for jsx-string.            |
+| [`@cjean-fr/jsx-flow`](./packages/jsx-flow)                 | Fragment streaming and DOM patch delivery plugin for jsx-string. Adds `<Island>`, `<Patch>`, and `enqueue` with Turbo Streams, HTMX, and Native adapter support. |
 | [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for secure and valid jsx-string usage.         |
 
 ### Other Tools
