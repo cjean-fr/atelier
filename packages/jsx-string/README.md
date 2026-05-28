@@ -158,7 +158,7 @@ import { raw } from "@cjean-fr/jsx-string";
 - Existing React-component ecosystems (MUI, Radix, Tanstack Query…) — they need React's runtime.
 - Next.js App Router / RSC — jsx-string isn't RSC-aware.
 
-For streaming and islands, see [`@cjean-fr/jsx-string-island`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string-island) (early / v0.1.0).
+For streaming and DOM patch delivery, see [`@cjean-fr/jsx-flow`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-flow) — adds `<Island>`, `<Patch>`, `enqueue`, and adapter support (Turbo Streams, HTMX, Native).
 
 ## License
 

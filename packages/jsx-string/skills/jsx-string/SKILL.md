@@ -50,7 +50,10 @@ Need to render JSX to HTML?
 │
 ├─ Shared data across the tree? → context() + withScope() + setContext() / useContext()
 │
-└─ Streaming / client-side hydration? → @cjean-fr/jsx-string-island
+└─ Streaming / DOM patches / islands? → @cjean-fr/jsx-flow
+      ├─ <Island> — deferred render with placeholder (streaming or static)
+      ├─ <Patch>  — push to an existing DOM target, no placeholder
+      └─ enqueue  — imperative API for plugins (via useContext(Fragments))
 ```
 
 ## Core API
