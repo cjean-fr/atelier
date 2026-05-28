@@ -37,10 +37,22 @@ export async function renderToReadableStream(
       return new ReadableStream<string>({
         async start(controller) {
           const shell = await renderToString(node());
-          controller.enqueue(`${shell}\n`);
-          await streamIslands(collected, adapter, (_id, html) => {
-            controller.enqueue(`${html}\n`);
-          });
+
+          if (collected.size === 0) {
+            controller.enqueue(`${shell}\n`);
+          } else {
+            // Defer closing tags so island chunks land inside the document
+            const match = shell.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
+            const closing = match?.[1] ?? "";
+            const body = closing ? shell.slice(0, -closing.length) : shell;
+
+            controller.enqueue(`${body}\n`);
+            await streamIslands(collected, adapter, (_id, html) => {
+              controller.enqueue(`${html}\n`);
+            });
+            controller.enqueue(`${closing}\n`);
+          }
+
           controller.close();
         },
       });

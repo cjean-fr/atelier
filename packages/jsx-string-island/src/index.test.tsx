@@ -6,6 +6,7 @@ import {
   TurboAdapter,
   HtmxAdapter,
   Islands,
+  renderToReadableStream,
 } from "./index.js";
 import { withScope, renderToString, useContext } from "@cjean-fr/jsx-string";
 import { describe, it, expect } from "bun:test";
@@ -107,6 +108,51 @@ describe("streamIslands", () => {
 
     expect(results.length).toBe(1);
     expect(results[0]![0]).toBe("good");
+  });
+});
+
+describe("renderToReadableStream", () => {
+  async function collectChunks(stream: ReadableStream<string>): Promise<string[]> {
+    const chunks: string[] = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    return chunks;
+  }
+
+  it("should send </html> before island chunks", async () => {
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <Island fallback={<div>loading...</div>}>
+              {() => <span>content</span>}
+            </Island>
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const chunks = await collectChunks(stream);
+    const htmlCloseIndex = chunks.findIndex((c) => c.includes("</html>"));
+    const islandIndex = chunks.findIndex((c) => c.includes("turbo-stream"));
+    expect(htmlCloseIndex).toBeGreaterThan(-1);
+    expect(islandIndex).toBeGreaterThan(-1);
+    expect(islandIndex).toBeLessThan(htmlCloseIndex);
+  });
+
+  it("should send a single chunk when there are no islands", async () => {
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <p>static</p>
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const chunks = await collectChunks(stream);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toContain("</html>");
   });
 });
 
