@@ -1,4 +1,5 @@
 import type { CSSProperties, JSXNode, HTMLAttributes } from "../core/types.js";
+import { RawString } from "../core/types.js";
 import {
   escapeContent,
   escapeAttr,
@@ -10,6 +11,8 @@ import {
   URL_ATTRIBUTES,
 } from "./escape.js";
 import { VOID_ELEMENTS } from "./void-elements.js";
+
+export { RawString, raw, type RenderResult } from "../core/types.js";
 
 const REGEX_CAMEL_TO_KEBAB = /[A-Z]/g;
 const REGEX_EVENT_HANDLER = /^on[a-z]/i;
@@ -55,56 +58,6 @@ const isSafeCssValue = (value: string): boolean => {
   return true;
 };
 
-export class RawString {
-  readonly value: string;
-  constructor(value: string) {
-    this.value = value;
-  }
-  toString(): string {
-    return this.value;
-  }
-}
-
-export function isRawString(value: unknown): value is RawString {
-  return value instanceof RawString;
-}
-
-/**
- * Mark an HTML string as trusted: it will be rendered verbatim without HTML
- * escaping. Use this for HTML you generated yourself or from a source you
- * fully trust — typically a Markdown renderer's output or a templating helper.
- *
- * **Common mistake — `raw()` is *not* for rendering user text.** If you have
- * a string and just want it to appear on the page (with `<`, `>`, `&`
- * displayed as characters), embed it directly — the default behavior already
- * HTML-escapes for you:
- *
- * ```tsx
- * <p>{userText}</p>   // ✅ safe — `<`/`>`/`&` shown as text
- * <p>{raw(userText)}</p>  // ❌ XSS if userText contains <script>...
- * ```
- *
- * ⚠️ **For untrusted HTML that must render *as HTML*** (e.g. forum posts
- * that allow basic formatting), escaping alone is not enough — you need an
- * HTML *sanitizer* (a different tool: it strips dangerous tags/attrs
- * structurally, instead of encoding them). Use
- * [`DOMPurify`](https://github.com/cure53/DOMPurify) or
- * [`sanitize-html`](https://github.com/apostrophecms/sanitize-html) and pass
- * their output to `raw()`.
- *
- * @example
- * ```tsx
- * import { raw } from "@cjean-fr/jsx-string";
- *
- * // Trusted source: server-side Markdown renderer.
- * const html = await renderMarkdown(post.body);
- * return <article>{raw(html)}</article>;
- * ```
- */
-export const raw = (value: string): RawString => new RawString(value);
-
-export type RenderResult = RawString | Promise<RawString>;
-
 /**
  * Convert a props object into an HTML attribute string.
  *
@@ -116,12 +69,10 @@ export function renderAttributes(
 ): string | Promise<string> {
   if (!props) return "";
 
-  const keys = Object.keys(props);
   let out = "";
   let pending: Promise<string>[] | null = null;
 
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i]!;
+  for (const key in props) {
     const r = renderAttribute(key, (props as any)[key]);
     if (typeof r === "string") {
       if (r) out += ` ${r}`;
@@ -233,17 +184,19 @@ export function renderAttribute(
  * @returns A semicolon-delimited CSS declaration string (e.g., `color:red;margin-top:1px`)
  */
 export function renderStyle(style: CSSProperties): string {
-  const parts: string[] = [];
-  for (const [key, value] of Object.entries(style)) {
+  let out = "";
+  for (const key in style) {
+    const value = style[key];
     if (value == null) continue;
     const prop = key.startsWith("--")
       ? key
       : key.replace(REGEX_CAMEL_TO_KEBAB, "-$&").toLowerCase();
     const str = String(value);
     if (!isSafeCssValue(str)) continue;
-    parts.push(`${prop}:${str}`);
+    if (out.length > 0) out += ";";
+    out += `${prop}:${str}`;
   }
-  return parts.join(";");
+  return out;
 }
 
 function renderArrayAsync(
@@ -252,9 +205,11 @@ function renderArrayAsync(
   prefix: string,
   pending: Promise<string>,
 ): Promise<string> {
-  const tail: (string | Promise<string>)[] = [pending];
-  for (let i = startIndex + 1; i < arr.length; i++) {
-    tail.push(renderChild(arr[i]));
+  const remaining = arr.length - startIndex;
+  const tail: (string | Promise<string>)[] = new Array(remaining);
+  tail[0] = pending;
+  for (let i = 1; i < remaining; i++) {
+    tail[i] = renderChild(arr[startIndex + i]);
   }
   return Promise.all(tail).then((parts) => {
     let out = prefix;
@@ -272,20 +227,22 @@ function renderArrayAsync(
 export function renderChild(child: JSXNode): string | Promise<string> {
   if (child == null || child === true || child === false) return "";
   if (typeof child === "string") return escapeContent(child);
+  if (typeof child === "number") return String(child);
   if (child instanceof RawString) return child.value;
   if (Array.isArray(child)) {
     let out = "";
     for (let i = 0; i < child.length; i++) {
       const c = child[i];
-      // Inline the two dominant cases (RawString from nested `jsx()` calls,
-      // primitive strings from JSX text nodes) to avoid the per-item recursive
-      // call overhead — the typical loop is a list of element-shaped children.
       if (c instanceof RawString) {
         out += c.value;
         continue;
       }
       if (typeof c === "string") {
         out += escapeContent(c);
+        continue;
+      }
+      if (typeof c === "number") {
+        out += c;
         continue;
       }
       if (c == null || c === true || c === false) continue;

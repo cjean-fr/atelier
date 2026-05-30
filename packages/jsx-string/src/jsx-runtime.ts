@@ -1,12 +1,6 @@
 import type { Component, JSXNode, HTMLAttributes } from "./core/types.js";
-import {
-  isRawString,
-  renderAttribute,
-  renderChild,
-  renderElement,
-  RawString,
-  type RenderResult,
-} from "./utils/html.js";
+import { RawString, type RenderResult } from "./core/types.js";
+import { renderAttribute, renderChild, renderElement } from "./utils/html.js";
 
 export type { JSX } from "./core/types.js";
 
@@ -42,7 +36,31 @@ export function jsx<P extends {} = {}>(
 }
 
 export const jsxs: typeof jsx = jsx;
-export const jsxDEV: typeof jsx = jsx;
+
+/**
+ * Automatic-runtime dev variant.
+ *
+ * Per the JSX automatic dev runtime spec, the signature is
+ * `(type, props, key, isStaticChildren, source, self)` — the four trailing
+ * arguments are diagnostics, NOT children. Children always live in
+ * `props.children`.
+ *
+ * Aliasing `jsxDEV` to `jsx` (which accepts variadic positional children for
+ * classic-transform compatibility) caused `source` — an object like
+ * `{ fileName, lineNumber, columnNumber }` — to be treated as a child and
+ * rendered as `[object Object]` inside any element whose JSX had no children
+ * (e.g. `<script src="…"></script>`).
+ */
+export function jsxDEV<P extends {} = {}>(
+  tag: string | Component<P>,
+  props: P,
+  _key?: unknown,
+  _isStaticChildren?: boolean,
+  _source?: { fileName?: string; lineNumber?: number; columnNumber?: number },
+  _self?: unknown,
+): RenderResult {
+  return jsx(tag, props);
+}
 
 /**
  * JSX Fragment — groups children without wrapping them in a DOM element.
@@ -105,7 +123,7 @@ export function jsxAttr(
 export function jsxEscape(value: unknown): unknown {
   if (value == null || value === false || value === true || value === "")
     return "";
-  if (isRawString(value)) return value;
+  if (value instanceof RawString) return value;
   if (value instanceof Promise) return value.then(jsxEscape);
 
   if (Array.isArray(value)) {
@@ -171,7 +189,7 @@ function joinTemplate(templates: ArrayLike<string>, exprs: unknown[]): string {
  */
 function flattenExpr(value: unknown): string {
   if (value == null || value === false || value === true) return "";
-  if (isRawString(value)) return value.value;
+  if (value instanceof RawString) return value.value;
   if (Array.isArray(value)) {
     let out = "";
     for (let i = 0; i < value.length; i++) out += flattenExpr(value[i]);

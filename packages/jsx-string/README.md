@@ -127,6 +127,25 @@ import { raw } from "@cjean-fr/jsx-string";
 <div dangerouslySetInnerHTML={{ __html: "<b>trusted</b>" }} />
 ```
 
+## Examples
+
+Self-contained runnable scripts under [`examples/`](./examples):
+
+| File | Demonstrates |
+| --- | --- |
+| `hello.tsx` | Minimal `renderToString` of static JSX |
+| `async-component.tsx` | An `async` component awaiting a fetch inside the tree |
+| `context.tsx` | `context()` + `setContext()` + `useContext()` inside `withScope()` |
+| `concurrent.tsx` | Two parallel renders with isolated context scopes |
+| `server.tsx` | A `Bun.serve` HTTP handler rendering JSX per request |
+
+Each example runs standalone:
+
+```bash
+bun examples/hello.tsx
+bun examples/server.tsx   # then: curl 'http://localhost:3000/?name=World'
+```
+
 ## Design notes
 
 - **`class` and `className` are kept separate.** Setting both on the same element emits two `class="…"` attributes — no merge. Use a single prop. This matches Deno's `precompile` JSX transform contract, where each attribute is rendered in isolation.

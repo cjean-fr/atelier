@@ -4,20 +4,21 @@
  * @module
  */
 
-export { Island } from "./components/Island.js";
+export { Deferred } from "./components/Deferred.js";
 export { Patch } from "./components/Patch.js";
 export { assertFragmentId } from "./fragmentId.js";
 export type { PatchProps } from "./components/Patch.js";
 export { initFlow, Flow } from "./context.js";
-export type { ChannelType, FragmentEffect, FlowContext, Config } from "./context.js";
+export type { FragmentEffect, FlowContext, Config } from "./context.js";
 export { streamFragments } from "./streamFragments.js";
 export { renderToReadableStream, renderToStatic } from "./render.js";
-export type { StaticContext } from "./render.js";
+export type { StaticContext, StaticOptions } from "./render.js";
 export {
   type MergeType,
   type PatchAdapter,
+  NativeAdapter,
   TurboAdapter,
   HtmxAdapter,
-  NativeAdapter,
   WebPlatformAdapter,
+  EsiAdapter,
 } from "./adapters.js";
