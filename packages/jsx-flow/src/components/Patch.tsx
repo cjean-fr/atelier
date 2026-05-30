@@ -12,7 +12,7 @@ export interface PatchProps {
 
 /** Pushes a fragment to an existing DOM target without rendering a placeholder. */
 export function Patch({ target, merge = "replace", children }: PatchProps): any {
-  const { enqueue } = useContext(Flow);
-  enqueue("fragment", target, children, merge);
+  const { patch } = useContext(Flow);
+  patch(target, children, merge);
   return null;
 }

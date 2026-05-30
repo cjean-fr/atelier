@@ -1,9 +1,18 @@
 import type { JSXNode } from "./core/types.js";
 import { renderChild } from "./utils/html.js";
 
-export { raw } from "./utils/html.js";
+export { raw } from "./core/types.js";
 export { Fragment } from "./jsx-runtime.js";
-export * from "./core/types.js";
+export type {
+  CSSProperties,
+  StringEventHandlers,
+  ToStatic,
+  HTMLAttributes,
+  SVGAttributes,
+  JSXNode,
+  Component,
+  JSX,
+} from "./core/types.js";
 export {
   context,
   setContext,

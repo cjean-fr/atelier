@@ -48,10 +48,6 @@ jobs:
         run: bun run check
         working-directory: packages/jsx-string-island
 
-      - name: Test jsx-string-island
-        run: bun test
-        working-directory: packages/jsx-string-island
-
       - name: Type check eslint-plugin-jsx-string
         run: bun run check
         working-directory: packages/eslint-plugin-jsx-string
@@ -59,3 +55,15 @@ jobs:
       - name: Test eslint-plugin-jsx-string
         run: bun test
         working-directory: packages/eslint-plugin-jsx-string
+
+      - name: Type check jsx-flow
+        run: bun run check
+        working-directory: packages/jsx-flow
+
+      - name: Test jsx-flow
+        run: bun test
+        working-directory: packages/jsx-flow
+
+      - name: Build jsx-flow
+        run: bun run build
+        working-directory: packages/jsx-flow

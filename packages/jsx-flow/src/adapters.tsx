@@ -53,7 +53,7 @@ export const WebPlatformAdapter: PatchAdapter = {
   Placeholder: function ({ id, src, children }) {
     // <?start> and <?end> are processing instructions that JSX syntax cannot express
     // (tag names starting with "?" are rejected by the parser). They are injected via
-    // raw() — id is guaranteed safe by assertFragmentId in Island and Patch.
+    // raw() — id is guaranteed safe by assertFragmentId in Deferred and Patch.
     const open = raw(`<?start name="${id}">`);
     const close = raw(`<?end>`);
     if (src) {
@@ -115,6 +115,45 @@ export const NativeAdapter: PatchAdapter = {
   },
 
   Frame: ({ id, children }) => <template htmlFor={id}>{children}</template>,
+};
+
+// ESI (Edge Side Includes) — CDN-level composition via esi:include / esi:inline (ESI 1.0).
+// Primary use case: SSG where each fragment is a standalone URL fetched by the CDN.
+// The shell contains <esi:include src="..."> tags; the CDN fetches, caches and assembles
+// them independently with per-fragment TTL.
+//
+// Streaming note: Patch emits <esi:inline fetchable="yes"> which some CDN implementations
+// (Varnish, Fastly) can serve as internal subrequests. Without a CDN ESI processor,
+// esi:inline tags are inert in the browser.
+//
+// Only supports "replace" — ESI has no native insert/append/prepend semantics.
+export const EsiAdapter: PatchAdapter = {
+  Placeholder: ({ src, children }) => {
+    if (src) {
+      // id is safe (validated by assertFragmentId), src may contain & or "
+      const safeSrc = src.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+      return raw(`<esi:include src="${safeSrc}" />`);
+    }
+    // No src (streaming mode): ESI requires a URL — render fallback inline.
+    return children;
+  },
+
+  Patch: ({ id, children, merge }) => {
+    if (merge !== "replace") {
+      throw new Error(
+        `EsiAdapter only supports "replace" — ESI has no insert/append/prepend semantics.`,
+      );
+    }
+    return [
+      raw(`<esi:inline name="${id}" fetchable="yes">`),
+      children,
+      raw(`</esi:inline>`),
+    ] as JSXNode;
+  },
+
+  // Fragment file served at the URL referenced by esi:include.
+  // Plain HTML — the CDN inserts the response body in place of the include tag.
+  Frame: ({ children }) => children,
 };
 
 export const HtmxAdapter: PatchAdapter = {

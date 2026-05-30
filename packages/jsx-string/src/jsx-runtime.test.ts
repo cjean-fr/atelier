@@ -3,6 +3,7 @@ import { renderToString } from "./index.js";
 import * as JSXRuntime from "./jsx-runtime.js";
 import {
   jsx,
+  jsxDEV,
   jsxAttr,
   jsxEscape,
   jsxTemplate,
@@ -14,10 +15,41 @@ describe("JSX Runtime Export Contract", () => {
   it("should export standard react-like transform factories and precompile trios", () => {
     expect(typeof JSXRuntime.jsx).toBe("function");
     expect(typeof JSXRuntime.jsxs).toBe("function");
+    expect(typeof JSXRuntime.jsxDEV).toBe("function");
     expect(JSXRuntime.Fragment).toBeDefined();
     expect(typeof JSXRuntime.jsxTemplate).toBe("function");
     expect(typeof JSXRuntime.jsxAttr).toBe("function");
     expect(typeof JSXRuntime.jsxEscape).toBe("function");
+  });
+});
+
+describe("Automatic JSX Dev Runtime", () => {
+  it("ignores key/isStaticChildren/source/self per the spec — never renders them as children", () => {
+    const source = { fileName: "Layout.tsx", lineNumber: 18, columnNumber: 9 };
+    const el = jsxDEV(
+      "script",
+      { type: "module", src: "/assets/client.js" },
+      undefined,
+      false,
+      source,
+      null,
+    );
+    expect(el.toString()).toBe(
+      '<script type="module" src="/assets/client.js"></script>',
+    );
+    expect(el.toString()).not.toContain("[object Object]");
+  });
+
+  it("reads children from props.children, not from positional args", () => {
+    const el = jsxDEV(
+      "div",
+      { children: "hello" },
+      undefined,
+      false,
+      { fileName: "x", lineNumber: 1, columnNumber: 1 },
+      null,
+    );
+    expect(el.toString()).toBe("<div>hello</div>");
   });
 });
 

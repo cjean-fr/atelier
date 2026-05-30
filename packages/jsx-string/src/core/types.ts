@@ -1,5 +1,3 @@
-import type { RawString } from "../utils/html.js";
-
 // Augment React's types when @types/react is installed,
 // so jsx-string attributes (class, string event handlers) are accepted there too.
 declare module "react" {
@@ -12,6 +10,52 @@ declare module "react" {
     [key: `on${string}`]: any;
   }
 }
+
+export class RawString {
+  readonly value: string;
+  constructor(value: string) {
+    this.value = value;
+  }
+  toString(): string {
+    return this.value;
+  }
+}
+
+/**
+ * Mark an HTML string as trusted: it will be rendered verbatim without HTML
+ * escaping. Use this for HTML you generated yourself or from a source you
+ * fully trust — typically a Markdown renderer's output or a templating helper.
+ *
+ * **Common mistake — `raw()` is *not* for rendering user text.** If you have
+ * a string and just want it to appear on the page (with `<`, `>`, `&`
+ * displayed as characters), embed it directly — the default behavior already
+ * HTML-escapes for you:
+ *
+ * ```tsx
+ * <p>{userText}</p>   // ✅ safe — `<`/`>`/`&` shown as text
+ * <p>{raw(userText)}</p>  // ❌ XSS if userText contains <script>...
+ * ```
+ *
+ * ⚠️ **For untrusted HTML that must render *as HTML*** (e.g. forum posts
+ * that allow basic formatting), escaping alone is not enough — you need an
+ * HTML *sanitizer* (a different tool: it strips dangerous tags/attrs
+ * structurally, instead of encoding them). Use
+ * [`DOMPurify`](https://github.com/cure53/DOMPurify) or
+ * [`sanitize-html`](https://github.com/apostrophecms/sanitize-html) and pass
+ * their output to `raw()`.
+ *
+ * @example
+ * ```tsx
+ * import { raw } from "@cjean-fr/jsx-string";
+ *
+ * // Trusted source: server-side Markdown renderer.
+ * const html = await renderMarkdown(post.body);
+ * return <article>{raw(html)}</article>;
+ * ```
+ */
+export const raw = (value: string): RawString => new RawString(value);
+
+export type RenderResult = RawString | Promise<RawString>;
 
 interface JSXElement {
   toString(): string;
