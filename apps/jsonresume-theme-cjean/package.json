@@ -4,10 +4,17 @@
   "description": "A clean, professional, and print-optimized JSON Resume theme built with Tailwind CSS and TypeScript.",
   "author": "Christophe Jean",
   "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/apps/jsonresume-theme-cjean#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cjean-fr/atelier.git",
-    "directory": "packages/jsonresume-theme-cjean"
+    "directory": "apps/jsonresume-theme-cjean"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "keywords": [
     "jsonresume-theme",
@@ -37,7 +44,7 @@
     "typescript-eslint": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
-    "@cjean-fr/eslint-plugin-jsx-string": "catalog:"
+    "@cjean-fr/eslint-plugin-jsx-string": "workspace:*"
   },
   "exports": {
     ".": {

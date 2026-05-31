@@ -4,6 +4,14 @@ Personal collection of high-performance, type-safe tools and themes.
 
 ## Packages
 
+### Apps
+
+| Package                                                       | Description                                 |
+| :------------------------------------------------------------ | :------------------------------------------ |
+| [`docs`](./apps/jsonresume-theme-cjean) | Doc build based on jsx-string.  |
+| [`jsonresume-theme-cjean`](./apps/jsonresume-theme-cjean) | Modern, print-optimized JSON Resume theme.  |
+
+
 ### `jsx-string` Ecosystem
 
 | Package                                                                     | Description                                                 |
@@ -17,7 +25,6 @@ Personal collection of high-performance, type-safe tools and themes.
 | Package                                                       | Description                                 |
 | :------------------------------------------------------------ | :------------------------------------------ |
 | [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny)                 | Zero-dependency, type-safe minimalist i18n. |
-| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Modern, print-optimized JSON Resume theme.  |
 
 ## Development
 

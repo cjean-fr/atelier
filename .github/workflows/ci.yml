@@ -27,7 +27,7 @@ jobs:
           bun-version: latest
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
 
@@ -83,13 +83,13 @@ jobs:
       # --- docs ----------------------------------------------------------
       - name: Type check docs
         run: bun run check
-        working-directory: packages/docs
+        working-directory: apps/docs
       - name: Test docs
         run: bun test
-        working-directory: packages/docs
+        working-directory: apps/docs
       - name: Build docs
         run: bun run build
-        working-directory: packages/docs
+        working-directory: apps/docs
 
       # --- Integration: jsx-string-doc built via the CLI ---------------
       # The CLI binary lives in @cjean-fr/docs and is invoked through the

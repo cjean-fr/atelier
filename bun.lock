@@ -21,7 +21,7 @@
         "typescript": "^6.0.3",
       },
     },
-    "packages/docs": {
+    "apps/docs": {
       "name": "@cjean-fr/docs",
       "version": "0.1.0",
       "bin": {
@@ -51,6 +51,29 @@
         "vite",
       ],
     },
+    "apps/jsonresume-theme-cjean": {
+      "name": "jsonresume-theme-cjean",
+      "version": "1.3.2",
+      "bin": {
+        "jsonresume-theme-cjean": "./bin/jsonresume-theme-cjean.js",
+      },
+      "devDependencies": {
+        "@cjean-fr/eslint-plugin-jsx-string": "catalog:",
+        "@cjean-fr/i18n-tiny": "workspace:*",
+        "@cjean-fr/jsx-string": "workspace:*",
+        "@tailwindcss/vite": "catalog:",
+        "@types/react": "catalog:",
+        "@typescript-eslint/eslint-plugin": "catalog:",
+        "@typescript-eslint/parser": "catalog:",
+        "eslint": "catalog:",
+        "tailwindcss": "catalog:",
+        "typescript": "catalog:",
+        "typescript-eslint": "catalog:",
+        "vite": "catalog:",
+        "vite-plugin-dts": "catalog:",
+        "zod": "catalog:",
+      },
+    },
     "packages/eslint-plugin-jsx-string": {
       "name": "@cjean-fr/eslint-plugin-jsx-string",
       "version": "0.1.0",
@@ -74,29 +97,6 @@
         "@types/bun": "catalog:",
         "bunup": "catalog:",
         "typescript": "catalog:",
-      },
-    },
-    "packages/jsonresume-theme-cjean": {
-      "name": "jsonresume-theme-cjean",
-      "version": "1.3.2",
-      "bin": {
-        "jsonresume-theme-cjean": "./bin/jsonresume-theme-cjean.js",
-      },
-      "devDependencies": {
-        "@cjean-fr/eslint-plugin-jsx-string": "catalog:",
-        "@cjean-fr/i18n-tiny": "workspace:*",
-        "@cjean-fr/jsx-string": "workspace:*",
-        "@tailwindcss/vite": "catalog:",
-        "@types/react": "catalog:",
-        "@typescript-eslint/eslint-plugin": "catalog:",
-        "@typescript-eslint/parser": "catalog:",
-        "eslint": "catalog:",
-        "tailwindcss": "catalog:",
-        "typescript": "catalog:",
-        "typescript-eslint": "catalog:",
-        "vite": "catalog:",
-        "vite-plugin-dts": "catalog:",
-        "zod": "catalog:",
       },
     },
     "packages/jsx-flow": {
@@ -191,11 +191,12 @@
     },
   },
   "catalog": {
-    "@cjean-fr/eleventy-plugin-jsx-string": "workspace:*",
+    "@cjean-fr/docs": "workspace:*",
     "@cjean-fr/eslint-plugin-jsx-string": "workspace:*",
     "@cjean-fr/i18n-tiny": "workspace:*",
     "@cjean-fr/jsx-flow": "workspace:*",
     "@cjean-fr/jsx-string": "workspace:*",
+    "@cjean-fr/jsx-vite": "workspace:*",
     "@iconify-icons/tabler": "latest",
     "@tailwindcss/vite": "latest",
     "@types/bun": "latest",
@@ -242,7 +243,7 @@
 
     "@bunup/shared": ["@bunup/shared@0.16.28", "", { "peerDependencies": { "typescript": ">=4.5.0" }, "optionalPeers": ["typescript"] }, "sha512-6xyJB5/OFYf0tLCQSRL+PrgzYlS0KabysM06cBY0Ijuk1tr5Aak8/NqzE6ifu+s6K0mstnGXQ+6DqtNlOMEazw=="],
 
-    "@cjean-fr/docs": ["@cjean-fr/docs@workspace:packages/docs"],
+    "@cjean-fr/docs": ["@cjean-fr/docs@workspace:apps/docs"],
 
     "@cjean-fr/eslint-plugin-jsx-string": ["@cjean-fr/eslint-plugin-jsx-string@workspace:packages/eslint-plugin-jsx-string"],
 
@@ -758,7 +759,7 @@
 
     "json-stable-stringify-without-jsonify": ["json-stable-stringify-without-jsonify@1.0.1", "", {}, "sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw=="],
 
-    "jsonresume-theme-cjean": ["jsonresume-theme-cjean@workspace:packages/jsonresume-theme-cjean"],
+    "jsonresume-theme-cjean": ["jsonresume-theme-cjean@workspace:apps/jsonresume-theme-cjean"],
 
     "jsx-string-doc": ["jsx-string-doc@workspace:packages/jsx-string-doc"],
 

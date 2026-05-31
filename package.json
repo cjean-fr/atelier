@@ -5,14 +5,16 @@
   "private": true,
   "workspaces": {
     "packages": [
+      "apps/*",
       "packages/*"
     ],
     "catalog": {
       "@cjean-fr/i18n-tiny": "workspace:*",
       "@cjean-fr/jsx-string": "workspace:*",
       "@cjean-fr/jsx-flow": "workspace:*",
+      "@cjean-fr/jsx-vite": "workspace:*",
+      "@cjean-fr/docs": "workspace:*",
       "@cjean-fr/eslint-plugin-jsx-string": "workspace:*",
-      "@cjean-fr/eleventy-plugin-jsx-string": "workspace:*",
       "@iconify-icons/tabler": "latest",
       "@tailwindcss/vite": "latest",
       "@types/node": "latest",
