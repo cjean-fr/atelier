@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml/badge.svg)](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@cjean-fr/jsx-string)](https://www.npmjs.com/package/@cjean-fr/jsx-string)
-[![gzip size](https://badgen.net/badgesize/gzip/https://unpkg.com/@cjean-fr/jsx-string/dist/index.js?label=gzip)](https://unpkg.com/@cjean-fr/jsx-string/dist/index.js)
+[![gzip size](https://img.badgesize.io/https://unpkg.com/@cjean-fr/jsx-string/dist/index.js?compression=gzip&label=gzip)](https://unpkg.com/@cjean-fr/jsx-string/dist/index.js)
 
 **JSX → HTML strings. Simple, async-first, designed for server-side needs.**
 

@@ -4,6 +4,24 @@
   "description": "Documentation site builder on top of @cjean-fr/jsx-string + jsx-flow + jsx-vite",
   "author": "Christophe Jean",
   "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/apps/docs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "apps/docs"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "docs",
+    "documentation",
+    "static-site",
+    "ssg",
+    "jsx",
+    "vite",
+    "starlight-alternative"
+  ],
   "type": "module",
   "types": "./dist/index.d.ts",
   "bin": {

@@ -4,6 +4,24 @@
   "description": "Vite asset integration for @cjean-fr/jsx-string projects",
   "author": "Christophe Jean",
   "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/jsx-vite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/jsx-vite"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "jsx",
+    "vite",
+    "ssr",
+    "asset",
+    "manifest",
+    "hmr"
+  ],
+  "sideEffects": false,
   "type": "module",
   "types": "./dist/index.d.ts",
   "engines": {

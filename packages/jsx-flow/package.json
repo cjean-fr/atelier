@@ -4,6 +4,25 @@
   "description": "HTML document orchestration layer for @cjean-fr/jsx-string",
   "author": "Christophe Jean",
   "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/jsx-flow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/jsx-flow"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "jsx",
+    "html",
+    "ssr",
+    "streaming",
+    "fragments",
+    "deferred",
+    "htmx",
+    "turbo"
+  ],
   "type": "module",
   "types": "./dist/index.d.ts",
   "engines": {
