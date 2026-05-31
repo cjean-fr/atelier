@@ -1,0 +1,84 @@
+{
+  "name": "@cjean-fr/build-core",
+  "version": "0.1.0",
+  "description": "Kernel for static-site builders on top of @cjean-fr/jsx-string. Shared by docs and blog distros.",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/build-core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/build-core"
+  },
+  "bugs": {
+    "url": "https://github.com/cjean-fr/atelier/issues"
+  },
+  "keywords": [
+    "static-site",
+    "ssg",
+    "build",
+    "jsx",
+    "vite",
+    "kernel"
+  ],
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./search": {
+      "types": "./dist/search/index.d.ts",
+      "default": "./dist/search/index.js"
+    },
+    "./search/builtin/client": {
+      "default": "./dist/search/builtin/client.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "default": "./dist/cli/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@cjean-fr/jsx-string": "workspace:*",
+    "@cjean-fr/jsx-flow": "workspace:*",
+    "@cjean-fr/jsx-vite": "workspace:*",
+    "gray-matter": "^4",
+    "rehype-stringify": "^10",
+    "remark-parse": "^11",
+    "remark-rehype": "^11",
+    "unified": "^11"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:"
+  },
+  "peerDependencies": {
+    "vite": "^8"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
