@@ -1,34 +1,36 @@
 # Christophe Jean - Atelier
 
-Personal collection of high-performance, type-safe tools and themes.
+Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML rendering.
 
 ## Packages
 
-### Apps
+### `jsx-string` stack
 
-| Package                                                       | Description                                 |
-| :------------------------------------------------------------ | :------------------------------------------ |
-| [`docs`](./apps/jsonresume-theme-cjean) | Doc build based on jsx-string.  |
-| [`jsonresume-theme-cjean`](./apps/jsonresume-theme-cjean) | Modern, print-optimized JSON Resume theme.  |
+| Package | Description |
+| :--- | :--- |
+| [`@cjean-fr/jsx-string`](./packages/jsx-string) | JSX-to-HTML string renderer. Zero dependencies. |
+| [`@cjean-fr/jsx-flow`](./packages/jsx-flow) | Orchestration layer for deferred fragments and DOM patching (`<Deferred>`, `<Patch>`, Turbo / HTMX / Native adapters). |
+| [`@cjean-fr/jsx-vite`](./packages/jsx-vite) | Vite asset integration — `<Asset>`, `assetUrl`, manifest resolution. |
+| [`@cjean-fr/build-core`](./packages/build-core) | SSG kernel shared by site builders: filesystem routing, markdown, TOC, sitemap, RSS, git last-modified, search adapters, CLI. |
+| [`@cjean-fr/docs`](./packages/docs) | Documentation site builder on top of the jsx-string stack. |
 
+### Other tools
 
-### `jsx-string` Ecosystem
+| Package | Description |
+| :--- | :--- |
+| [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for safe jsx-string usage. |
+| [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny) | Zero-dependency, type-safe minimalist i18n. |
+| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript). |
 
-| Package                                                                     | Description                                                 |
-| :-------------------------------------------------------------------------- | :---------------------------------------------------------- |
-| [`@cjean-fr/jsx-string`](./packages/jsx-string)                             | High-performance, secure JSX-to-HTML string renderer.       |
-| [`@cjean-fr/jsx-flow`](./packages/jsx-flow)                 | Fragment streaming and DOM patch delivery plugin for jsx-string. Adds `<Island>`, `<Patch>`, and `enqueue` with Turbo Streams, HTMX, and Native adapter support. |
-| [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for secure and valid jsx-string usage.         |
+### Apps (internal)
 
-### Other Tools
-
-| Package                                                       | Description                                 |
-| :------------------------------------------------------------ | :------------------------------------------ |
-| [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny)                 | Zero-dependency, type-safe minimalist i18n. |
+| App | Description |
+| :--- | :--- |
+| [`jsx-string-doc`](./apps/jsx-string-doc) | Documentation site for `@cjean-fr/jsx-string` — end-to-end consumer of the stack. |
 
 ## Development
 
-This is a monorepo managed with **Bun** and **Turbo**.
+Managed with **Bun workspaces** and **Turbo**.
 
 ```bash
 bun install

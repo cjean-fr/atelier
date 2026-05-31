@@ -6,6 +6,7 @@
 
 export { Deferred } from "./components/Deferred.js";
 export { Patch } from "./components/Patch.js";
+export { Slot, type SlotProps } from "./components/Slot.js";
 export { assertFragmentId } from "./fragmentId.js";
 export type { PatchProps } from "./components/Patch.js";
 export { initFlow, Flow } from "./context.js";
