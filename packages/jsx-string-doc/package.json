@@ -1,0 +1,25 @@
+{
+  "name": "jsx-string-doc",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ./node_modules/@cjean-fr/docs/bin/docs.mjs dev",
+    "build": "node ./node_modules/@cjean-fr/docs/bin/docs.mjs build",
+    "preview": "vite preview --outDir dist",
+    "test": "bun test docs-src"
+  },
+  "dependencies": {
+    "@cjean-fr/jsx-string": "workspace:*",
+    "@cjean-fr/jsx-flow": "workspace:*",
+    "@cjean-fr/jsx-vite": "workspace:*",
+    "@cjean-fr/docs": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

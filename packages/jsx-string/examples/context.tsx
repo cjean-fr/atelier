@@ -14,7 +14,7 @@ import {
 } from "@cjean-fr/jsx-string";
 
 // Define context keys once, at module level.
-const Theme = context<"light" | "dark">();
+const Theme = context<"light" | "dark">("examples:theme");
 
 function Box({ children }: { children: string }) {
   const theme = useContext(Theme);

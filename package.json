@@ -20,6 +20,7 @@
       "@types/react": "latest",
       "bunup": "latest",
       "postcss": "latest",
+      "shiki": "latest",
       "tailwindcss": "latest",
       "typescript": "latest",
       "vite": "latest",

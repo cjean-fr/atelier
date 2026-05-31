@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "npm:@cjean-fr/jsx-string"
+  },
+  "imports": {
+    "@cjean-fr/jsx-string": "npm:@cjean-fr/jsx-string"
+  }
+}

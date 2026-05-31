@@ -7,8 +7,8 @@ import {
 } from "./context.js";
 import { expect, describe, it } from "bun:test";
 
-const UserToken = context<{ name: string }>();
-const PluginToken = context<{ items: string[] }>();
+const UserToken = context<{ name: string }>("test:user");
+const PluginToken = context<{ items: string[] }>("test:plugin");
 
 describe("context", () => {
   describe("useContext / setContext", () => {
@@ -138,6 +138,51 @@ describe("context", () => {
 
         expect(useContext(PluginToken).items).toEqual(["Alice"]);
       });
+    });
+  });
+
+  describe("context(key) — cross-instance sharing", () => {
+    it("same key returns the same Symbol within one instance", () => {
+      const a = context<string>("test:demo");
+      const b = context<string>("test:demo");
+      expect(a).toBe(b);
+    });
+
+    it("different keys return different Symbols", () => {
+      const a = context<string>("test:x");
+      const b = context<string>("test:y");
+      expect(a).not.toBe(b);
+    });
+
+    it("key uses Symbol.for so it survives across instances", () => {
+      const Shared = context<string>("test:shared");
+      // Simulate a "second instance" by retrieving the same global symbol.
+      const sameViaRegistry = Symbol.for("@cjean-fr/jsx-string.context.test:shared");
+      expect(Shared).toBe(sameViaRegistry as unknown as typeof Shared);
+    });
+
+    it("rejects empty or non-string keys", () => {
+      expect(() => context<string>("")).toThrow(/non-empty string key/);
+      // @ts-expect-error — intentionally wrong type at runtime
+      expect(() => context<string>(123)).toThrow(/non-empty string key/);
+      // @ts-expect-error — intentionally wrong type at runtime
+      expect(() => context<string>()).toThrow(/non-empty string key/);
+    });
+
+    it("works with setContext/useContext inside a scope", async () => {
+      const Shared = context<{ value: number }>("test:in-scope");
+      await withScope(() => {
+        setContext(Shared, { value: 42 });
+        expect(useContext(Shared).value).toBe(42);
+      });
+    });
+  });
+
+  describe("AsyncLocalStorage singleton", () => {
+    it("storage is reachable via globalThis Symbol.for key", () => {
+      const key = Symbol.for("@cjean-fr/jsx-string.storage");
+      const g = globalThis as unknown as Record<symbol, unknown>;
+      expect(g[key]).toBeDefined();
     });
   });
 });

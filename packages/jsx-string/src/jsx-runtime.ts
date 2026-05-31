@@ -5,51 +5,44 @@ import { renderAttribute, renderChild, renderElement } from "./utils/html.js";
 export type { JSX } from "./core/types.js";
 
 /**
- * Standard JSX Transform function.
- * Handles both functional components (sync/async) and standard HTML elements.
+ * Automatic JSX Transform — production variant.
+ *
+ * Per the JSX automatic runtime spec, signature is `(type, props, key?)`. The
+ * `key` is diagnostic, NOT a child. Children always live in `props.children`.
+ *
+ * Older versions of this package accepted variadic positional children for
+ * classic-transform compatibility. That overload was removed in v2.0 because
+ * it silently mis-rendered any element with a `key` and no children — the key
+ * string was treated as the child. If you need classic-style `jsx(tag, props,
+ * child1, child2)`, pass an explicit `children` array on `props` instead.
  */
 export function jsx<P extends {} = {}>(
   tag: string | Component<P>,
   props: P,
-  ...childrenArgs: any[]
+  _key?: unknown,
 ): RenderResult {
   const p = (props ?? {}) as P & { children?: any };
 
-  const hasArgChildren = childrenArgs.length > 0 && p.children === undefined;
-  const childProp = hasArgChildren
-    ? childrenArgs.length === 1
-      ? childrenArgs[0]
-      : childrenArgs
-    : p.children;
-
   if (typeof tag === "function") {
-    const componentProps: P & { children?: any } = hasArgChildren
-      ? { ...p, children: childProp }
-      : p;
-    const result = renderChild(tag(componentProps));
+    const result = renderChild(tag(p));
     return typeof result === "string"
       ? new RawString(result)
       : result.then((s) => new RawString(s));
   }
 
-  return renderElement(tag, p as HTMLAttributes, childProp as JSXNode);
+  return renderElement(tag, p as HTMLAttributes, p.children as JSXNode);
 }
 
+/**
+ * Automatic JSX Transform — multi-children variant. Same shape as `jsx`;
+ * emitted by transforms when children are statically known to be an array.
+ */
 export const jsxs: typeof jsx = jsx;
 
 /**
- * Automatic-runtime dev variant.
- *
- * Per the JSX automatic dev runtime spec, the signature is
- * `(type, props, key, isStaticChildren, source, self)` — the four trailing
- * arguments are diagnostics, NOT children. Children always live in
- * `props.children`.
- *
- * Aliasing `jsxDEV` to `jsx` (which accepts variadic positional children for
- * classic-transform compatibility) caused `source` — an object like
- * `{ fileName, lineNumber, columnNumber }` — to be treated as a child and
- * rendered as `[object Object]` inside any element whose JSX had no children
- * (e.g. `<script src="…"></script>`).
+ * Automatic JSX Transform — dev variant. Signature
+ * `(type, props, key, isStaticChildren, source, self)`. All four trailing
+ * arguments are diagnostics, NOT children. Same delegation as `jsx`.
  */
 export function jsxDEV<P extends {} = {}>(
   tag: string | Component<P>,

@@ -51,7 +51,7 @@ interface ViteScope {
   base: string;
 }
 
-const ViteContext = context<ViteScope>();
+const ViteContext = context<ViteScope>("@cjean-fr/jsx-vite:scope");
 
 /**
  * Load and parse a Vite manifest from disk. Returns `null` if the file does

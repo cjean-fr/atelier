@@ -28,7 +28,7 @@ export interface FlowContext {
   patch(id: string, factory: () => JSXNode, merge?: MergeType): void;
 }
 
-export const Flow = context<FlowContext>();
+export const Flow = context<FlowContext>("@cjean-fr/jsx-flow:flow");
 
 export function initFlow(config: Config): void {
   let counter = 0;
