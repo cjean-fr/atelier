@@ -1,0 +1,79 @@
+{
+  "name": "@cjean-fr/docs",
+  "version": "0.1.0",
+  "description": "Documentation site builder on top of @cjean-fr/jsx-string + jsx-flow + jsx-vite",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "docs": "./bin/docs.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
+    },
+    "./search": {
+      "types": "./dist/search/index.d.ts",
+      "default": "./dist/search/index.js"
+    },
+    "./client": {
+      "default": "./dist/client.js"
+    },
+    "./style.css": "./dist/theme/style.css",
+    "./tokens.css": "./dist/theme/tokens.css",
+    "./shiki.css": "./dist/theme/shiki.css"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@cjean-fr/jsx-string": "workspace:*",
+    "@cjean-fr/jsx-flow": "workspace:*",
+    "@cjean-fr/jsx-vite": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/bun": "catalog:",
+    "shiki": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:"
+  },
+  "peerDependencies": {
+    "@types/react": "catalog:",
+    "shiki": "catalog:",
+    "vite": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    },
+    "shiki": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ]
+}

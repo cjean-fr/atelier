@@ -1,0 +1,50 @@
+/**
+ * Theme tokens. Override these in your own CSS to retheme without forking
+ * components.
+ *
+ *   :root { --docs-color-accent: #ec4899; }   in your styles file.
+ *
+ * The default light scheme is white background, blue accent. The dark scheme
+ * activates whenever the `dark` class is present on <html> (set by
+ * <ThemeToggle> in Phase 2).
+ */
+
+:root {
+  /* Colors */
+  --docs-color-bg: #ffffff;
+  --docs-color-text: #111827;
+  --docs-color-muted: #6b7280;
+  --docs-color-accent: #2563eb;
+  --docs-color-accent-soft: #eff6ff;
+  --docs-color-border: #e5e7eb;
+  --docs-color-mark-bg: #fef08a;
+
+  /* Code blocks */
+  --docs-code-bg: #030712;
+  --docs-code-text: #f3f4f6;
+  --docs-code-border: #1f2937;
+
+  /* Typography */
+  --docs-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --docs-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  /* Layout */
+  --docs-shell-max-width: 64rem;
+  --docs-sidebar-width: 14rem;
+  --docs-content-padding: 1.5rem;
+}
+
+.dark {
+  --docs-color-bg: #030712;
+  --docs-color-text: #f3f4f6;
+  --docs-color-muted: #9ca3af;
+  --docs-color-accent: #60a5fa;
+  --docs-color-accent-soft: #172554;
+  --docs-color-border: #1f2937;
+  --docs-color-mark-bg: #a16207;
+
+  --docs-code-bg: #111827;
+  --docs-code-border: #1f2937;
+}

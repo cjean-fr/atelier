@@ -13,7 +13,7 @@ import {
   renderToString,
 } from "@cjean-fr/jsx-string";
 
-const Locale = context<"en" | "fr">();
+const Locale = context<"en" | "fr">("examples:locale");
 
 const messages = {
   en: "Hello, world!",

@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Make Tailwind's `dark:` variant trigger on the `dark` class on <html>
+ * instead of the default `prefers-color-scheme: dark` media query, so the
+ * ThemeToggle button can switch modes. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* docs theme tokens (CSS variables) + Shiki multi-theme switching rules. */
+@import "@cjean-fr/docs/tokens.css";
+@import "@cjean-fr/docs/shiki.css";
+
+/* Scan @cjean-fr/docs bundled JS so its utility classes get generated
+ * (component templates + injected TOC HTML). */
+@source "../../node_modules/@cjean-fr/docs/dist/**/*.js";

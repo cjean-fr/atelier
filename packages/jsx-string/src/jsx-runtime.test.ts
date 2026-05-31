@@ -53,28 +53,27 @@ describe("Automatic JSX Dev Runtime", () => {
   });
 });
 
-describe("Classic JSX Transform Engine (Factories)", () => {
-  it("should support standard jsx() factory invocations", () => {
+describe("Automatic JSX Runtime Factories", () => {
+  it("renders an element with children from props", () => {
     expect(jsx("span", { children: "ok" }).toString()).toBe("<span>ok</span>");
   });
 
-  it("should flatten multi-argument child parameter structures into continuous tags", async () => {
-    // @ts-ignore
-    const element = jsx(
-      "div",
-      { id: "p" },
-      jsx("span", {}, "1"),
-      jsx("span", {}, "2"),
-    );
+  it("renders multiple children passed via props.children array", async () => {
+    const element = jsx("div", {
+      id: "p",
+      children: [jsx("span", { children: "1" }), jsx("span", { children: "2" })],
+    });
     expect(await renderToString(element)).toBe(
       '<div id="p"><span>1</span><span>2</span></div>',
     );
   });
 
-  it("should prioritize formal props.children declarations over overlapping trailing arguments", async () => {
-    // @ts-ignore
-    const element = jsx("div", { children: "Props" }, "Extra");
-    expect(await renderToString(element)).toBe("<div>Props</div>");
+  it("ignores the third positional argument (it is the JSX `key`, never a child)", async () => {
+    // Per the automatic runtime spec, the third arg is `key`. Old versions
+    // of this package treated it as a child when `props.children` was
+    // absent, silently rendering keys as content.
+    const element = jsx("div", { id: "p" }, "some-key");
+    expect(await renderToString(element)).toBe('<div id="p"></div>');
   });
 
   it("should collapse nested Fragments structures into flat layout lines", async () => {

@@ -1,5 +1,72 @@
 # Changelog
 
+## 2.0.0
+
+### Fixed
+
+- **`RawString` class is now a `globalThis` singleton.** Backed by
+  `Symbol.for("@cjean-fr/jsx-string.RawString")`. Previously, when jsx-string
+  was loaded multiple times in the same process (typical setup: Vite dev
+  server SSR-loads user pages with its own jsx-string instance, while a
+  Node-loaded plugin holds another), the two instances had distinct
+  `RawString` classes. `child instanceof RawString` then failed across
+  instances, sending trusted HTML through the untrusted-text escape path —
+  the rendered page came out with literal `&lt;html&gt;…` in the body. The
+  class is now resolved once per process, mirroring the existing fixes for
+  `AsyncLocalStorage` and context tokens.
+
+### Changed
+
+- **BREAKING — `jsx`, `jsxs`, `jsxDEV` no longer accept variadic positional
+  children.** The automatic runtime spec is `(type, props, key?)`; the third
+  argument is the JSX `key` (diagnostic), never a child. The old variadic
+  overload silently rendered the `key` string as child content whenever an
+  element had no `props.children` — e.g. `jsx("div", { id: "p" }, "k")` used
+  to produce `<div id="p">k</div>`. It now produces `<div id="p"></div>`.
+  Children must live on `props.children`.
+
+  ```ts
+  // Before (v1.x classic-style)
+  jsx("div", { id: "p" }, jsx("span", {}, "1"), jsx("span", {}, "2"));
+
+  // After (v2.0)
+  jsx("div", {
+    id: "p",
+    children: [jsx("span", { children: "1" }), jsx("span", { children: "2" })],
+  });
+  ```
+
+  Code emitted by the standard TypeScript/Babel automatic JSX transform is
+  unaffected — it already passes children via `props.children`. Only hand-written
+  `jsx(...)` calls using the legacy classic-style variadic form need to migrate.
+
+- **BREAKING — `context(key)` now requires a non-empty string key.** Old
+  `context<T>()` no-arg form is removed. The key must be a globally-unique
+  namespaced string (e.g. `"@my-org/my-pkg:purpose"`), used as
+  `Symbol.for(...)` lookup. This makes context tokens stable across module
+  duplications — Vite plugin loaded by Node + user pages loaded by Vite SSR
+  no longer end up with mismatched `Symbol`s; same for web workers,
+  microfrontends, edge re-init, federated bundles. The previous no-arg form
+  silently broke in those scenarios.
+- **`AsyncLocalStorage` is now a `globalThis` singleton.** Backed by
+  `Symbol.for("@cjean-fr/jsx-string.storage")`. Multiple loaded instances of
+  jsx-string share one storage. No API change beyond the context key
+  requirement above.
+
+### Migration
+
+```ts
+// Before (v1.x)
+const Auth = context<{ userId: string }>();
+
+// After (v2.0)
+const Auth = context<{ userId: string }>("my-app:auth");
+```
+
+The key is up to you — convention is `"<scope>:<purpose>"` to avoid
+collisions. Two callers with the same key share the same Symbol (by design,
+for cross-instance sharing).
+
 ## 1.5.0
 
 ### Added

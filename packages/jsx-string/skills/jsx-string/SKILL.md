@@ -107,8 +107,10 @@ const html = renderToString(<AsyncComponent />); // missing await
 Typed, isolated scope for sharing data across the render tree without prop drilling. Backed by `AsyncLocalStorage` — concurrent requests never bleed into each other.
 
 ```ts
-// Define a typed token — once, in its own module
-export const AuthContext = context<{ user: string; locale: string }>();
+// Define a typed token — once, in its own module. The string key is a
+// globally-unique namespace ("<scope>:<purpose>"); same key → same Symbol
+// across module duplicates (Vite SSR, workers, microfrontends).
+export const AuthContext = context<{ user: string; locale: string }>("my-app:auth");
 ```
 
 ```tsx
@@ -151,8 +153,8 @@ await withScope(async () => {
 Each feature declares its own typed token — no shared global object to pollute.
 
 ```ts
-export const AuthContext = context<{ userId: string }>();
-export const ThemeContext = context<{ dark: boolean }>();
+export const AuthContext = context<{ userId: string }>("my-app:auth");
+export const ThemeContext = context<{ dark: boolean }>("my-app:theme");
 
 await withScope(async () => {
   setContext(AuthContext, { userId: "42" });
@@ -166,7 +168,7 @@ await withScope(async () => {
 | React pattern                  | jsx-string equivalent                           |
 | ------------------------------ | ----------------------------------------------- |
 | `useState`, `useEffect`        | Fetch data before render, pass as props         |
-| `createContext` / `<Provider>` | `context<T>()` + `withScope()` + `setContext()` |
+| `createContext` / `<Provider>` | `context<T>(key)` + `withScope()` + `setContext()` |
 | Event handler functions        | String values only (`onClick="alert(1)"`)       |
 | `ref`                          | Not supported                                   |
 | `className`                    | Both `class` and `className` accepted           |
@@ -265,7 +267,7 @@ describe("Component", () => {
   });
 
   it("renders with context", async () => {
-    const Ctx = context<{ user: string }>();
+    const Ctx = context<{ user: string }>("test:user");
     const Greeting = () => <span>{useContext(Ctx).user}</span>;
 
     const html = await withScope(async () => {

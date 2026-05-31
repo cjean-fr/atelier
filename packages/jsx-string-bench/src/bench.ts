@@ -33,10 +33,10 @@ import { jsx as honoJsx } from "hono/jsx";
 async function jsxStringAsyncTree() {
   const AsyncItem = async ({ i }: { i: number }) => {
     await Promise.resolve(); // simulates a micro-task (e.g. cache lookup)
-    return jsx("li", { class: "item" }, `Item ${i}`);
+    return jsx("li", { class: "item", children: `Item ${i}` });
   };
   const items = Array.from({ length: 10 }, (_, i) => jsx(AsyncItem, { i }));
-  return jsx("ul", { class: "list" }, ...items);
+  return jsx("ul", { class: "list", children: items });
 }
 
 group("async — 10 concurrent async components (jsx-string only)", () => {
@@ -66,20 +66,20 @@ const STACK_DEPTH = 1000;
 // --- Text bench (1000× Bavaria) ---
 
 const bavariaJsxString = () =>
-  jsx(
-    "div",
-    {},
-    jsx(
-      "span",
-      { class: "foo", "data-testid": "foo" },
-      BAVARIA_1,
-    ),
-    jsx(
-      "span",
-      { class: "bar", "data-testid": "bar" },
-      BAVARIA_2,
-    ),
-  );
+  jsx("div", {
+    children: [
+      jsx("span", {
+        class: "foo",
+        "data-testid": "foo",
+        children: BAVARIA_1,
+      }),
+      jsx("span", {
+        class: "bar",
+        "data-testid": "bar",
+        children: BAVARIA_2,
+      }),
+    ],
+  });
 const bavariaReact = () =>
   createElement(
     "div",
@@ -129,7 +129,7 @@ const bavariaHono = () =>
 function textAppJsxString() {
   const children = new Array(TEXT_REPEATS);
   for (let i = 0; i < TEXT_REPEATS; i++) children[i] = bavariaJsxString();
-  return jsx("div", {}, children);
+  return jsx("div", { children });
 }
 function textAppReact() {
   const children = new Array(TEXT_REPEATS);
@@ -151,13 +151,15 @@ function textAppHono() {
 
 function stackJsxString(depth: number): any {
   if (depth <= 0) {
-    return jsx(
-      "div",
-      {},
-      jsx("span", { class: "foo", "data-testid": "stack" }, "deep stack"),
-    );
+    return jsx("div", {
+      children: jsx("span", {
+        class: "foo",
+        "data-testid": "stack",
+        children: "deep stack",
+      }),
+    });
   }
-  return jsx("div", {}, stackJsxString(depth - 1));
+  return jsx("div", { children: stackJsxString(depth - 1) });
 }
 function stackReact(depth: number): any {
   if (depth <= 0) {
@@ -198,7 +200,7 @@ function stackAppJsxString() {
   const children = new Array(STACK_REPEATS);
   for (let i = 0; i < STACK_REPEATS; i++)
     children[i] = stackJsxString(STACK_DEPTH);
-  return jsx("div", {}, children);
+  return jsx("div", { children });
 }
 function stackAppReact() {
   const children = new Array(STACK_REPEATS);

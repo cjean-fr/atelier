@@ -11,15 +11,38 @@ declare module "react" {
   }
 }
 
-export class RawString {
+/**
+ * Trusted, already-escaped HTML.
+ *
+ * The class is registered on `globalThis` under `Symbol.for(...)` so that
+ * even when jsx-string is loaded multiple times (Vite SSR + Node-loaded
+ * plugins, workers, microfrontends), every loaded instance reuses the
+ * SAME class — `instanceof RawString` then stays meaningful across module
+ * boundaries instead of silently failing and re-escaping trusted HTML.
+ */
+declare class RawStringType {
   readonly value: string;
-  constructor(value: string) {
-    this.value = value;
-  }
-  toString(): string {
-    return this.value;
-  }
+  constructor(value: string);
+  toString(): string;
 }
+
+const RAWSTRING_KEY = Symbol.for("@cjean-fr/jsx-string.RawString");
+const g = globalThis as { [RAWSTRING_KEY]?: typeof RawStringType };
+
+if (!g[RAWSTRING_KEY]) {
+  g[RAWSTRING_KEY] = class RawString {
+    readonly value: string;
+    constructor(value: string) {
+      this.value = value;
+    }
+    toString(): string {
+      return this.value;
+    }
+  };
+}
+
+export const RawString = g[RAWSTRING_KEY]!;
+export type RawString = RawStringType;
 
 /**
  * Mark an HTML string as trusted: it will be rendered verbatim without HTML

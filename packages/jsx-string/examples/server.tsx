@@ -14,7 +14,7 @@ import {
   renderToString,
 } from "@cjean-fr/jsx-string";
 
-const Request = context<{ name: string }>();
+const Request = context<{ name: string }>("examples:request");
 
 function Page() {
   const { name } = useContext(Request);
