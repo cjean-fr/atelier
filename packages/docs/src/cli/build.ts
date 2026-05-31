@@ -1,6 +1,6 @@
-import path from "node:path";
 import { build as docsBuild } from "../build.js";
 import { loadDocsConfig } from "./loadConfig.js";
+import path from "node:path";
 
 /**
  * Orchestrate a full production build: `vite build` for client assets, then

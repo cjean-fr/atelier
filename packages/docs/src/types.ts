@@ -4,7 +4,6 @@
  * The user-facing types are intentionally minimal. Implementation details
  * (Page, ResolvedConfig, etc.) live below the `// internal` divider.
  */
-
 import type { JSXNode } from "@cjean-fr/jsx-string";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +53,10 @@ export interface PageMeta {
  * Progressive disclosure: pass `'auto'`, a list of group names, or a full
  * tree. See DOCS_SPEC.md §5.1 + Q4.
  */
-export type SidebarConfig = "auto" | readonly string[] | readonly SidebarGroup[];
+export type SidebarConfig =
+  | "auto"
+  | readonly string[]
+  | readonly SidebarGroup[];
 
 export interface SidebarGroup {
   label: string;

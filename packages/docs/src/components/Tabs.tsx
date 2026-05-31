@@ -11,7 +11,6 @@
  * every other Tabs on the page that has a "Bun" panel to it, and the choice
  * is restored on next visit).
  */
-
 import type { JSXNode } from "@cjean-fr/jsx-string";
 
 export interface TabsProps {
@@ -25,12 +24,14 @@ export function Tabs({ syncKey, tabs }: TabsProps) {
 
   return (
     <div
-      class="docs-tabs my-4 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden"
-      {...(syncKey ? { "data-docs-tabs-sync": syncKey } : { "data-docs-tabs": "" })}
+      class="docs-tabs my-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800"
+      {...(syncKey
+        ? { "data-docs-tabs-sync": syncKey }
+        : { "data-docs-tabs": "" })}
     >
       <div
         role="tablist"
-        class="docs-tabs-list flex border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50"
+        class="docs-tabs-list flex border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50"
       >
         {tabs.map((tab, i) => (
           <button

@@ -6,11 +6,10 @@
  * `preloadLastModified(files)` before a batch to populate the cache with a
  * single `git log` invocation instead of one process per file.
  */
-
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { stat } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const cache = new Map<string, string | null>();
@@ -58,13 +57,7 @@ export async function preloadLastModified(files: string[]): Promise<void> {
     const SENTINEL = "__COMMIT__";
     const { stdout } = await execFileAsync(
       "git",
-      [
-        "log",
-        `--format=${SENTINEL}%cI`,
-        "--name-only",
-        "--",
-        ...wanted,
-      ],
+      ["log", `--format=${SENTINEL}%cI`, "--name-only", "--", ...wanted],
       { maxBuffer: 64 * 1024 * 1024 },
     );
     const repoRoot = (

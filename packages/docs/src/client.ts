@@ -9,9 +9,8 @@
  * When other adapters ship, the search import becomes adapter-aware via
  * virtual module rewrite by the Vite plugin.
  */
-
-import "./search/builtin/client.js";
-import "./toc/client.js";
-import "./theme/client.js";
 import "./nav/client.js";
+import "./search/builtin/client.js";
 import "./tabs/client.js";
+import "./theme/client.js";
+import "./toc/client.js";

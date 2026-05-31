@@ -1,6 +1,11 @@
 import type { PatchAdapter, MergeType } from "./adapters.js";
 import { assertFragmentId } from "./fragmentId.js";
-import { context, setContext, type JSXNode } from "@cjean-fr/jsx-string";
+import {
+  context,
+  setContext,
+  type Context,
+  type JSXNode,
+} from "@cjean-fr/jsx-string";
 
 /** A deferred fragment: encoded by the adapter, applied as a DOM patch. */
 export type FragmentEffect = { factory: () => JSXNode; merge: MergeType };
@@ -28,7 +33,9 @@ export interface FlowContext {
   patch(id: string, factory: () => JSXNode, merge?: MergeType): void;
 }
 
-export const Flow = context<FlowContext>("@cjean-fr/jsx-flow:flow");
+export const Flow: Context<FlowContext> = context<FlowContext>(
+  "@cjean-fr/jsx-flow:flow",
+);
 
 export function initFlow(config: Config): void {
   let counter = 0;

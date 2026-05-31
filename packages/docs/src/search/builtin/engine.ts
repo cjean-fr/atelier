@@ -99,10 +99,7 @@ export function escapeAttr(s: string): string {
 export function highlight(text: string, query: string): string {
   const escapedText = escapeHtml(text);
   if (!query) return escapedText;
-  const pattern = escapeHtml(query).replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&",
-  );
+  const pattern = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (!pattern) return escapedText;
   const regex = new RegExp(`(${pattern})`, "gi");
   return escapedText.replace(

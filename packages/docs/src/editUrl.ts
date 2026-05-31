@@ -2,7 +2,6 @@
  * Substitute `{slug}` in `config.editUrl` with the page's source path
  * relative to the project root.
  */
-
 import path from "node:path";
 
 export function resolveEditUrl(

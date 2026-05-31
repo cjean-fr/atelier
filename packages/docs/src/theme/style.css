@@ -87,7 +87,9 @@ html.docs-html {
   text-decoration: none;
   border-left: 2px solid transparent;
   margin-left: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .docs-toc-link:hover {

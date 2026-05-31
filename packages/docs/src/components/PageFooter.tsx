@@ -2,7 +2,6 @@
  * Bottom-of-page footer: edit-on-GitHub link + last-updated timestamp.
  * Renders nothing if neither piece of data is available.
  */
-
 import { useDocs } from "../context.js";
 
 export function PageFooter() {
@@ -10,7 +9,7 @@ export function PageFooter() {
   if (!editUrl && !lastUpdated) return null;
 
   return (
-    <footer class="docs-page-footer mt-12 pt-6 border-t border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
+    <footer class="docs-page-footer mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 pt-6 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
       {editUrl ? (
         <a
           class="docs-page-footer-edit inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100"
@@ -24,10 +23,7 @@ export function PageFooter() {
         <span />
       )}
       {lastUpdated && (
-        <time
-          class="docs-page-footer-updated"
-          datetime={lastUpdated}
-        >
+        <time class="docs-page-footer-updated" datetime={lastUpdated}>
           Last updated: {formatDate(lastUpdated)}
         </time>
       )}

@@ -3,7 +3,6 @@
  * Shared between the static build and the dev plugin so dev and prod search
  * behave identically.
  */
-
 import type { SearchEntry } from "./engine.js";
 
 /**

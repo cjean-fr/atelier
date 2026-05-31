@@ -7,19 +7,13 @@
  * Pure logic (ranking, snippet extraction, escaping, highlighting) lives in
  * ./searchEngine — DOM-free and unit-tested.
  */
+import { rank, highlight, escapeAttr, type SearchEntry } from "./engine.js";
 
-import {
-  rank,
-  highlight,
-  escapeAttr,
-  type SearchEntry,
-} from './engine.js';
-
-const trigger = document.getElementById('search-trigger');
-const dialogEl = document.getElementById('search-dialog');
-const inputEl = document.getElementById('search-input');
-const statusEl = document.getElementById('search-status');
-const resultsEl = document.getElementById('search-results');
+const trigger = document.getElementById("search-trigger");
+const dialogEl = document.getElementById("search-dialog");
+const inputEl = document.getElementById("search-input");
+const statusEl = document.getElementById("search-status");
+const resultsEl = document.getElementById("search-results");
 
 if (
   trigger instanceof HTMLButtonElement &&
@@ -28,7 +22,13 @@ if (
   statusEl instanceof HTMLElement &&
   resultsEl instanceof HTMLUListElement
 ) {
-  install({ trigger, dialog: dialogEl, input: inputEl, status: statusEl, results: resultsEl });
+  install({
+    trigger,
+    dialog: dialogEl,
+    input: inputEl,
+    status: statusEl,
+    results: resultsEl,
+  });
 }
 
 interface Refs {
@@ -60,7 +60,7 @@ function install(refs: Refs): void {
   async function ensureIndex(): Promise<SearchEntry[]> {
     if (index) return index;
     if (!indexPromise) {
-      indexPromise = fetch('/search-index.json')
+      indexPromise = fetch("/search-index.json")
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json() as Promise<SearchEntry[]>;
@@ -68,14 +68,14 @@ function install(refs: Refs): void {
         .then((data) => {
           index = data;
           input.disabled = false;
-          input.placeholder = 'Search documentation…';
-          status.textContent = 'Type to search.';
+          input.placeholder = "Search documentation…";
+          status.textContent = "Type to search.";
           // If the dialog is already open, focus the input now that it's usable.
           if (dialog.open) input.focus();
           return data;
         })
         .catch((err) => {
-          status.textContent = 'Could not load search index.';
+          status.textContent = "Could not load search index.";
           throw err;
         });
     }
@@ -86,22 +86,22 @@ function install(refs: Refs): void {
     if (!index) return;
     const q = query.trim().toLowerCase();
     if (!q) {
-      results.classList.add('hidden');
-      status.classList.remove('hidden');
-      status.textContent = 'Type to search.';
+      results.classList.add("hidden");
+      status.classList.remove("hidden");
+      status.textContent = "Type to search.";
       activeIndex = -1;
       return;
     }
     const ranked = rank(index, q);
     if (ranked.length === 0) {
-      results.classList.add('hidden');
-      status.classList.remove('hidden');
-      status.textContent = 'No matches.';
+      results.classList.add("hidden");
+      status.classList.remove("hidden");
+      status.textContent = "No matches.";
       activeIndex = -1;
       return;
     }
-    status.classList.add('hidden');
-    results.classList.remove('hidden');
+    status.classList.add("hidden");
+    results.classList.remove("hidden");
     results.innerHTML = ranked
       .map(
         (r, i) => `
@@ -118,7 +118,7 @@ function install(refs: Refs): void {
             </a>
           </li>`,
       )
-      .join('');
+      .join("");
     activeIndex = 0;
     syncActive();
   }
@@ -127,8 +127,8 @@ function install(refs: Refs): void {
     const items = results.querySelectorAll<HTMLLIElement>('li[role="option"]');
     items.forEach((li, i) => {
       const selected = i === activeIndex;
-      li.setAttribute('aria-selected', selected ? 'true' : 'false');
-      if (selected) li.scrollIntoView({ block: 'nearest' });
+      li.setAttribute("aria-selected", selected ? "true" : "false");
+      if (selected) li.scrollIntoView({ block: "nearest" });
     });
   }
 
@@ -143,31 +143,33 @@ function install(refs: Refs): void {
     const items = results.querySelectorAll<HTMLLIElement>('li[role="option"]');
     const current = items[activeIndex];
     if (!current) return;
-    current.querySelector('a')?.click();
+    current.querySelector("a")?.click();
   }
 
   // Open via Ctrl/Cmd + K
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
       open();
     }
   });
 
   // Open via the trigger button
-  trigger.addEventListener('click', open);
+  trigger.addEventListener("click", open);
 
   // Type to search
-  input.addEventListener('input', () => {
+  input.addEventListener("input", () => {
     if (!index) return;
     render(input.value);
   });
 
   // Mouse hover syncs the active index so keyboard and mouse stay aligned.
-  results.addEventListener('mousemove', (e) => {
-    const li = (e.target as HTMLElement).closest<HTMLLIElement>('li[role="option"]');
+  results.addEventListener("mousemove", (e) => {
+    const li = (e.target as HTMLElement).closest<HTMLLIElement>(
+      'li[role="option"]',
+    );
     if (!li) return;
-    const idx = Number(li.dataset['idx']);
+    const idx = Number(li.dataset["idx"]);
     if (!Number.isNaN(idx) && idx !== activeIndex) {
       activeIndex = idx;
       syncActive();
@@ -175,31 +177,31 @@ function install(refs: Refs): void {
   });
 
   // Keyboard navigation inside the input
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') {
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
       move(1);
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
       move(-1);
-    } else if (e.key === 'Enter') {
+    } else if (e.key === "Enter") {
       e.preventDefault();
       activate();
     }
   });
 
   // Click outside dialog content (on the backdrop) closes it.
-  dialog.addEventListener('click', (e) => {
+  dialog.addEventListener("click", (e) => {
     if (e.target === dialog) close();
   });
 
   // Reset state when the dialog closes.
-  dialog.addEventListener('close', () => {
-    input.value = '';
-    results.innerHTML = '';
-    results.classList.add('hidden');
-    status.classList.remove('hidden');
-    status.textContent = index ? 'Type to search.' : 'Loading…';
+  dialog.addEventListener("close", () => {
+    input.value = "";
+    results.innerHTML = "";
+    results.classList.add("hidden");
+    status.classList.remove("hidden");
+    status.textContent = index ? "Type to search." : "Loading…";
     activeIndex = -1;
   });
 }

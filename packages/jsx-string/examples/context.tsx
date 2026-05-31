@@ -4,7 +4,6 @@
  *
  * Run: `bun examples/context.tsx`
  */
-
 import {
   context,
   setContext,
@@ -18,7 +17,8 @@ const Theme = context<"light" | "dark">("examples:theme");
 
 function Box({ children }: { children: string }) {
   const theme = useContext(Theme);
-  const cls = theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900";
+  const cls =
+    theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900";
   return <div class={cls}>{children}</div>;
 }
 

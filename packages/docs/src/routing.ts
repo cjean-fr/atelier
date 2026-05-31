@@ -5,11 +5,10 @@
  * `Page[]` ready to be rendered. The `meta` export is read with mild
  * validation; the default export must be a component.
  */
-
+import type { Page, PageMeta, ResolvedDocsConfig } from "./types.js";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Page, PageMeta, ResolvedDocsConfig } from "./types.js";
 
 export interface DiscoverOptions {
   /**
@@ -56,7 +55,13 @@ export async function discoverPages(
     const url = meta.slug ?? routeToUrl(route);
     const outPath = path.join(config.out, urlToOutPath(url));
 
-    pages.push({ url, file, outPath, meta, Component: Component as Page["Component"] });
+    pages.push({
+      url,
+      file,
+      outPath,
+      meta,
+      Component: Component as Page["Component"],
+    });
   }
 
   // Stable ordering: by URL, so the order of build output is deterministic.

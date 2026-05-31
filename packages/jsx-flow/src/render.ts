@@ -1,10 +1,5 @@
 import { type PatchAdapter } from "./adapters.js";
-import {
-  type FlowContext,
-  type Config,
-  initFlow,
-  Flow,
-} from "./context.js";
+import { type FlowContext, type Config, initFlow, Flow } from "./context.js";
 import { streamFragments } from "./streamFragments.js";
 import {
   renderToString,
@@ -13,7 +8,10 @@ import {
   type JSXNode,
 } from "@cjean-fr/jsx-string";
 
-function withFlow<T>(handler: (ctx: FlowContext) => T, config: Config): Promise<T> {
+function withFlow<T>(
+  handler: (ctx: FlowContext) => T,
+  config: Config,
+): Promise<T> {
   return withScope(async function () {
     initFlow(config);
     return handler(useContext(Flow));
@@ -83,14 +81,18 @@ export async function renderToReadableStream(
       return new ReadableStream<string>({
         async start(controller) {
           const shell = await renderToString(node());
-          const prepared = adapter.transformShell ? adapter.transformShell(shell) : shell;
+          const prepared = adapter.transformShell
+            ? adapter.transformShell(shell)
+            : shell;
 
           if (fragments.size === 0) {
             controller.enqueue(`${prepared}\n`);
           } else {
             const match = prepared.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
             const closing = match?.[1] ?? "";
-            const before = closing ? prepared.slice(0, -closing.length) : prepared;
+            const before = closing
+              ? prepared.slice(0, -closing.length)
+              : prepared;
 
             controller.enqueue(`${before}\n`);
             await streamFragments(fragments, adapter, (_id, html) => {

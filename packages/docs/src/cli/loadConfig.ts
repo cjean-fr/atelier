@@ -1,6 +1,6 @@
+import type { ResolvedDocsConfig } from "../types.js";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import type { ResolvedDocsConfig } from "../types.js";
 
 const CANDIDATES = ["docs.config.ts", "docs.config.js", "docs.config.mjs"];
 

@@ -12,13 +12,13 @@
 
 jsx-string is a **server-first JSX renderer** that embraces backend-specific patterns:
 
-| Aspect | jsx-string | react-dom/server | preact-render-to-string |
-|--------|------------|------------------|--------------------------|
-| **Async by default** | ✅ Native `await` in render | ⚠️ Via Suspense | ❌ Sync only |
-| **Server-first design** | ✅ Scoped context for per-request isolation | ❌ Client-first patterns | ❌ Client-first patterns |
-| **Single purpose** | ✅ Render JSX → HTML strings | ❌ Renderer depends on full React runtime | ✅ Renderer (depends on Preact core) |
-| **Zero dependencies** | ✅ ~3 KB | ❌ ~140 KB (with React) | ❌ ~8 KB (with Preact) |
-| **XSS defenses** | ✅ Escape + URL scheme block + attribute whitelist + function-handler drop | ⚠️ Escape only | ⚠️ Escape only |
+| Aspect                  | jsx-string                                                                 | react-dom/server                          | preact-render-to-string              |
+| ----------------------- | -------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------ |
+| **Async by default**    | ✅ Native `await` in render                                                | ⚠️ Via Suspense                           | ❌ Sync only                         |
+| **Server-first design** | ✅ Scoped context for per-request isolation                                | ❌ Client-first patterns                  | ❌ Client-first patterns             |
+| **Single purpose**      | ✅ Render JSX → HTML strings                                               | ❌ Renderer depends on full React runtime | ✅ Renderer (depends on Preact core) |
+| **Zero dependencies**   | ✅ ~3 KB                                                                   | ❌ ~140 KB (with React)                   | ❌ ~8 KB (with Preact)               |
+| **XSS defenses**        | ✅ Escape + URL scheme block + attribute whitelist + function-handler drop | ⚠️ Escape only                            | ⚠️ Escape only                       |
 
 No hooks, no refs, no hydration — **just direct JSX→HTML rendering with server-side ergonomics**.
 
@@ -59,7 +59,7 @@ const html = await renderToString(
   <main>
     <h1>Hello, world!</h1>
     <p>jsx-string renders JSX to plain HTML strings.</p>
-  </main>
+  </main>,
 );
 // => "<main><h1>Hello, world!</h1><p>jsx-string renders JSX to plain HTML strings.</p></main>"
 ```
@@ -108,6 +108,7 @@ jsx-string **escapes everything by default** — no opt-in required:
 ```
 
 **Your responsibility:**
+
 - `raw(html)` and `dangerouslySetInnerHTML` **bypass escaping** — never use with untrusted input.
 - Event handler strings (`onClick="myFunc()"`) are HTML-escaped, but the JS inside is **not sanitized** — never interpolate user data.
 
@@ -126,7 +127,13 @@ import { raw } from "@cjean-fr/jsx-string";
 Per-request context with **typed keys** — `AsyncLocalStorage`-backed, no provider components needed, designed for server-side isolation.
 
 ```tsx
-import { context, useContext, setContext, withScope, renderToString } from "@cjean-fr/jsx-string";
+import {
+  context,
+  useContext,
+  setContext,
+  withScope,
+  renderToString,
+} from "@cjean-fr/jsx-string";
 
 // Define context keys at module level — keys are global strings (Symbol.for)
 // so the same key resolves to the same Symbol even if jsx-string is loaded
@@ -148,7 +155,7 @@ const html = await withScope(async () => {
 ```tsx
 await withScope(async () => {
   setContext(Auth, { userId: "42" });
-  
+
   // Child scope inherits parent data via snapshot()
   await withScope(async () => {
     const parentData = snapshot(); // captures current context
@@ -167,7 +174,7 @@ Use `raw()` for HTML from trusted sources (markdown renderers, sanitizers):
 import { raw } from "@cjean-fr/jsx-string";
 
 const markdownHtml = await renderMarkdown("# Hello");
-<div>{raw(markdownHtml)}</div>
+<div>{raw(markdownHtml)}</div>;
 // => <div><h1>Hello</h1></div> (no escaping)
 ```
 
@@ -183,15 +190,16 @@ const markdownHtml = await renderMarkdown("# Hello");
 
 Self-contained runnable scripts under [`examples/`](./examples):
 
-| File | Demonstrates |
-|------|-------------|
-| [`hello.tsx`](./examples/hello.tsx) | Minimal `renderToString` of static JSX |
-| [`async-component.tsx`](./examples/async-component.tsx) | Async component with `await` inside render |
-| [`context.tsx`](./examples/context.tsx) | `context()` + `setContext()` + `useContext()` with `withScope()` |
-| [`concurrent.tsx`](./examples/concurrent.tsx) | Parallel renders with isolated context scopes |
-| [`server.tsx`](./examples/server.tsx) | `Bun.serve` HTTP handler with per-request context |
+| File                                                    | Demonstrates                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`hello.tsx`](./examples/hello.tsx)                     | Minimal `renderToString` of static JSX                           |
+| [`async-component.tsx`](./examples/async-component.tsx) | Async component with `await` inside render                       |
+| [`context.tsx`](./examples/context.tsx)                 | `context()` + `setContext()` + `useContext()` with `withScope()` |
+| [`concurrent.tsx`](./examples/concurrent.tsx)           | Parallel renders with isolated context scopes                    |
+| [`server.tsx`](./examples/server.tsx)                   | `Bun.serve` HTTP handler with per-request context                |
 
 Run standalone:
+
 ```bash
 bun examples/hello.tsx
 bun examples/server.tsx  # then: curl 'http://localhost:3000/?name=World'
@@ -201,16 +209,16 @@ bun examples/server.tsx  # then: curl 'http://localhost:3000/?name=World'
 
 ## API Reference
 
-| Export | Type | Description |
-|--------|------|-------------|
-| `renderToString(node)` | `Promise<string>` | Renders JSX tree to HTML string. |
-| `raw(string)` | `RawString` | Marks HTML as trusted (no escape). |
-| `Fragment` | `symbol` | Standard JSX Fragment (`<>…</>`). |
-| `context<T>(key)` | `Context<T>` | Creates a typed, namespaced context token. `key` is a globally-unique string (e.g. `"@org/pkg:purpose"`). |
-| `setContext(token, value)` | `void` | Writes to current scope. |
-| `useContext(token)` | `T` | Reads from current scope; **throws if absent**. |
-| `withScope(fn, options?)` | `Promise<T>` | Runs `fn` in isolated async scope. |
-| `snapshot()` | `Map<Context, unknown>` | Captures current scope state for sub-scopes. |
+| Export                     | Type                    | Description                                                                                               |
+| -------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `renderToString(node)`     | `Promise<string>`       | Renders JSX tree to HTML string.                                                                          |
+| `raw(string)`              | `RawString`             | Marks HTML as trusted (no escape).                                                                        |
+| `Fragment`                 | `symbol`                | Standard JSX Fragment (`<>…</>`).                                                                         |
+| `context<T>(key)`          | `Context<T>`            | Creates a typed, namespaced context token. `key` is a globally-unique string (e.g. `"@org/pkg:purpose"`). |
+| `setContext(token, value)` | `void`                  | Writes to current scope.                                                                                  |
+| `useContext(token)`        | `T`                     | Reads from current scope; **throws if absent**.                                                           |
+| `withScope(fn, options?)`  | `Promise<T>`            | Runs `fn` in isolated async scope.                                                                        |
+| `snapshot()`               | `Map<Context, unknown>` | Captures current scope state for sub-scopes.                                                              |
 
 ---
 
@@ -221,10 +229,12 @@ bun examples/server.tsx  # then: curl 'http://localhost:3000/?name=World'
 All outputs are sanitized **automatically** — no configuration needed.
 
 #### Text Content
+
 - Escapes: `&` ` <` `>`
 - Example: `<script>` → `&lt;script&gt;`
 
 #### Attributes
+
 - **Names:** Rejects whitespace, quotes, `>`, `/`, `=`, and Unicode "Other" chars (controls, ZWSP, LRM, surrogates).
   Regex: `/^[^\s"'>/=\p{C}]+$/u`
 - **Values:** Escapes `&` ` <` `>` `"`; always double-quoted.
@@ -234,25 +244,28 @@ All outputs are sanitized **automatically** — no configuration needed.
   Affected attributes: `href`, `src`, `action`, `formaction`, `cite`, `poster`, `icon`, `data`, `xlink:href`, `srcset`.
 
 #### Tags
+
 - Must match `/^[a-zA-Z][a-zA-Z0-9-]*$/`.
 - Invalid tags: dropped with warning, element omitted from output.
 
 #### Style
+
 - Rejects `expression()` and `javascript:` in CSS values.
 - `url()` arguments validated as URLs (same rules as URL attributes).
 
 #### Event Handlers
+
 - **Strings only:** `onClick="alert(1)"` → allowed (HTML-escaped).
 - **Non-strings dropped:** Functions → warn + drop. Numbers/Objects → silent drop.
 - ⚠️ **JS not sanitized** — never interpolate user input in handler strings.
 
 ### ⚠️ Your Responsibility
 
-| Scenario | Risk | Mitigation |
-|----------|------|------------|
-| `raw(userInput)` | XSS | Sanitize with DOMPurify first |
-| `dangerouslySetInnerHTML` | XSS | Only use with trusted HTML |
-| `onClick={"userFunc()"}` | XSS | Never interpolate user data |
+| Scenario                  | Risk | Mitigation                    |
+| ------------------------- | ---- | ----------------------------- |
+| `raw(userInput)`          | XSS  | Sanitize with DOMPurify first |
+| `dangerouslySetInnerHTML` | XSS  | Only use with trusted HTML    |
+| `onClick={"userFunc()"}`  | XSS  | Never interpolate user data   |
 
 ### 🛡️ Trusted HTML
 
@@ -263,11 +276,11 @@ import { raw } from "@cjean-fr/jsx-string";
 
 // ✅ Safe: trusted markdown renderer
 const html = await markdownToHtml(userMarkdown);
-<div>{raw(html)}</div>
+<div>{raw(html)}</div>;
 
 // ✅ Safe: DOMPurify sanitized
 const safeHtml = DOMPurify.sanitize(userInput);
-<div>{raw(safeHtml)}</div>
+<div>{raw(safeHtml)}</div>;
 ```
 
 ---
@@ -277,16 +290,17 @@ const safeHtml = DOMPurify.sanitize(userInput);
 Benchmarks ported from [preact-render-to-string](https://github.com/preactjs/preact-render-to-string/tree/main/benchmarks).
 Source: [`packages/jsx-string-bench/src/bench.ts`](../jsx-string-bench/src/bench.ts).
 
-| Runtime | Scenario | jsx-string | preact-render-to-string@6 | react-dom@18 |
-|---------|----------|------------|----------------------------|--------------|
-| Node 26 (V8) | 1000 text blocks | **635 µs** | 650 µs | 5.1 ms |
-| Node 26 (V8) | 10×1000 deep stack | **770 µs** | 820 µs | 6.7 ms |
-| Bun 1.3 (JSC) | 1000 text blocks | **460 µs** | 670 µs | 6.2 ms |
-| Bun 1.3 (JSC) | 10×1000 deep stack | **697 µs** | 1.15 ms | 8.4 ms |
+| Runtime       | Scenario           | jsx-string | preact-render-to-string@6 | react-dom@18 |
+| ------------- | ------------------ | ---------- | ------------------------- | ------------ |
+| Node 26 (V8)  | 1000 text blocks   | **635 µs** | 650 µs                    | 5.1 ms       |
+| Node 26 (V8)  | 10×1000 deep stack | **770 µs** | 820 µs                    | 6.7 ms       |
+| Bun 1.3 (JSC) | 1000 text blocks   | **460 µs** | 670 µs                    | 6.2 ms       |
+| Bun 1.3 (JSC) | 10×1000 deep stack | **697 µs** | 1.15 ms                   | 8.4 ms       |
 
-*Ryzen 7 PRO 8840HS, median of 3 runs.*
+_Ryzen 7 PRO 8840HS, median of 3 runs._
 
 **Analysis:**
+
 - On Node 26: V8 optimizations make jsx-string **~parity with Preact** on wide trees, **~7% faster** on deep trees.
 - On Bun (JSC): **30-40% faster than Preact** across all scenarios.
 - Against React: **8-14× faster** regardless of tree shape (structural advantage — no virtual DOM).
@@ -297,11 +311,11 @@ Source: [`packages/jsx-string-bench/src/bench.ts`](../jsx-string-bench/src/bench
 
 ## Runtimes
 
-| Runtime | Support | Notes |
-|---------|---------|-------|
-| **Node 20+** | ✅ Full | Native `AsyncLocalStorage` |
-| **Bun** | ✅ Full |Works with `node:async_hooks` (native compatibility) |
-| **Deno** | ✅ Full | Works with `node:async_hooks` (native compatibility) |
+| Runtime                | Support | Notes                                                                         |
+| ---------------------- | ------- | ----------------------------------------------------------------------------- |
+| **Node 20+**           | ✅ Full | Native `AsyncLocalStorage`                                                    |
+| **Bun**                | ✅ Full | Works with `node:async_hooks` (native compatibility)                          |
+| **Deno**               | ✅ Full | Works with `node:async_hooks` (native compatibility)                          |
 | **Cloudflare Workers** | ✅ Full | Requires `compatibility_flags = ["nodejs_compat_v2"]` for `AsyncLocalStorage` |
 
 ### Deno Setup
@@ -324,39 +338,43 @@ Source: [`packages/jsx-string-bench/src/bench.ts`](../jsx-string-bench/src/bench
 ## Design Philosophy
 
 ### ✅ What jsx-string Does
+
 - **Eager rendering:** No virtual DOM, no reconciliation — direct string concatenation.
 - **Async-first:** Components can `await` directly in render body.
 - **Scoped context:** Typed, nestable context for server-side rendering.
 - **Security-first:** Everything escaped by default.
 
 ### ⚠️ What jsx-string Doesn’t Do
+
 - **Client-side rendering:** Server-only. No hydration.
 - **React compatibility:** No hooks, no refs, no React runtime.
 - **React Server Components:** Not RSC-aware (use Next.js App Router’s built-in renderer).
 
 ### 💡 Key Differences from React
 
-| Feature | jsx-string | React |
-|---------|------------|-------|
-| Async in render | ✅ Yes | ❌ No (needs hooks) |
-| Context model | ✅ Scoped per-request | ❌ Provider-based |
-| Virtual DOM | ❌ No | ✅ Yes |
-| Hooks | ❌ No | ✅ Yes |
-| Refs | ❌ No | ✅ Yes |
-| `class` vs `className` | Separate (no merge) | Merged |
+| Feature                | jsx-string            | React               |
+| ---------------------- | --------------------- | ------------------- |
+| Async in render        | ✅ Yes                | ❌ No (needs hooks) |
+| Context model          | ✅ Scoped per-request | ❌ Provider-based   |
+| Virtual DOM            | ❌ No                 | ✅ Yes              |
+| Hooks                  | ❌ No                 | ✅ Yes              |
+| Refs                   | ❌ No                 | ✅ Yes              |
+| `class` vs `className` | Separate (no merge)   | Merged              |
 
 ---
 
 ## When NOT to Use
 
-| Use Case | Recommendation |
-|----------|----------------|
-| Client-side rendering/hydration | Use React, Preact, or Solid |
-| React ecosystem (MUI, Radix, Tanstack Query) | Requires React runtime |
-| Next.js App Router / RSC | Use Next.js built-in RSC |
+| Use Case                                     | Recommendation              |
+| -------------------------------------------- | --------------------------- |
+| Client-side rendering/hydration              | Use React, Preact, or Solid |
+| React ecosystem (MUI, Radix, Tanstack Query) | Requires React runtime      |
+| Next.js App Router / RSC                     | Use Next.js built-in RSC    |
 
 ### For Streaming/DOM Patching
+
 Use [`@cjean-fr/jsx-flow`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-flow):
+
 - Adds `<Deferred>`, `<Patch>`, streaming support
 - Adapters for Turbo Streams, HTMX, Native DOM updates, ESI
 

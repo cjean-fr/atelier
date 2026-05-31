@@ -1,5 +1,5 @@
-import { describe, it, expect } from "bun:test";
 import { indexEntry } from "./extract.js";
+import { describe, it, expect } from "bun:test";
 
 describe("indexEntry — text extraction", () => {
   it("indexes <main> content only when present", () => {

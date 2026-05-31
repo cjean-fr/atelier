@@ -15,7 +15,10 @@ export { Layout } from "./components/Layout.js";
 export { Nav } from "./components/Nav.js";
 export { SearchDialog } from "./components/SearchDialog.js";
 export { CodeBlock, type CodeBlockProps } from "./components/CodeBlock.js";
-export { CodeExample, type CodeExampleProps } from "./components/CodeExample.js";
+export {
+  CodeExample,
+  type CodeExampleProps,
+} from "./components/CodeExample.js";
 export { TableOfContents } from "./components/TableOfContents.js";
 export { ThemeToggle, themeInitScript } from "./components/ThemeToggle.js";
 export { NavToggle } from "./components/NavToggle.js";
@@ -34,7 +37,12 @@ export {
 } from "./sitemap.js";
 
 // Context (for custom components)
-export { useDocs, setDocs, DocsContext, type DocsRenderContext } from "./context.js";
+export {
+  useDocs,
+  setDocs,
+  DocsContext,
+  type DocsRenderContext,
+} from "./context.js";
 
 // Routing + sidebar — exposed for the Vite plugin and advanced users
 export { discoverPages } from "./routing.js";

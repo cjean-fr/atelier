@@ -24,13 +24,15 @@ const PLACEHOLDER = /<aside data-docs-toc-placeholder><\/aside>/;
 
 /** Slugify a heading text into an HTML id (lowercase, alphanumeric + dashes). */
 export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/<[^>]+>/g, "") // strip any inline tags
-    .replace(/&[a-z]+;/g, " ") // decode entities loosely
-    .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "section";
+  return (
+    text
+      .toLowerCase()
+      .replace(/<[^>]+>/g, "") // strip any inline tags
+      .replace(/&[a-z]+;/g, " ") // decode entities loosely
+      .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "section"
+  );
 }
 
 /**
@@ -83,14 +85,14 @@ function renderToc(entries: TocEntry[]): string {
     .map(
       (e) =>
         `<li class="docs-toc-entry docs-toc-level-${e.level} m-0">` +
-          `<a href="#${e.id}" class="docs-toc-link block py-1 ${e.level === 3 ? "pl-6 text-xs" : "pl-3"} text-sm text-gray-500 dark:text-gray-400 border-l-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 -ml-px transition-colors aria-[current=true]:text-blue-600 dark:aria-[current=true]:text-blue-400 aria-[current=true]:border-blue-500">${escapeHtml(e.text)}</a>` +
+        `<a href="#${e.id}" class="docs-toc-link block py-1 ${e.level === 3 ? "pl-6 text-xs" : "pl-3"} text-sm text-gray-500 dark:text-gray-400 border-l-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 -ml-px transition-colors aria-[current=true]:text-blue-600 dark:aria-[current=true]:text-blue-400 aria-[current=true]:border-blue-500">${escapeHtml(e.text)}</a>` +
         `</li>`,
     )
     .join("");
   return (
     `<aside class="docs-toc sticky top-8 text-sm" aria-label="Table of contents">` +
-      `<p class="docs-toc-title m-0 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">On this page</p>` +
-      `<ul class="docs-toc-list list-none p-0 m-0 border-l border-gray-200 dark:border-gray-800">${items}</ul>` +
+    `<p class="docs-toc-title m-0 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">On this page</p>` +
+    `<ul class="docs-toc-list list-none p-0 m-0 border-l border-gray-200 dark:border-gray-800">${items}</ul>` +
     `</aside>`
   );
 }

@@ -5,10 +5,9 @@
  * plugin. Calling it explicitly in `docs.config.ts` gives the user TS
  * autocomplete and catches typos at compile time.
  */
-
-import type { DocsConfig, ResolvedDocsConfig } from "./types.js";
 import { Layout } from "./components/Layout.js";
 import { builtin } from "./search/builtin/adapter.js";
+import type { DocsConfig, ResolvedDocsConfig } from "./types.js";
 
 const DEFAULTS = {
   pages: "./pages",

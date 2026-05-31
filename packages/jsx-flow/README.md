@@ -8,12 +8,12 @@ Fragment streaming extension for [@cjean-fr/jsx-string](../jsx-string). Renders 
 
 Use `jsx-string` alone for SSG, emails, and pure SSR. Add `jsx-flow` when you need **progressive enhancement**: the initial HTML loads fast with placeholders, and heavy or slow components are rendered separately and patched into the page without a full reload.
 
-| `@cjean-fr/jsx-string` | `@cjean-fr/jsx-flow` |
-| --- | --- |
+| `@cjean-fr/jsx-string`    | `@cjean-fr/jsx-flow`                               |
+| ------------------------- | -------------------------------------------------- |
 | Renders JSX → HTML string | Adds deferred fragments + streaming patch delivery |
-| Server-only, zero runtime | Emits adapter-specific markup for DOM updates |
-| `renderToString()` | `renderToReadableStream()` / `renderToStatic()` |
-| Context via `withScope()` | Adapters: Turbo, HTMX, Native, WebPlatform, ESI |
+| Server-only, zero runtime | Emits adapter-specific markup for DOM updates      |
+| `renderToString()`        | `renderToReadableStream()` / `renderToStatic()`    |
+| Context via `withScope()` | Adapters: Turbo, HTMX, Native, WebPlatform, ESI    |
 
 ## Why deferred regions in streaming SSR
 
@@ -90,13 +90,13 @@ import { Patch } from "@cjean-fr/jsx-flow";
 
 Both `<Deferred>` and `<Patch>` accept a `merge` prop describing how the content is applied **relative to the target DOM element identified by `id`**. The content rendered by the factory has no id requirement.
 
-| `merge` | Effect |
-| --- | --- |
+| `merge`     | Effect                                          |
+| ----------- | ----------------------------------------------- |
 | `"replace"` | Target element is replaced by content (default) |
-| `"append"` | Content inserted as last child of target |
-| `"prepend"` | Content inserted as first child of target |
-| `"before"` | Content inserted as previous sibling of target |
-| `"after"` | Content inserted as next sibling of target |
+| `"append"`  | Content inserted as last child of target        |
+| `"prepend"` | Content inserted as first child of target       |
+| `"before"`  | Content inserted as previous sibling of target  |
+| `"after"`   | Content inserted as next sibling of target      |
 
 > `WebPlatformAdapter` only supports `"replace"` (WICG spec limitation). `EsiAdapter` only supports `"replace"` (ESI has no native insert/append semantics).
 
@@ -104,13 +104,13 @@ Both `<Deferred>` and `<Patch>` accept a `merge` prop describing how the content
 
 Each adapter is a pure encoding backend implementing three methods plus an optional `transformShell`.
 
-| Adapter | `Placeholder` | `Patch` (streaming inline) | `Frame` (SSG lazy-load) |
-| --- | --- | --- | --- |
-| `TurboAdapter` | `<turbo-frame>` | `<turbo-stream action="…">` | `<turbo-frame id="…">` |
-| `HtmxAdapter` | `<div hx-get>` | `<div hx-swap-oob="…">` | `<div id="…">` |
-| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only) | `<template for="…">` |
-| `NativeAdapter` | `<?start name>…<?end>` | `<template for>` + `insertAdjacentHTML` | `<template for="…">` |
-| `EsiAdapter` | `<esi:include src>` | `<esi:inline name fetchable>` (`replace` only) | raw HTML |
+| Adapter              | `Placeholder`          | `Patch` (streaming inline)                     | `Frame` (SSG lazy-load) |
+| -------------------- | ---------------------- | ---------------------------------------------- | ----------------------- |
+| `TurboAdapter`       | `<turbo-frame>`        | `<turbo-stream action="…">`                    | `<turbo-frame id="…">`  |
+| `HtmxAdapter`        | `<div hx-get>`         | `<div hx-swap-oob="…">`                        | `<div id="…">`          |
+| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)          | `<template for="…">`    |
+| `NativeAdapter`      | `<?start name>…<?end>` | `<template for>` + `insertAdjacentHTML`        | `<template for="…">`    |
+| `EsiAdapter`         | `<esi:include src>`    | `<esi:inline name fetchable>` (`replace` only) | raw HTML                |
 
 - **`Patch`** — fragment delivered inline in the same HTTP response as the shell.
 - **`Frame`** — fragment served as a standalone file fetched by the client (SSG).
@@ -140,7 +140,11 @@ Only `"replace"` is supported; ESI has no insert/append semantics. No client-sid
 ### Streaming (server pushes fragments)
 
 ```tsx
-import { renderToReadableStream, NativeAdapter, Deferred } from "@cjean-fr/jsx-flow";
+import {
+  renderToReadableStream,
+  NativeAdapter,
+  Deferred,
+} from "@cjean-fr/jsx-flow";
 
 const stream = await renderToReadableStream(
   () => (
@@ -166,7 +170,9 @@ import { renderToStatic } from "@cjean-fr/jsx-flow";
 
 await renderToStatic(async (ctx) => {
   for (const page of pages) {
-    const html = await ctx.renderPage(() => page.component({ currentPage: page.url }));
+    const html = await ctx.renderPage(() =>
+      page.component({ currentPage: page.url }),
+    );
     await Bun.write(page.outPath, "<!DOCTYPE html>\n" + html);
   }
 });
@@ -182,7 +188,9 @@ import { renderToStatic, NativeAdapter } from "@cjean-fr/jsx-flow";
 await renderToStatic(
   async (ctx) => {
     for (const page of pages) {
-      const html = await ctx.renderPage(() => page.component({ currentPage: page.url }));
+      const html = await ctx.renderPage(() =>
+        page.component({ currentPage: page.url }),
+      );
       await Bun.write(page.outPath, "<!DOCTYPE html>\n" + html);
     }
 
@@ -215,40 +223,40 @@ patch("toast-list", () => <li>Saved</li>, "append");
 
 ### Components
 
-| Export | Description |
-| --- | --- |
+| Export     | Description                                                             |
+| ---------- | ----------------------------------------------------------------------- |
 | `Deferred` | Renders a placeholder; delivers real content as a patch after the shell |
-| `Patch` | Renders nothing; pushes a fragment to an existing DOM target |
+| `Patch`    | Renders nothing; pushes a fragment to an existing DOM target            |
 
 ### Renderers
 
-| Export | Description |
-| --- | --- |
-| `renderToReadableStream(node, adapter)` | Streams shell + fragments as a `ReadableStream<string>` |
-| `renderToStatic(handler, options?)` | Runs `handler` inside a static render scope. `options.adapter` + `options.generatePath` required only when using `<Deferred>` / `ctx.emitFragments` |
-| `streamFragments(fragments, adapter, cb)` | Low-level: render a `Map<id, FragmentEffect>` and call `cb(id, html)` for each |
+| Export                                    | Description                                                                                                                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `renderToReadableStream(node, adapter)`   | Streams shell + fragments as a `ReadableStream<string>`                                                                                             |
+| `renderToStatic(handler, options?)`       | Runs `handler` inside a static render scope. `options.adapter` + `options.generatePath` required only when using `<Deferred>` / `ctx.emitFragments` |
+| `streamFragments(fragments, adapter, cb)` | Low-level: render a `Map<id, FragmentEffect>` and call `cb(id, html)` for each                                                                      |
 
 ### Context & scope
 
-| Export | Description |
-| --- | --- |
-| `Flow` | Context token — `useContext(Flow)` from inside a render scope |
-| `FlowContext` | Type: `{ config, fragments, nextId, patch }` |
-| `StaticContext` | `FlowContext` + `renderPage(node)` + `emitFragments(cb)` |
+| Export          | Description                                                   |
+| --------------- | ------------------------------------------------------------- |
+| `Flow`          | Context token — `useContext(Flow)` from inside a render scope |
+| `FlowContext`   | Type: `{ config, fragments, nextId, patch }`                  |
+| `StaticContext` | `FlowContext` + `renderPage(node)` + `emitFragments(cb)`      |
 
 ### Adapters & types
 
-| Export | Description |
-| --- | --- |
-| `TurboAdapter` | Hotwire Turbo Streams — all merge types |
-| `HtmxAdapter` | HTMX OOB swaps — all merge types |
-| `NativeAdapter` | Declarative Partial Updates + bundled polyfill — all merge types |
-| `WebPlatformAdapter` | Pure WICG spec — `replace` only |
-| `EsiAdapter` | CDN-level ESI composition — `replace` only |
-| `PatchAdapter` | `{ Placeholder, Patch, Frame, transformShell? }` |
-| `MergeType` | `"replace" \| "append" \| "prepend" \| "before" \| "after"` |
-| `FragmentEffect` | `{ factory: () => JSXNode; merge: MergeType }` |
-| `assertFragmentId` | Validates a fragment id (helpful in custom plugins calling `patch` directly) |
+| Export               | Description                                                                  |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `TurboAdapter`       | Hotwire Turbo Streams — all merge types                                      |
+| `HtmxAdapter`        | HTMX OOB swaps — all merge types                                             |
+| `NativeAdapter`      | Declarative Partial Updates + bundled polyfill — all merge types             |
+| `WebPlatformAdapter` | Pure WICG spec — `replace` only                                              |
+| `EsiAdapter`         | CDN-level ESI composition — `replace` only                                   |
+| `PatchAdapter`       | `{ Placeholder, Patch, Frame, transformShell? }`                             |
+| `MergeType`          | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                  |
+| `FragmentEffect`     | `{ factory: () => JSXNode; merge: MergeType }`                               |
+| `assertFragmentId`   | Validates a fragment id (helpful in custom plugins calling `patch` directly) |
 
 ## License
 

@@ -1,12 +1,15 @@
 import { runBuild } from "./build.js";
 import { runDev } from "./dev.js";
+import { runInit } from "./init.js";
 
 const USAGE = `@cjean-fr/docs
 
 Usage:
-  docs dev [--port N]   Start the dev server with HMR.
-  docs build            Build the documentation site (vite build + render).
-  docs --help           Show this message.
+  docs init [--with-tailwind] [--force]
+                          Scaffold a starter project in the current directory.
+  docs dev [--port N]     Start the dev server with HMR.
+  docs build              Build the documentation site (vite build + render).
+  docs --help             Show this message.
 `;
 
 export async function run(argv: string[]): Promise<void> {
@@ -18,6 +21,14 @@ export async function run(argv: string[]): Promise<void> {
     case "dev": {
       const port = parsePortFlag(argv.slice(1));
       await runDev(process.cwd(), port);
+      return;
+    }
+    case "init": {
+      const rest = argv.slice(1);
+      await runInit(process.cwd(), {
+        withTailwind: rest.includes("--with-tailwind"),
+        force: rest.includes("--force"),
+      });
       return;
     }
     case undefined:

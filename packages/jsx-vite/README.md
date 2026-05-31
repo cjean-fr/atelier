@@ -68,7 +68,7 @@ setVite(null);
 
 ```ts
 const manifest = await loadViteManifest("dist/.vite/manifest.json");
-setVite(manifest);  // null in dev, real manifest in prod
+setVite(manifest); // null in dev, real manifest in prod
 ```
 
 ### 3. Reference arbitrary assets with `assetUrl()`
@@ -91,6 +91,7 @@ import { assetUrl } from "@cjean-fr/jsx-vite";
 ```
 
 Resolution rules:
+
 - Dev: returns `{base}{entry}` (Vite serves the source directly).
 - Prod: returns `{base}{chunk.file}` from the manifest.
 - Throws if the entry is missing from the manifest in prod.
@@ -146,14 +147,14 @@ The manifest will be written to `<outDir>/.vite/manifest.json`.
 
 ## API
 
-| Export | Description |
-| --- | --- |
-| `Asset` | Component that resolves an entry to `<link>` / `<script>` / `<link rel="modulepreload">` tags (CSS / JS only) |
-| `assetUrl(entry)` | Function that resolves an entry to a URL string — use inside arbitrary tags (images, fonts, favicons, …) |
-| `setVite(manifest, { base? })` | Configure the render scope. Call once per render. |
-| `loadViteManifest(path)` | Load a Vite manifest from disk. Returns `null` if the file does not exist. |
-| `ViteManifest` | Type mirroring Vite's `manifest.json` shape |
-| `ViteManifestChunk` | Type for a single manifest entry |
+| Export                         | Description                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `Asset`                        | Component that resolves an entry to `<link>` / `<script>` / `<link rel="modulepreload">` tags (CSS / JS only) |
+| `assetUrl(entry)`              | Function that resolves an entry to a URL string — use inside arbitrary tags (images, fonts, favicons, …)      |
+| `setVite(manifest, { base? })` | Configure the render scope. Call once per render.                                                             |
+| `loadViteManifest(path)`       | Load a Vite manifest from disk. Returns `null` if the file does not exist.                                    |
+| `ViteManifest`                 | Type mirroring Vite's `manifest.json` shape                                                                   |
+| `ViteManifestChunk`            | Type for a single manifest entry                                                                              |
 
 ## Notes
 

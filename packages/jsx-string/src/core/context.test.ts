@@ -157,7 +157,9 @@ describe("context", () => {
     it("key uses Symbol.for so it survives across instances", () => {
       const Shared = context<string>("test:shared");
       // Simulate a "second instance" by retrieving the same global symbol.
-      const sameViaRegistry = Symbol.for("@cjean-fr/jsx-string.context.test:shared");
+      const sameViaRegistry = Symbol.for(
+        "@cjean-fr/jsx-string.context.test:shared",
+      );
       expect(Shared).toBe(sameViaRegistry as unknown as typeof Shared);
     });
 

@@ -5,9 +5,13 @@
  * `<Layout>`, `<Nav>`, `<SearchDialog>` read it with `useDocs()`. Users who
  * write their own components can call `useDocs()` too.
  */
-
-import { context, setContext, useContext } from "@cjean-fr/jsx-string";
 import type { PageMeta, ResolvedDocsConfig, ResolvedSidebar } from "./types.js";
+import {
+  context,
+  setContext,
+  useContext,
+  type Context,
+} from "@cjean-fr/jsx-string";
 
 export interface DocsRenderContext {
   /** The resolved configuration (with all defaults filled in). */
@@ -24,7 +28,9 @@ export interface DocsRenderContext {
   editUrl: string | null;
 }
 
-const DocsContext = context<DocsRenderContext>("@cjean-fr/docs:render");
+const DocsContext: Context<DocsRenderContext> = context<DocsRenderContext>(
+  "@cjean-fr/docs:render",
+);
 
 /** Configure the docs context for the current render scope. */
 export function setDocs(value: DocsRenderContext): void {

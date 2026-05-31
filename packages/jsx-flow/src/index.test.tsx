@@ -140,8 +140,14 @@ describe("Patch", () => {
 
   it("should work in static mode", async () => {
     await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "static", generatePath: (id) => `/f/${id}.html` });
-      await renderToString(<Patch target="some-target">{() => <span />}</Patch>);
+      initFlow({
+        adapter: TurboAdapter,
+        mode: "static",
+        generatePath: (id) => `/f/${id}.html`,
+      });
+      await renderToString(
+        <Patch target="some-target">{() => <span />}</Patch>,
+      );
       const { fragments } = useContext(Flow);
       expect(fragments.size).toBe(1);
     });
@@ -192,7 +198,10 @@ describe("patch()", () => {
 describe("streamFragments", () => {
   it("should call callback for each fragment", async () => {
     const fragments = new Map();
-    fragments.set("test-1", { factory: () => <div>Hello</div>, merge: "replace" });
+    fragments.set("test-1", {
+      factory: () => <div>Hello</div>,
+      merge: "replace",
+    });
 
     const results: [string, string][] = [];
     await streamFragments(fragments, TurboAdapter, (id, html) => {
@@ -207,7 +216,9 @@ describe("streamFragments", () => {
     const fragments = new Map();
     fragments.set("good", { factory: () => <div>OK</div>, merge: "replace" });
     fragments.set("bad", {
-      factory: () => { throw new Error("fail"); },
+      factory: () => {
+        throw new Error("fail");
+      },
       merge: "replace",
     });
 
@@ -222,7 +233,9 @@ describe("streamFragments", () => {
 });
 
 describe("renderToReadableStream", () => {
-  async function collectChunks(stream: ReadableStream<string>): Promise<string[]> {
+  async function collectChunks(
+    stream: ReadableStream<string>,
+  ): Promise<string[]> {
     const chunks: string[] = [];
     for await (const chunk of stream) chunks.push(chunk);
     return chunks;
@@ -253,7 +266,9 @@ describe("renderToReadableStream", () => {
     const stream = await renderToReadableStream(
       () => (
         <html>
-          <body><p>static</p></body>
+          <body>
+            <p>static</p>
+          </body>
         </html>
       ),
       TurboAdapter,
@@ -267,7 +282,13 @@ describe("renderToReadableStream", () => {
 describe("renderToStatic", () => {
   it("works without any options for pure-static rendering", async () => {
     const result = await renderToStatic(async (ctx) => {
-      const html = await ctx.renderPage(() => <html><body><p>hi</p></body></html>);
+      const html = await ctx.renderPage(() => (
+        <html>
+          <body>
+            <p>hi</p>
+          </body>
+        </html>
+      ));
       return { html, count: ctx.fragments.size };
     });
     expect(result.html).toContain("<p>hi</p>");
@@ -278,9 +299,13 @@ describe("renderToStatic", () => {
     const result = await renderToStatic(
       async (ctx) => {
         const html = await ctx.renderPage(() => (
-          <html><body>
-            <Deferred fallback={<span>…</span>}>{() => <span>real</span>}</Deferred>
-          </body></html>
+          <html>
+            <body>
+              <Deferred fallback={<span>…</span>}>
+                {() => <span>real</span>}
+              </Deferred>
+            </body>
+          </html>
         ));
         return { html, ids: [...ctx.fragments.keys()] };
       },
@@ -293,7 +318,13 @@ describe("renderToStatic", () => {
 
   it("applies adapter.transformShell to the rendered page", async () => {
     const result = await renderToStatic(
-      async (ctx) => ctx.renderPage(() => <html><head></head><body /></html>),
+      async (ctx) =>
+        ctx.renderPage(() => (
+          <html>
+            <head></head>
+            <body />
+          </html>
+        )),
       { adapter: NativeAdapter },
     );
     expect(result).toContain("MutationObserver");
@@ -305,9 +336,13 @@ describe("renderToStatic", () => {
       await renderToStatic(
         async (ctx) => {
           await ctx.renderPage(() => (
-            <html><body>
-              <Deferred fallback={<span>…</span>}>{() => <span>real</span>}</Deferred>
-            </body></html>
+            <html>
+              <body>
+                <Deferred fallback={<span>…</span>}>
+                  {() => <span>real</span>}
+                </Deferred>
+              </body>
+            </html>
           ));
           await ctx.emitFragments((id, url, html) => {
             written.push({ id, url, html });
@@ -326,11 +361,17 @@ describe("renderToStatic", () => {
       await renderToStatic(
         async (ctx) => {
           await ctx.renderPage(() => (
-            <html><body>
-              <Deferred fallback={<span>…</span>}>{() => <span>real</span>}</Deferred>
-            </body></html>
+            <html>
+              <body>
+                <Deferred fallback={<span>…</span>}>
+                  {() => <span>real</span>}
+                </Deferred>
+              </body>
+            </html>
           ));
-          await ctx.emitFragments((_id, url) => { written.push(url); });
+          await ctx.emitFragments((_id, url) => {
+            written.push(url);
+          });
         },
         { adapter: TurboAdapter, generatePath: (id) => `/f/${id}.html` },
       );
@@ -350,9 +391,13 @@ describe("renderToStatic", () => {
     await expect(
       renderToStatic(async (ctx) => {
         return ctx.renderPage(() => (
-          <html><body>
-            <Deferred fallback={<span>…</span>}>{() => <span>real</span>}</Deferred>
-          </body></html>
+          <html>
+            <body>
+              <Deferred fallback={<span>…</span>}>
+                {() => <span>real</span>}
+              </Deferred>
+            </body>
+          </html>
         ));
       }),
     ).rejects.toThrow(/adapter/i);
@@ -362,7 +407,11 @@ describe("renderToStatic", () => {
 describe("adapters", () => {
   it("TurboAdapter should render placeholder with turbo-frame", async () => {
     const html = await renderToString(
-      TurboAdapter.Placeholder({ id: "test-id", src: "/src", children: "fallback" }),
+      TurboAdapter.Placeholder({
+        id: "test-id",
+        src: "/src",
+        children: "fallback",
+      }),
     );
     expect(html).toContain("turbo-frame");
     expect(html).toContain('id="test-id"');
@@ -371,7 +420,11 @@ describe("adapters", () => {
 
   it("TurboAdapter should render patch with turbo-stream action=replace", async () => {
     const html = await renderToString(
-      TurboAdapter.Patch({ id: "test-id", children: "content", merge: "replace" }),
+      TurboAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "replace",
+      }),
     );
     expect(html).toContain("turbo-stream");
     expect(html).toContain('target="test-id"');
@@ -380,14 +433,22 @@ describe("adapters", () => {
 
   it("TurboAdapter should render patch with turbo-stream action=append", async () => {
     const html = await renderToString(
-      TurboAdapter.Patch({ id: "test-id", children: "content", merge: "append" }),
+      TurboAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "append",
+      }),
     );
     expect(html).toContain('action="append"');
   });
 
   it("HtmxAdapter should render placeholder with hx-get", async () => {
     const html = await renderToString(
-      HtmxAdapter.Placeholder({ id: "test-id", src: "/src", children: "fallback" }),
+      HtmxAdapter.Placeholder({
+        id: "test-id",
+        src: "/src",
+        children: "fallback",
+      }),
     );
     expect(html).toContain("hx-get");
     expect(html).toContain('id="test-id"');
@@ -395,34 +456,54 @@ describe("adapters", () => {
 
   it("HtmxAdapter should render patch with hx-swap-oob=outerHTML for replace", async () => {
     const html = await renderToString(
-      HtmxAdapter.Patch({ id: "test-id", children: "content", merge: "replace" }),
+      HtmxAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "replace",
+      }),
     );
     expect(html).toContain('hx-swap-oob="outerHTML"');
   });
 
   it("HtmxAdapter should render patch with hx-swap-oob=beforebegin for before", async () => {
     const html = await renderToString(
-      HtmxAdapter.Patch({ id: "test-id", children: "content", merge: "before" }),
+      HtmxAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "before",
+      }),
     );
     expect(html).toContain('hx-swap-oob="beforebegin"');
   });
 
   it("WebPlatformAdapter should render patch for replace", async () => {
     const html = await renderToString(
-      WebPlatformAdapter.Patch({ id: "test-id", children: "content", merge: "replace" }),
+      WebPlatformAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "replace",
+      }),
     );
     expect(html).toContain("template");
   });
 
   it("WebPlatformAdapter should throw for non-replace merge types", () => {
     expect(() =>
-      WebPlatformAdapter.Patch({ id: "test-id", children: "content", merge: "append" }),
+      WebPlatformAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "append",
+      }),
     ).toThrow(/WebPlatformAdapter only supports "replace"/);
   });
 
   it("NativeAdapter should render patch with template for replace", async () => {
     const html = await renderToString(
-      NativeAdapter.Patch({ id: "test-id", children: "content", merge: "replace" }),
+      NativeAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "replace",
+      }),
     );
     expect(html).toContain("template");
     expect(html).not.toContain("insertAdjacentHTML");
@@ -430,7 +511,11 @@ describe("adapters", () => {
 
   it("NativeAdapter should use insertAdjacentHTML for non-replace merge types", async () => {
     const html = await renderToString(
-      NativeAdapter.Patch({ id: "test-id", children: "content", merge: "append" }),
+      NativeAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "append",
+      }),
     );
     expect(html).toContain("insertAdjacentHTML");
     expect(html).toContain("beforeend");
@@ -472,7 +557,11 @@ describe("adapters", () => {
 
   it("EsiAdapter should render esi:include with src", async () => {
     const html = await renderToString(
-      EsiAdapter.Placeholder({ id: "test-id", src: "/fragments/test.html", children: "fallback" }),
+      EsiAdapter.Placeholder({
+        id: "test-id",
+        src: "/fragments/test.html",
+        children: "fallback",
+      }),
     );
     expect(html).toContain("esi:include");
     expect(html).toContain('src="/fragments/test.html"');
@@ -481,7 +570,11 @@ describe("adapters", () => {
 
   it("EsiAdapter should render fallback inline when no src", async () => {
     const html = await renderToString(
-      EsiAdapter.Placeholder({ id: "test-id", src: null, children: "fallback" }),
+      EsiAdapter.Placeholder({
+        id: "test-id",
+        src: null,
+        children: "fallback",
+      }),
     );
     expect(html).toContain("fallback");
     expect(html).not.toContain("esi:include");
@@ -489,7 +582,11 @@ describe("adapters", () => {
 
   it("EsiAdapter should escape src attribute", async () => {
     const html = await renderToString(
-      EsiAdapter.Placeholder({ id: "test-id", src: "/f?a=1&b=2", children: "" }),
+      EsiAdapter.Placeholder({
+        id: "test-id",
+        src: "/f?a=1&b=2",
+        children: "",
+      }),
     );
     expect(html).toContain("&amp;");
     expect(html).not.toContain('"&"');
@@ -497,7 +594,11 @@ describe("adapters", () => {
 
   it("EsiAdapter should render esi:inline patch", async () => {
     const html = await renderToString(
-      EsiAdapter.Patch({ id: "test-id", children: "content", merge: "replace" }),
+      EsiAdapter.Patch({
+        id: "test-id",
+        children: "content",
+        merge: "replace",
+      }),
     );
     expect(html).toContain("esi:inline");
     expect(html).toContain('name="test-id"');
