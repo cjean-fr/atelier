@@ -21,7 +21,7 @@ export function ThemeToggle() {
     <button
       type="button"
       data-docs-theme-toggle
-      class="docs-theme-toggle inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+      class="docs-theme-toggle inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
       aria-label="Toggle theme"
     >
       {SUN_ICON}

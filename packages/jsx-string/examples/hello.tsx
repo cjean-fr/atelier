@@ -3,7 +3,6 @@
  *
  * Run: `bun examples/hello.tsx`
  */
-
 import { renderToString } from "@cjean-fr/jsx-string";
 
 const html = await renderToString(

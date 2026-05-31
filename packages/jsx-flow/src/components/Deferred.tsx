@@ -1,5 +1,5 @@
-import { Flow } from "../context.js";
 import type { MergeType } from "../adapters.js";
+import { Flow } from "../context.js";
 import {
   useContext,
   type JSXNode,
@@ -47,7 +47,8 @@ export function Deferred(props: DeferredProps): any {
     throw new Error("Deferred must have children if src is not provided.");
   }
 
-  const merge: MergeType = "merge" in props ? (props.merge ?? "replace") : "replace";
+  const merge: MergeType =
+    "merge" in props ? (props.merge ?? "replace") : "replace";
   patch(id, children, merge);
 
   if (config.mode === "streaming") {

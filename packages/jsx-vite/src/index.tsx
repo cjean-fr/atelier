@@ -19,14 +19,14 @@
  *
  * @module
  */
-
-import { readFile, access } from "node:fs/promises";
 import {
   context,
   setContext,
   useContext,
+  type Context,
   type JSXNode,
 } from "@cjean-fr/jsx-string";
+import { readFile, access } from "node:fs/promises";
 
 /** A single chunk in a Vite manifest. Mirrors `vite.ManifestChunk`. */
 export interface ViteManifestChunk {
@@ -51,7 +51,9 @@ interface ViteScope {
   base: string;
 }
 
-const ViteContext = context<ViteScope>("@cjean-fr/jsx-vite:scope");
+const ViteContext: Context<ViteScope> = context<ViteScope>(
+  "@cjean-fr/jsx-vite:scope",
+);
 
 /**
  * Load and parse a Vite manifest from disk. Returns `null` if the file does

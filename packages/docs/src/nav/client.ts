@@ -24,8 +24,12 @@ function setOpen(open: boolean): void {
   else nav.removeAttribute("data-open");
   toggle?.setAttribute("aria-expanded", String(open));
   // Swap toggle icons.
-  toggle?.querySelector(".docs-nav-toggle-open")?.toggleAttribute("hidden", open);
-  toggle?.querySelector(".docs-nav-toggle-close")?.toggleAttribute("hidden", !open);
+  toggle
+    ?.querySelector(".docs-nav-toggle-open")
+    ?.toggleAttribute("hidden", open);
+  toggle
+    ?.querySelector(".docs-nav-toggle-close")
+    ?.toggleAttribute("hidden", !open);
   // Lock body scroll when nav is full-screen on mobile.
   document.body.style.overflow = open ? "hidden" : "";
 }

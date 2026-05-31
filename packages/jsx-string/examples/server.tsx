@@ -5,7 +5,6 @@
  * Run: `bun examples/server.tsx`
  * Then: `curl -i http://localhost:3000/?name=World`
  */
-
 import {
   context,
   setContext,

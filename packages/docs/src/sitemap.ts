@@ -2,11 +2,14 @@
  * Sitemap + RSS generation. Both opt-in via `config.site` (the public origin
  * URL) — without it, neither file is produced (URLs need an origin).
  */
-
 import type { PageMeta } from "./types.js";
 
 export interface SitemapInput {
-  pages: ReadonlyArray<{ url: string; meta: PageMeta; lastUpdated: string | null }>;
+  pages: ReadonlyArray<{
+    url: string;
+    meta: PageMeta;
+    lastUpdated: string | null;
+  }>;
   /** Public origin (e.g. `"https://docs.example.com"`). Required. */
   site: string;
 }
@@ -19,7 +22,9 @@ export function generateSitemap(input: SitemapInput): string {
     .filter((p) => !p.meta.draft)
     .map((p) => {
       const loc = origin + p.url;
-      const lastmod = p.lastUpdated ? `<lastmod>${escapeXml(p.lastUpdated)}</lastmod>` : "";
+      const lastmod = p.lastUpdated
+        ? `<lastmod>${escapeXml(p.lastUpdated)}</lastmod>`
+        : "";
       return `  <url><loc>${escapeXml(loc)}</loc>${lastmod}</url>`;
     })
     .join("\n");
@@ -31,7 +36,11 @@ ${entries}
 }
 
 export interface RssInput {
-  pages: ReadonlyArray<{ url: string; meta: PageMeta; lastUpdated: string | null }>;
+  pages: ReadonlyArray<{
+    url: string;
+    meta: PageMeta;
+    lastUpdated: string | null;
+  }>;
   /** Public origin (e.g. `"https://docs.example.com"`). Required. */
   site: string;
   /** Channel title. Defaults to `"Documentation"`. */
@@ -44,7 +53,13 @@ export interface RssInput {
 
 /** Generate a minimal RSS 2.0 feed string. */
 export function generateRss(input: RssInput): string {
-  const { site, pages, title = "Documentation", description = "", language } = input;
+  const {
+    site,
+    pages,
+    title = "Documentation",
+    description = "",
+    language,
+  } = input;
   const origin = site.replace(/\/+$/, "");
   const sorted = [...pages]
     .filter((p) => !p.meta.draft)

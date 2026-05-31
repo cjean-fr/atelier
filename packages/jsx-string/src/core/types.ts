@@ -41,7 +41,7 @@ if (!g[RAWSTRING_KEY]) {
   };
 }
 
-export const RawString = g[RAWSTRING_KEY]!;
+export const RawString: typeof RawStringType = g[RAWSTRING_KEY]!;
 export type RawString = RawStringType;
 
 /**

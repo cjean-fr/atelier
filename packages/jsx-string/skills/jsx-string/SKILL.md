@@ -110,7 +110,9 @@ Typed, isolated scope for sharing data across the render tree without prop drill
 // Define a typed token — once, in its own module. The string key is a
 // globally-unique namespace ("<scope>:<purpose>"); same key → same Symbol
 // across module duplicates (Vite SSR, workers, microfrontends).
-export const AuthContext = context<{ user: string; locale: string }>("my-app:auth");
+export const AuthContext = context<{ user: string; locale: string }>(
+  "my-app:auth",
+);
 ```
 
 ```tsx
@@ -165,13 +167,13 @@ await withScope(async () => {
 
 ## Migration from React
 
-| React pattern                  | jsx-string equivalent                           |
-| ------------------------------ | ----------------------------------------------- |
-| `useState`, `useEffect`        | Fetch data before render, pass as props         |
+| React pattern                  | jsx-string equivalent                              |
+| ------------------------------ | -------------------------------------------------- |
+| `useState`, `useEffect`        | Fetch data before render, pass as props            |
 | `createContext` / `<Provider>` | `context<T>(key)` + `withScope()` + `setContext()` |
-| Event handler functions        | String values only (`onClick="alert(1)"`)       |
-| `ref`                          | Not supported                                   |
-| `className`                    | Both `class` and `className` accepted           |
+| Event handler functions        | String values only (`onClick="alert(1)"`)          |
+| `ref`                          | Not supported                                      |
+| `className`                    | Both `class` and `className` accepted              |
 
 ```tsx
 // React: hooks + useEffect

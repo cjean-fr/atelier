@@ -4,7 +4,6 @@
  *
  * Run: `bun examples/async-component.tsx`
  */
-
 import { renderToString } from "@cjean-fr/jsx-string";
 
 async function fetchUser(id: string) {

@@ -16,7 +16,6 @@
  * The output is a `ResolvedSidebar` with `current` flagged on the matching
  * page item.
  */
-
 import type {
   Page,
   ResolvedSidebar,
@@ -47,7 +46,10 @@ export function resolveSidebar(
 // Level 1: auto
 // ─────────────────────────────────────────────────────────────────────────────
 
-function resolveAuto(pages: readonly Page[], currentUrl: string): ResolvedSidebar {
+function resolveAuto(
+  pages: readonly Page[],
+  currentUrl: string,
+): ResolvedSidebar {
   const ungrouped: Page[] = [];
   const byGroup = new Map<string, Page[]>();
 
@@ -75,7 +77,9 @@ function resolveAuto(pages: readonly Page[], currentUrl: string): ResolvedSideba
   for (const name of groupNames) {
     groups.push({
       label: name,
-      items: sortPages(byGroup.get(name)!).map((p) => pageToItem(p, currentUrl)),
+      items: sortPages(byGroup.get(name)!).map((p) =>
+        pageToItem(p, currentUrl),
+      ),
     });
   }
 
@@ -158,7 +162,8 @@ function resolveItem(
   byUrl: ReadonlyMap<string, Page>,
   currentUrl: string,
 ): ResolvedSidebarItem[] {
-  if (typeof item === "string") return resolveSlug(item, pages, byUrl, currentUrl);
+  if (typeof item === "string")
+    return resolveSlug(item, pages, byUrl, currentUrl);
   if (isLink(item)) {
     return [
       {

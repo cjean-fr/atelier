@@ -40,12 +40,15 @@ function installScrollSpy(toc: HTMLElement): void {
           break;
         }
       }
-      toc.querySelectorAll<HTMLAnchorElement>(".docs-toc-link").forEach((link) => {
-        const isActive = activeId !== null && link.getAttribute("href") === `#${activeId}`;
-        link.classList.toggle("is-active", isActive);
-        if (isActive) link.setAttribute("aria-current", "true");
-        else link.removeAttribute("aria-current");
-      });
+      toc
+        .querySelectorAll<HTMLAnchorElement>(".docs-toc-link")
+        .forEach((link) => {
+          const isActive =
+            activeId !== null && link.getAttribute("href") === `#${activeId}`;
+          link.classList.toggle("is-active", isActive);
+          if (isActive) link.setAttribute("aria-current", "true");
+          else link.removeAttribute("aria-current");
+        });
     },
     {
       // Trigger when the heading enters the top quarter of the viewport.

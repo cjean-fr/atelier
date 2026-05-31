@@ -30,7 +30,8 @@ const feed = [
 function Stats() {
   return (
     <div class="stats">
-      <strong>{stats.users}</strong> users · <strong>{stats.online}</strong> online
+      <strong>{stats.users}</strong> users · <strong>{stats.online}</strong>{" "}
+      online
     </div>
   );
 }
@@ -68,7 +69,10 @@ function Shell() {
         <h1>Dashboard</h1>
 
         <h2>Stats</h2>
-        <Island name="stats" fallback={<p class="placeholder">Loading stats…</p>}>
+        <Island
+          name="stats"
+          fallback={<p class="placeholder">Loading stats…</p>}
+        >
           {() => <Stats />}
         </Island>
 

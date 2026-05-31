@@ -6,7 +6,6 @@
  * the link list as the default location — users who want a different layout
  * can swap the whole Layout component via config.components.Layout.
  */
-
 import { useDocs } from "../context.js";
 import { SearchDialog } from "./SearchDialog.js";
 import { ThemeToggle } from "./ThemeToggle.js";
@@ -15,10 +14,10 @@ export function Nav() {
   const { config, sidebar } = useDocs();
 
   return (
-    <nav class="docs-nav hidden data-[open]:block fixed inset-0 z-40 w-full max-w-xs px-6 py-8 overflow-y-auto bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 md:static md:block md:w-56 md:max-w-none md:shrink-0 md:px-0 md:pr-6 md:overflow-visible">
-      <div class="docs-nav-header flex items-start justify-between mb-4 gap-2">
+    <nav class="docs-nav fixed inset-0 z-40 hidden w-full max-w-xs overflow-y-auto border-r border-gray-200 bg-white px-6 py-8 data-[open]:block md:static md:block md:w-56 md:max-w-none md:shrink-0 md:overflow-visible md:px-0 md:pr-6 dark:border-gray-800 dark:bg-gray-950">
+      <div class="docs-nav-header mb-4 flex items-start justify-between gap-2">
         <a href="/" class="docs-nav-brand block">
-          <span class="docs-nav-brand-title font-bold text-lg text-gray-900 dark:text-white">
+          <span class="docs-nav-brand-title text-lg font-bold text-gray-900 dark:text-white">
             {config.title}
           </span>
           {config.tagline && (
@@ -37,7 +36,7 @@ export function Nav() {
       {sidebar.groups.map((group) => (
         <div class="docs-nav-group">
           {group.label !== null && (
-            <p class="docs-nav-group-label mt-5 mb-1 px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            <p class="docs-nav-group-label mt-5 mb-1 px-3 text-xs font-semibold tracking-wider text-gray-400 uppercase dark:text-gray-500">
               {group.label}
             </p>
           )}

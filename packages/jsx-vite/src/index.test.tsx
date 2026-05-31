@@ -1,7 +1,7 @@
 // @jsxImportSource @cjean-fr/jsx-string
-import { describe, it, expect } from "bun:test";
-import { withScope, renderToString } from "@cjean-fr/jsx-string";
 import { Asset, assetUrl, setVite, type ViteManifest } from "./index.js";
+import { withScope, renderToString } from "@cjean-fr/jsx-string";
+import { describe, it, expect } from "bun:test";
 
 async function render(node: unknown): Promise<string> {
   return renderToString(node as Parameters<typeof renderToString>[0]);
@@ -12,7 +12,9 @@ describe("Asset (dev mode)", () => {
     await withScope(async () => {
       setVite(null);
       const html = await render(<Asset entry="src/styles/main.css" />);
-      expect(html).toContain('<link rel="stylesheet" href="/src/styles/main.css"');
+      expect(html).toContain(
+        '<link rel="stylesheet" href="/src/styles/main.css"',
+      );
     });
   });
 
@@ -70,7 +72,9 @@ describe("Asset (production mode)", () => {
     await withScope(async () => {
       setVite(manifest);
       const html = await render(<Asset entry="src/main.ts" />);
-      expect(html).toContain('<script type="module" src="/assets/main-abc123.js">');
+      expect(html).toContain(
+        '<script type="module" src="/assets/main-abc123.js">',
+      );
     });
   });
 

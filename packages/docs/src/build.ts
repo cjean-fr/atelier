@@ -9,19 +9,18 @@
  *     import config from "./docs.config.js";
  *     await build(config);
  */
-
-import { writeFile, mkdir } from "node:fs/promises";
-import path from "node:path";
-import { renderToStatic } from "@cjean-fr/jsx-flow";
-import { loadViteManifest, setVite } from "@cjean-fr/jsx-vite";
 import { setDocs } from "./context.js";
+import { resolveEditUrl } from "./editUrl.js";
+import { getLastModified, preloadLastModified } from "./git.js";
 import { discoverPages, type DiscoverOptions } from "./routing.js";
 import { resolveSidebar } from "./sidebar.js";
-import { injectToc } from "./toc.js";
-import { getLastModified, preloadLastModified } from "./git.js";
-import { resolveEditUrl } from "./editUrl.js";
 import { generateSitemap, generateRss } from "./sitemap.js";
+import { injectToc } from "./toc.js";
 import type { Page, PageMeta, ResolvedDocsConfig } from "./types.js";
+import { renderToStatic } from "@cjean-fr/jsx-flow";
+import { loadViteManifest, setVite } from "@cjean-fr/jsx-vite";
+import { writeFile, mkdir } from "node:fs/promises";
+import path from "node:path";
 
 export interface BuildResult {
   /** Pages written to disk, indexed by output URL. */
@@ -51,9 +50,10 @@ export async function build(
 
   // 2. Discover pages.
   const allPages = await discoverPages(config, options);
-  const buildablePages = process.env.NODE_ENV === "production"
-    ? allPages.filter((p) => !p.meta.draft)
-    : allPages;
+  const buildablePages =
+    process.env.NODE_ENV === "production"
+      ? allPages.filter((p) => !p.meta.draft)
+      : allPages;
 
   // Batch all per-page `git log` lookups into one process.
   await preloadLastModified(buildablePages.map((p) => p.file));
@@ -62,7 +62,11 @@ export async function build(
   //    state (and a single Vite manifest setup) is shared.
   const written: Array<{ url: string; outPath: string }> = [];
   const rendered: Array<{ url: string; html: string; meta: PageMeta }> = [];
-  const pageMetas: Array<{ url: string; meta: PageMeta; lastUpdated: string | null }> = [];
+  const pageMetas: Array<{
+    url: string;
+    meta: PageMeta;
+    lastUpdated: string | null;
+  }> = [];
 
   await renderToStatic(async (ctx) => {
     setVite(manifest, { base: config.base });
@@ -81,7 +85,9 @@ export async function build(
         editUrl,
       });
 
-      const raw = await ctx.renderPage(() => renderPageWithLayout(page, config));
+      const raw = await ctx.renderPage(() =>
+        renderPageWithLayout(page, config),
+      );
       const html = injectToc(raw);
       const fullHtml = "<!DOCTYPE html>\n" + html;
       await mkdir(path.dirname(page.outPath), { recursive: true });

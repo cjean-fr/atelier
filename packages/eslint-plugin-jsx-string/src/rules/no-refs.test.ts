@@ -14,10 +14,7 @@ const ruleTester = new RuleTester({
 });
 
 ruleTester.run("no-refs", noRefs, {
-  valid: [
-    '<input id="field" />',
-    "<div data-ref=\"not-a-ref\" />",
-  ],
+  valid: ['<input id="field" />', '<div data-ref="not-a-ref" />'],
   invalid: [
     {
       code: "<input ref={inputRef} />",

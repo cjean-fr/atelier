@@ -18,7 +18,7 @@ export function SearchDialog() {
       <button
         id="search-trigger"
         type="button"
-        class="docs-search-trigger inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-600 transition-colors w-full"
+        class="docs-search-trigger inline-flex w-full items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-500 transition-colors hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-gray-600"
         aria-label="Open search"
       >
         <svg
@@ -35,19 +35,19 @@ export function SearchDialog() {
           />
         </svg>
         <span class="docs-search-trigger-label flex-1 text-left">Search…</span>
-        <kbd class="docs-search-kbd hidden sm:inline-flex items-center gap-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-mono text-gray-600 dark:text-gray-400">
+        <kbd class="docs-search-kbd hidden items-center gap-1 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-xs text-gray-600 sm:inline-flex dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
           <span class="text-base leading-none">⌘</span>K
         </kbd>
       </button>
 
       <dialog
         id="search-dialog"
-        class="docs-search-dialog m-0 mx-auto mt-[10vh] w-full max-w-lg rounded-xl bg-white dark:bg-gray-900 p-0 shadow-2xl backdrop:bg-gray-900/40 backdrop:backdrop-blur-sm dark:backdrop:bg-black/60 open:flex open:flex-col"
+        class="docs-search-dialog m-0 mx-auto mt-[10vh] w-full max-w-lg rounded-xl bg-white p-0 shadow-2xl backdrop:bg-gray-900/40 backdrop:backdrop-blur-sm open:flex open:flex-col dark:bg-gray-900 dark:backdrop:bg-black/60"
         aria-label="Search documentation"
       >
-        <div class="docs-search-input-row flex items-center gap-3 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
+        <div class="docs-search-input-row flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-800">
           <svg
-            class="docs-search-icon size-5 text-gray-400 shrink-0"
+            class="docs-search-icon size-5 shrink-0 text-gray-400"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -63,7 +63,7 @@ export function SearchDialog() {
             id="search-input"
             type="search"
             placeholder="Loading index…"
-            class="docs-search-input flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 outline-none disabled:opacity-50"
+            class="docs-search-input flex-1 bg-transparent text-gray-900 outline-none placeholder:text-gray-400 disabled:opacity-50 dark:text-gray-100"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"
@@ -73,7 +73,7 @@ export function SearchDialog() {
             aria-controls="search-results"
             aria-describedby="search-status"
           />
-          <kbd class="docs-search-kbd hidden sm:inline-flex items-center rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-mono text-gray-500 dark:text-gray-400">
+          <kbd class="docs-search-kbd hidden items-center rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-xs text-gray-500 sm:inline-flex dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
             Esc
           </kbd>
         </div>
@@ -87,7 +87,7 @@ export function SearchDialog() {
 
         <ul
           id="search-results"
-          class="docs-search-results hidden max-h-[60vh] overflow-y-auto py-2 m-0"
+          class="docs-search-results m-0 hidden max-h-[60vh] overflow-y-auto py-2"
           role="listbox"
           aria-label="Search results"
         ></ul>

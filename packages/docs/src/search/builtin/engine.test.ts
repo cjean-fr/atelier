@@ -1,4 +1,3 @@
-import { describe, it, expect } from "bun:test";
 import {
   rank,
   snippetAround,
@@ -8,6 +7,7 @@ import {
   MAX_RESULTS,
   type SearchEntry,
 } from "./engine.js";
+import { describe, it, expect } from "bun:test";
 
 const sample: SearchEntry[] = [
   {
@@ -55,13 +55,16 @@ describe("rank", () => {
   it("scores a title hit higher than a body-only hit", () => {
     const r = rank(sample, "quick");
     const ranked = r.find((x) => x.entry.url === "/guide/quick-start");
-    const otherCount = r.filter((x) => x.entry.url !== "/guide/quick-start").length;
+    const otherCount = r.filter(
+      (x) => x.entry.url !== "/guide/quick-start",
+    ).length;
     expect(ranked).toBeDefined();
     // Title contains "Quick" → at least 100 score. Body-only would be 10.
     expect(ranked!.score).toBeGreaterThanOrEqual(100);
     // Other entries that only match in body should score lower.
     for (const x of r) {
-      if (x.entry.url !== "/guide/quick-start") expect(x.score).toBeLessThan(100);
+      if (x.entry.url !== "/guide/quick-start")
+        expect(x.score).toBeLessThan(100);
     }
     // Sanity: did we have other matches at all?
     expect(otherCount).toBeGreaterThanOrEqual(0);
@@ -131,7 +134,9 @@ describe("snippetAround", () => {
 
 describe("escapeHtml", () => {
   it("escapes ampersand, angle brackets, and double quotes", () => {
-    expect(escapeHtml('<a href="x" & b>')).toBe("&lt;a href=&quot;x&quot; &amp; b&gt;");
+    expect(escapeHtml('<a href="x" & b>')).toBe(
+      "&lt;a href=&quot;x&quot; &amp; b&gt;",
+    );
   });
 
   it("escapes ampersand first so existing entities are not double-broken", () => {

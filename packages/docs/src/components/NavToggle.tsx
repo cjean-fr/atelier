@@ -20,7 +20,7 @@ export function NavToggle() {
       data-docs-nav-toggle
       aria-label="Open navigation"
       aria-expanded="false"
-      class="docs-nav-toggle md:hidden fixed top-4 right-4 z-50 inline-flex items-center justify-center w-10 h-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 shadow-md"
+      class="docs-nav-toggle fixed top-4 right-4 z-50 inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-md md:hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
     >
       <span class="docs-nav-toggle-open">{HAMBURGER}</span>
       <span class="docs-nav-toggle-close" hidden>

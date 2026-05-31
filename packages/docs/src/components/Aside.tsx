@@ -10,7 +10,6 @@
  * classes (Tailwind + the vendored stylesheet); restyle by overriding the
  * CSS variables `--docs-aside-{type}-bg` / `--docs-aside-{type}-border`.
  */
-
 import { raw, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type AsideType = "note" | "tip" | "caution" | "danger";
@@ -46,19 +45,21 @@ const DEFAULT_TITLES: Record<AsideType, string> = {
 const TYPE_CLASSES: Record<AsideType, string> = {
   note: "docs-aside-note border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-100",
   tip: "docs-aside-tip border-green-300 bg-green-50 text-green-900 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100",
-  caution: "docs-aside-caution border-yellow-300 bg-yellow-50 text-yellow-900 dark:border-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-100",
-  danger: "docs-aside-danger border-red-300 bg-red-50 text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100",
+  caution:
+    "docs-aside-caution border-yellow-300 bg-yellow-50 text-yellow-900 dark:border-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-100",
+  danger:
+    "docs-aside-danger border-red-300 bg-red-50 text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100",
 };
 
 export function Aside({ type = "note", title, children }: AsideProps) {
   return (
     <aside
       role="note"
-      class={`docs-aside ${TYPE_CLASSES[type]} my-4 rounded-lg border-l-4 p-4 flex gap-3`}
+      class={`docs-aside ${TYPE_CLASSES[type]} my-4 flex gap-3 rounded-lg border-l-4 p-4`}
     >
-      <span class="docs-aside-icon shrink-0 mt-0.5">{ICONS[type]}</span>
-      <div class="docs-aside-body flex-1 min-w-0">
-        <p class="docs-aside-title font-semibold mb-1">
+      <span class="docs-aside-icon mt-0.5 shrink-0">{ICONS[type]}</span>
+      <div class="docs-aside-body min-w-0 flex-1">
+        <p class="docs-aside-title mb-1 font-semibold">
           {title ?? DEFAULT_TITLES[type]}
         </p>
         <div class="docs-aside-content">{children}</div>

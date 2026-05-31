@@ -4,7 +4,6 @@
  *
  * Run: `bun examples/concurrent.tsx`
  */
-
 import {
   context,
   setContext,

@@ -61,7 +61,10 @@ describe("Automatic JSX Runtime Factories", () => {
   it("renders multiple children passed via props.children array", async () => {
     const element = jsx("div", {
       id: "p",
-      children: [jsx("span", { children: "1" }), jsx("span", { children: "2" })],
+      children: [
+        jsx("span", { children: "1" }),
+        jsx("span", { children: "2" }),
+      ],
     });
     expect(await renderToString(element)).toBe(
       '<div id="p"><span>1</span><span>2</span></div>',

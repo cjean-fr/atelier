@@ -18,17 +18,16 @@
  * storage and the same `DocsContext`. No `noExternal` or `ssrLoadModule`
  * routing trick required.
  */
-
-import { existsSync, readdirSync, statSync } from "node:fs";
-import path from "node:path";
-import { renderToStatic } from "@cjean-fr/jsx-flow";
-import { setVite } from "@cjean-fr/jsx-vite";
-import type { JSXNode } from "@cjean-fr/jsx-string";
-import type { Plugin, ViteDevServer } from "vite";
 import { setDocs } from "./context.js";
 import { resolveSidebar } from "./sidebar.js";
 import { injectToc } from "./toc.js";
 import type { Page, PageMeta, ResolvedDocsConfig } from "./types.js";
+import { renderToStatic } from "@cjean-fr/jsx-flow";
+import type { JSXNode } from "@cjean-fr/jsx-string";
+import { setVite } from "@cjean-fr/jsx-vite";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import type { Plugin, ViteDevServer } from "vite";
 
 export interface DocsPluginOptions {
   /** Path to the docs config file (relative to project root). Default: `"./docs.config.ts"`. */
@@ -41,7 +40,8 @@ export function docs(options: DocsPluginOptions = {}): Plugin {
   let configPromise: Promise<ResolvedDocsConfig> | null = null;
 
   const loadConfig = (): Promise<ResolvedDocsConfig> => {
-    if (!server) throw new Error("[@cjean-fr/docs] Vite server not yet configured.");
+    if (!server)
+      throw new Error("[@cjean-fr/docs] Vite server not yet configured.");
     if (!configPromise) {
       const absPath = path.resolve(server.config.root, configFile);
       configPromise = server.ssrLoadModule(absPath).then((mod) => {
@@ -91,7 +91,12 @@ export function docs(options: DocsPluginOptions = {}): Plugin {
               return;
             }
 
-            const html = await renderPageInDev(devServer, config, compFile, url);
+            const html = await renderPageInDev(
+              devServer,
+              config,
+              compFile,
+              url,
+            );
             const transformed = await devServer.transformIndexHtml(
               url,
               "<!DOCTYPE html>\n" + html,
@@ -113,7 +118,10 @@ export function docs(options: DocsPluginOptions = {}): Plugin {
         devServer.ws.send({ type: "full-reload" });
         return [];
       }
-      if (file.startsWith(root) && !file.includes(`${path.sep}dist${path.sep}`)) {
+      if (
+        file.startsWith(root) &&
+        !file.includes(`${path.sep}dist${path.sep}`)
+      ) {
         devServer.ws.send({ type: "full-reload" });
       }
       return [];
@@ -185,7 +193,11 @@ async function collectPages(
   const out: Array<{ url: string; html: string; meta: PageMeta }> = [];
   for (const page of pages) {
     const html = await renderPageInDev(devServer, config, page.file, page.url);
-    out.push({ url: page.url, html: "<!DOCTYPE html>\n" + html, meta: page.meta });
+    out.push({
+      url: page.url,
+      html: "<!DOCTYPE html>\n" + html,
+      meta: page.meta,
+    });
   }
   return out;
 }
@@ -213,7 +225,10 @@ async function collectPagesAsPagesList(
   return pages;
 }
 
-function respondWith(res: import("node:http").ServerResponse, response: Response): void {
+function respondWith(
+  res: import("node:http").ServerResponse,
+  response: Response,
+): void {
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));
   response.text().then((body) => res.end(body));

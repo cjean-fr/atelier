@@ -1,6 +1,6 @@
 // @jsxImportSource @cjean-fr/jsx-string
-import { raw, type JSXNode } from "@cjean-fr/jsx-string";
 import { injectIntoHead } from "./utils.js";
+import { raw, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type MergeType = "replace" | "append" | "prepend" | "before" | "after";
 
@@ -98,7 +98,8 @@ const ADJ: Record<Exclude<MergeType, "replace">, string> = {
 // via insertAdjacentHTML for non-replace cases.
 export const NativeAdapter: PatchAdapter = {
   // Inject the minimal polyfill into <head> — no external CDN required.
-  transformShell: (shell) => injectIntoHead(shell, `<script>${POLYFILL}</script>`),
+  transformShell: (shell) =>
+    injectIntoHead(shell, `<script>${POLYFILL}</script>`),
 
   Placeholder: WebPlatformAdapter.Placeholder,
 
