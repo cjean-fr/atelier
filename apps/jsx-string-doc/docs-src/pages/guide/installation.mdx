@@ -1,0 +1,59 @@
+---
+title: Installation
+sidebar:
+  group: Guide
+  order: 1
+---
+
+# Installation
+
+jsx-string has zero runtime dependencies. Install it and configure TypeScript —
+that's all.
+
+## Package manager
+
+<Tabs syncKey="pkg-manager" tabs={[
+  { label: 'npm', content: <CodeBlock code="npm install @cjean-fr/jsx-string" language="bash" /> },
+  { label: 'bun', content: <CodeBlock code="bun add @cjean-fr/jsx-string" language="bash" /> },
+]} />
+
+## TypeScript configuration
+
+Set `jsxImportSource` in your `tsconfig.json` so that JSX files don't need any
+explicit import:
+
+<CodeExample src="guide/installation/tsconfig.json" />
+
+## Optional: @types/react
+
+Installing `@types/react` gives you per-element attribute autocomplete (e.g.
+`src` on `<img>`, `href` on `<a>`). It is not required — jsx-string works
+without it.
+
+<CodeExample src="guide/installation/tsconfig-with-react.json" />
+
+## Deno
+
+Configure `deno.json`:
+
+<CodeExample src="guide/installation/deno.json" />
+
+## ESLint plugin
+
+The ESLint plugin catches common mistakes — unsafe `raw()` calls, event
+handlers that will be silently dropped, and attributes incompatible with static
+rendering.
+
+<Tabs syncKey="pkg-manager" tabs={[
+  { label: 'npm', content: <CodeBlock code="npm install -D @cjean-fr/eslint-plugin-jsx-string" language="bash" /> },
+  { label: 'bun', content: <CodeBlock code="bun add -D @cjean-fr/eslint-plugin-jsx-string" language="bash" /> },
+]} />
+
+<div class="mt-10 flex justify-end">
+  <a
+    href="/guide/quick-start"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    Quick Start →
+  </a>
+</div>

@@ -32,11 +32,11 @@ export const renderPage: RenderPageHook<ResolvedDocsConfig> = (
   const LayoutChoice =
     meta.layout === false ? null : (meta.layout ?? config.components.Layout);
   const rawInner = page.Component({});
-  const inner = page.file.endsWith(".md") ? (
-    <div class="docs-prose">{rawInner}</div>
-  ) : (
-    rawInner
-  );
+  // Markdown-authored pages (.md / .mdx) get wrapped in the prose container;
+  // hand-authored .tsx pages style themselves. `format` comes from build-core,
+  // which already knows how each page was loaded.
+  const inner =
+    page.format === "tsx" ? rawInner : <div class="docs-prose">{rawInner}</div>;
   return ctx.renderPage(() =>
     LayoutChoice === null ? inner : LayoutChoice({ children: inner }),
   );

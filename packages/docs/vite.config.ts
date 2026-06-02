@@ -20,6 +20,7 @@ export default defineConfig({
         index: path.resolve(__dirname, "src/index.ts"),
         vite: path.resolve(__dirname, "src/vite.ts"),
         client: path.resolve(__dirname, "src/client.ts"),
+        "mdx-components": path.resolve(__dirname, "src/mdx-components.ts"),
         "cli/index": path.resolve(__dirname, "src/cli/index.ts"),
       },
       formats: ["es"],
@@ -52,26 +53,7 @@ export default defineConfig({
       // Keep declaration files alongside JS for subpath exports.
       entryRoot: "src",
     }),
-    // Static copy of CSS files — they're entry points users import directly
-    // via package.json exports, not bundled JS-side.
-    {
-      name: "copy-css",
-      async writeBundle() {
-        const { mkdir, copyFile } = await import("node:fs/promises");
-        const dest = path.resolve(__dirname, "dist/theme");
-        await mkdir(dest, { recursive: true });
-        for (const name of [
-          "tokens.css",
-          "shiki.css",
-          "style.css",
-          "tailwind.css",
-        ]) {
-          await copyFile(
-            path.resolve(__dirname, "src/theme", name),
-            path.resolve(dest, name),
-          );
-        }
-      },
-    },
+    // Theme CSS ships as source (see package.json exports `./main.css` and
+    // `./style.css`); the consumer's Tailwind compiles it. No copy needed.
   ],
 });

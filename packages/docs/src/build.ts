@@ -3,6 +3,7 @@
  * Provides the docs `renderPage` hook (Layout + DocsContext + sidebar).
  */
 import { renderPage } from "./renderHook.js";
+import { renderToc } from "./toc.js";
 import type { ResolvedDocsConfig } from "./types.js";
 import {
   buildSite,
@@ -14,12 +15,12 @@ export type { BuildResult };
 
 export interface BuildOptions extends Omit<
   CoreBuildOptions<ResolvedDocsConfig>,
-  "renderPage"
+  "renderPage" | "renderToc"
 > {}
 
 export function build(
   config: ResolvedDocsConfig,
   options: BuildOptions = {},
 ): Promise<BuildResult> {
-  return buildSite(config, { ...options, renderPage });
+  return buildSite(config, { ...options, renderPage, renderToc });
 }

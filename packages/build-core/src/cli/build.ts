@@ -1,4 +1,5 @@
 import { buildSite, type BuildConfig, type RenderPageHook } from "../build.js";
+import type { RenderTocHook } from "../toc.js";
 import { loadDocsConfig } from "./loadConfig.js";
 import path from "node:path";
 
@@ -12,7 +13,7 @@ import path from "node:path";
  */
 export async function runBuild<C extends BuildConfig>(
   cwd: string,
-  hooks: { renderPage: RenderPageHook<C> },
+  hooks: { renderPage: RenderPageHook<C>; renderToc: RenderTocHook },
 ): Promise<void> {
   const { config, configPath } = await loadDocsConfig(cwd);
   console.log(
@@ -31,6 +32,7 @@ export async function runBuild<C extends BuildConfig>(
   try {
     const result = await buildSite(config as C, {
       renderPage: hooks.renderPage,
+      renderToc: hooks.renderToc,
       loadPage: (file) => server.ssrLoadModule(file),
     });
     console.log(`Built ${result.pages.length} pages.`);

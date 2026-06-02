@@ -9,5 +9,5 @@
 import { raw } from "@cjean-fr/jsx-string";
 
 export function TableOfContents() {
-  return raw("<aside data-docs-toc-placeholder></aside>");
+  return raw("<aside data-toc-placeholder></aside>");
 }

@@ -1,0 +1,56 @@
+---
+title: Streaming
+sidebar:
+  group: jsx-flow
+  order: 2
+---
+
+# Streaming
+
+Send the HTML shell immediately and stream deferred fragments inline in the
+same HTTP response.
+
+## renderToReadableStream
+
+Returns a `ReadableStream<string>`. The shell chunk is emitted first; fragment
+chunks follow as they resolve.
+
+<CodeExample src="jsx-flow/deferred-stream.tsx" />
+
+## `<Deferred>` — server push
+
+Pass a **factory function** as children — JSX evaluates eagerly, so the thunk
+defers rendering to streaming time. The `fallback` prop is rendered in the
+shell while the fragment resolves.
+
+## `<Deferred src>` — client fetch
+
+Provide a `src` URL instead of children. The adapter injects a fetch or
+`hx-get` — the browser loads the fragment after the shell lands. No server-push
+required.
+
+<CodeExample src="jsx-flow/deferred-src.tsx" />
+
+## `<Patch>`
+
+Target an existing DOM element by id — renders nothing in the shell. Useful for
+updating counters, banners, or any element that already exists on the page.
+Supports the same `merge` types as `<Deferred>`: `"replace"` (default),
+`"append"`, `"prepend"`, `"before"`, `"after"`.
+
+<CodeExample src="jsx-flow/patch.tsx" />
+
+<div class="mt-10 flex justify-between">
+  <a
+    href="/jsx-flow/overview"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    ← Overview
+  </a>
+  <a
+    href="/jsx-flow/static"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    Static generation →
+  </a>
+</div>

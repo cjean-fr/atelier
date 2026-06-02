@@ -7,6 +7,7 @@
  * bypass the CLI can install it manually in their `vite.config.ts`.
  */
 import { renderPage } from "./renderHook.js";
+import { renderToc } from "./toc.js";
 import type { ResolvedDocsConfig } from "./types.js";
 import { createSitePlugin } from "@cjean-fr/build-core/vite";
 import type { Plugin } from "vite";
@@ -20,5 +21,6 @@ export function docs(options: DocsPluginOptions = {}): Plugin {
   return createSitePlugin<ResolvedDocsConfig>({
     configFile: options.configFile,
     renderPage,
+    renderToc,
   });
 }

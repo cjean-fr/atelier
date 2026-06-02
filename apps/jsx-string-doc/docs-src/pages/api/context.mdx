@@ -1,0 +1,53 @@
+---
+title: Context API
+sidebar:
+  label: Context
+  group: API
+  order: 2
+---
+
+# Context API
+
+Pass data through a component tree without prop-drilling. Built on
+`AsyncLocalStorage` — concurrent renders are fully isolated.
+
+## API signatures
+
+<CodeExample src="api/context/signatures.ts" />
+
+## Basic example
+
+Create a context key once at module level, provide a value with `setContext`
+inside a `withScope`, and read it anywhere in the tree with `useContext`.
+
+<CodeExample src="api/context/basic.tsx" />
+
+## Concurrent renders
+
+Each `withScope` call creates an isolated `AsyncLocalStorage` store. Concurrent
+renders never interfere with each other.
+
+<CodeExample src="api/context/concurrent.tsx" />
+
+## snapshot()
+
+Capture all current context values and pass them as a `seed` to a new scope.
+Useful for spawning child renders that inherit the parent's context.
+
+<CodeExample src="api/context/snapshot.tsx" />
+
+## Per-request context
+
+A common pattern for HTTP servers: inject request-specific data into the
+context at the top level.
+
+<CodeExample src="api/context/per-request.tsx" />
+
+<div class="mt-10 flex justify-start">
+  <a
+    href="/api/renderToString"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    ← renderToString
+  </a>
+</div>
