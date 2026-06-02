@@ -1,0 +1,36 @@
+---
+title: Static generation
+sidebar:
+  group: jsx-flow
+  order: 3
+---
+
+# Static generation
+
+Build HTML files at compile time. `renderToStatic` gives you a context to
+render all your pages, then emit fragment files if any page uses `<Deferred>`.
+
+## Pure static
+
+No `<Deferred>` in your pages? Call `renderToStatic` without options.
+`ctx.renderPage` applies any adapter shell transforms and returns the HTML
+string.
+
+<CodeExample src="jsx-flow/pure-static.tsx" />
+
+## With deferred fragments
+
+Pass an adapter and call `ctx.emitFragments` after rendering all pages. Each
+deferred fragment is rendered and passed to your callback with its id, its URL
+(from `generatePath`, default: `/fragments/{id}.html`), and its HTML.
+
+<CodeExample src="jsx-flow/deferred-static.tsx" />
+
+<div class="mt-10 flex justify-start">
+  <a
+    href="/jsx-flow/streaming"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    ← Streaming
+  </a>
+</div>

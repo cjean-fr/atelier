@@ -1,4 +1,5 @@
 import type { BuildConfig, RenderPageHook } from "../build.js";
+import type { RenderTocHook } from "../toc.js";
 import { runBuild } from "./build.js";
 import { runDev } from "./dev.js";
 
@@ -9,6 +10,8 @@ import { runDev } from "./dev.js";
  */
 export interface CliHooks<C extends BuildConfig> {
   renderPage: RenderPageHook<C>;
+  /** TOC markup renderer (build and dev both need it). */
+  renderToc: RenderTocHook;
   /** Extra commands (e.g. `init`). Keys are command names. */
   extraCommands?: Record<string, (argv: string[]) => Promise<void>>;
   /** Override the help banner. */
@@ -44,13 +47,16 @@ export async function run<C extends BuildConfig>(
 
   switch (cmd) {
     case "build":
-      await runBuild(process.cwd(), { renderPage: hooks.renderPage });
+      await runBuild(process.cwd(), {
+        renderPage: hooks.renderPage,
+        renderToc: hooks.renderToc,
+      });
       return;
     case "dev": {
       const port = parsePortFlag(argv.slice(1));
       await runDev(
         process.cwd(),
-        { renderPage: hooks.renderPage },
+        { renderPage: hooks.renderPage, renderToc: hooks.renderToc },
         port !== undefined ? { port } : undefined,
       );
       return;

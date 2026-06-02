@@ -2,7 +2,6 @@ import { mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
 
 interface InitOptions {
-  withTailwind: boolean;
   force: boolean;
 }
 
@@ -14,15 +13,15 @@ interface FileSpec {
 /**
  * Scaffold a starter docs project in `cwd`.
  *
- * Minimal by default: docs.config, vite.config, client, sample page, plain
- * CSS. `--with-tailwind` adds Tailwind 4 + dark-mode setup + tokens/shiki.
- * Refuses to overwrite existing files unless `--force` is passed.
+ * Tailwind 4 is the theming layer: the scaffold wires `@tailwindcss/vite`,
+ * MDX (`.mdx` pages), dark-mode, and the docs preset stylesheet. Refuses to
+ * overwrite existing files unless `--force` is passed.
  */
 export async function runInit(
   cwd: string,
   options: InitOptions,
 ): Promise<void> {
-  const files = buildFiles(options);
+  const files = buildFiles();
 
   if (!options.force) {
     const conflicts: string[] = [];
@@ -50,10 +49,10 @@ export async function runInit(
     console.log(`  created ${f.path}`);
   }
 
-  printNextSteps(options);
+  printNextSteps();
 }
 
-function buildFiles(options: InitOptions): FileSpec[] {
+function buildFiles(): FileSpec[] {
   const docsConfig = `import { defineConfig } from "@cjean-fr/docs";
 
 export default defineConfig({
@@ -68,37 +67,32 @@ export default defineConfig({
 });
 `;
 
-  const viteConfig = options.withTailwind
-    ? `import { defineConfig } from "vite";
+  const viteConfig = `import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
+import mdx from "@mdx-js/rollup";
+import remarkFrontmatter from "remark-frontmatter";
+import remarkMdxFrontmatter from "remark-mdx-frontmatter";
+import remarkGfm from "remark-gfm";
 
 // The @cjean-fr/docs plugin is registered by the CLI ('docs dev' / 'docs build').
 // Only project-specific plugins live here.
 export default defineConfig({
-  plugins: [tailwindcss()],
-  esbuild: {
-    jsx: "automatic",
-    jsxImportSource: "@cjean-fr/jsx-string",
-  },
-  build: {
-    outDir: "dist/assets",
-    assetsDir: "",
-    manifest: true,
-    rollupOptions: {
-      input: "src/client.ts",
-      output: {
-        entryFileNames: "[name]-[hash].js",
-        assetFileNames: "[name]-[hash][extname]",
-      },
-    },
-  },
-});
-`
-    : `import { defineConfig } from "vite";
-
-// The @cjean-fr/docs plugin is registered by the CLI ('docs dev' / 'docs build').
-// Only project-specific plugins live here.
-export default defineConfig({
+  plugins: [
+    // \`.mdx\` pages compile to jsx-string components; the frontmatter becomes
+    // the \`meta\` export the page loader reads.
+    mdx({
+      jsxImportSource: "@cjean-fr/jsx-string",
+      // Built-in docs components (<CodeBlock>, <Tabs>, <Aside>, …) are
+      // auto-provided — no need to import them in every page.
+      providerImportSource: "@cjean-fr/docs/mdx-components",
+      remarkPlugins: [
+        remarkFrontmatter,
+        [remarkMdxFrontmatter, { name: "meta" }],
+        remarkGfm,
+      ],
+    }),
+    tailwindcss(),
+  ],
   esbuild: {
     jsx: "automatic",
     jsxImportSource: "@cjean-fr/jsx-string",
@@ -122,29 +116,21 @@ export default defineConfig({
 import "@cjean-fr/docs/client";
 `;
 
-  const page = `import type { PageMeta } from "@cjean-fr/docs";
+  const page = `---
+title: Home
+---
 
-export const meta: PageMeta = {
-  title: "Home",
-};
+# Welcome
 
-export default function HomePage() {
-  return (
-    <div>
-      <h1>Welcome</h1>
-      <p>Edit <code>src/pages/index.tsx</code> to get started.</p>
-    </div>
-  );
-}
+Edit \`src/pages/index.mdx\` to get started.
+
+Pages are Markdown — the built-in components (\`CodeBlock\`, \`Tabs\`, \`Aside\`,
+…) are available out of the box; just use them inline. Need your own? Add an
+\`import\` at the top.
 `;
 
-  const mainCss = options.withTailwind
-    ? `@import "tailwindcss";
-@import "@cjean-fr/docs/tailwind.css";
-
-/* Add your own styles below. */
-`
-    : `@import "@cjean-fr/docs/style.css";
+  const mainCss = `@import "tailwindcss";
+@import "@cjean-fr/docs/main.css";
 
 /* Add your own styles below. */
 `;
@@ -153,25 +139,24 @@ export default function HomePage() {
     { path: "docs.config.ts", content: docsConfig },
     { path: "vite.config.ts", content: viteConfig },
     { path: "src/client.ts", content: client },
-    { path: "src/pages/index.tsx", content: page },
+    { path: "src/pages/index.mdx", content: page },
     { path: "src/styles/main.css", content: mainCss },
   ];
 }
 
-function printNextSteps(options: InitOptions): void {
-  const lines: string[] = ["", "Next steps:"];
-  if (options.withTailwind) {
-    lines.push("  1. bun add -D @tailwindcss/vite tailwindcss vite");
-  } else {
-    lines.push("  1. bun add -D vite");
-  }
-  lines.push(
+function printNextSteps(): void {
+  const mdxDeps =
+    "@mdx-js/rollup remark-frontmatter remark-mdx-frontmatter remark-gfm";
+  const lines: string[] = [
+    "",
+    "Next steps:",
+    `  1. bun add -D @tailwindcss/vite tailwindcss vite ${mdxDeps}`,
     "  1b. bun add @cjean-fr/docs @cjean-fr/jsx-string @cjean-fr/jsx-flow @cjean-fr/jsx-vite",
-  );
-  lines.push("  2. Add to package.json scripts:");
-  lines.push(`       "dev": "docs dev",`);
-  lines.push(`       "build": "docs build"`);
-  lines.push("  3. bun run dev");
-  lines.push("");
+    "  2. Add to package.json scripts:",
+    `       "dev": "docs dev",`,
+    `       "build": "docs build"`,
+    "  3. bun run dev",
+    "",
+  ];
   process.stdout.write(lines.join("\n"));
 }

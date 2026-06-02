@@ -42,10 +42,11 @@
     "./client": {
       "default": "./dist/client.js"
     },
-    "./style.css": "./dist/theme/style.css",
-    "./tailwind.css": "./dist/theme/tailwind.css",
-    "./tokens.css": "./dist/theme/tokens.css",
-    "./shiki.css": "./dist/theme/shiki.css"
+    "./mdx-components": {
+      "types": "./dist/mdx-components.d.ts",
+      "default": "./dist/mdx-components.js"
+    },
+    "./main.css": "./src/theme/main.css"
   },
   "publishConfig": {
     "access": "public"
@@ -88,6 +89,7 @@
   },
   "files": [
     "dist",
+    "src/theme",
     "bin",
     "README.md",
     "LICENSE"

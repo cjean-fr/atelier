@@ -1,20 +1,27 @@
 /**
  * Generic Vite dev plugin — intercepts HTTP requests, finds the matching
- * page file (`.tsx` or `.md`), loads it via `ssrLoadModule`, and renders
- * it through the distro-provided `renderPage` hook.
+ * page file (`.tsx` / `.mdx` / `.md`), loads it via `ssrLoadModule`, and
+ * renders it through the distro-provided `renderPage` hook.
+ *
+ * Page discovery/loading is shared with the production build: this plugin
+ * resolves a URL with `findPageFile` and loads it with `loadPageFile`, and
+ * lists all pages with `discoverPages` — the same functions the build uses.
  *
  * Distros (docs, blog) wrap this with their own factory that supplies the
  * hook (setting up Layout, context, sidebar, etc.).
  */
 import type { BuildConfig, RenderPageHook } from "./build.js";
 import { resolveEditUrl } from "./editUrl.js";
-import { processMarkdown } from "./markdown.js";
-import { injectToc } from "./toc.js";
-import type { Page, PageMeta } from "./types.js";
+import {
+  discoverPages,
+  findPageFile,
+  loadPageFile,
+  type DiscoverOptions,
+} from "./routing.js";
+import { injectToc, type RenderTocHook } from "./toc.js";
+import type { PageMeta } from "./types.js";
 import { renderToStatic } from "@cjean-fr/jsx-flow";
-import { raw } from "@cjean-fr/jsx-string";
 import { setVite } from "@cjean-fr/jsx-vite";
-import { existsSync } from "node:fs";
 import path from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
 
@@ -23,6 +30,8 @@ export interface VitePluginOptions<C extends BuildConfig> {
   configFile?: string;
   /** Distro's renderPage implementation — same shape as build's. */
   renderPage: RenderPageHook<C>;
+  /** Distro's TOC markup renderer — same shape as build's. */
+  renderToc: RenderTocHook;
 }
 
 export function createSitePlugin<C extends BuildConfig>(
@@ -67,7 +76,12 @@ export function createSitePlugin<C extends BuildConfig>(
               const result = await config.search.serve({
                 url: new URL(url, "http://localhost"),
                 pages: () =>
-                  collectRenderedPages(devServer, config, options.renderPage),
+                  collectRenderedPages(
+                    devServer,
+                    config,
+                    options.renderPage,
+                    options.renderToc,
+                  ),
               });
               if (result) {
                 respondWith(res, result);
@@ -80,8 +94,8 @@ export function createSitePlugin<C extends BuildConfig>(
               next();
               return;
             }
-            const compFile = findComponentFile(config, url);
-            if (!compFile) {
+            const file = findPageFile(config, url);
+            if (!file) {
               next();
               return;
             }
@@ -89,9 +103,9 @@ export function createSitePlugin<C extends BuildConfig>(
             const html = await renderOne(
               devServer,
               config,
-              compFile,
-              url,
+              file,
               options.renderPage,
+              options.renderToc,
             );
             const transformed = await devServer.transformIndexHtml(
               url,
@@ -127,32 +141,27 @@ export function createSitePlugin<C extends BuildConfig>(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function findComponentFile(config: BuildConfig, url: string): string | null {
-  const pagesDir = path.resolve(config.pages);
-  let page = url.replace(/^\//, "") || "index";
-  if (page.endsWith(".html")) page = page.slice(0, -5);
-  if (page.endsWith("/")) page = page + "index";
-  const candidates = [
-    path.join(pagesDir, page + ".tsx"),
-    path.join(pagesDir, page + ".md"),
-    path.join(pagesDir, page, "index.tsx"),
-    path.join(pagesDir, page, "index.md"),
-  ];
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return null;
+/** Discover options that route page loading through Vite's SSR module graph. */
+function devLoadOptions(
+  devServer: ViteDevServer,
+  config: BuildConfig,
+): DiscoverOptions {
+  return {
+    loadPage: (file) => devServer.ssrLoadModule(file),
+    markdown: config.markdown,
+  };
 }
 
 async function renderOne<C extends BuildConfig>(
   devServer: ViteDevServer,
   config: C,
-  compFile: string,
-  url: string,
+  file: string,
   renderPage: RenderPageHook<C>,
+  renderToc: RenderTocHook,
 ): Promise<string> {
-  const page = await loadPageInDev(devServer, config, compFile, url);
-  const allPages = await listAllPagesInDev(devServer, config);
+  const opts = devLoadOptions(devServer, config);
+  const page = await loadPageFile(file, config, opts);
+  const allPages = await discoverPages(config, opts);
 
   const lastUpdated = page.meta.updatedAt ?? null;
   const editUrl = resolveEditUrl(
@@ -164,70 +173,24 @@ async function renderOne<C extends BuildConfig>(
     setVite(null);
     return renderPage(page, { ctx, allPages, lastUpdated, editUrl, config });
   });
-  return injectToc(inner);
-}
-
-async function loadPageInDev(
-  devServer: ViteDevServer,
-  config: BuildConfig,
-  file: string,
-  url: string,
-): Promise<Page> {
-  if (file.endsWith(".md")) {
-    const { html, meta: rawMeta } = await processMarkdown(
-      file,
-      config.markdown,
-    );
-    const rendered = raw(html);
-    return {
-      url,
-      file,
-      outPath: "",
-      meta: rawMeta as unknown as PageMeta,
-      Component: () => rendered,
-    };
-  }
-  const mod = await devServer.ssrLoadModule(file);
-  return {
-    url,
-    file,
-    outPath: "",
-    meta: mod["meta"] as PageMeta,
-    Component: mod["default"] as Page["Component"],
-  };
-}
-
-async function listAllPagesInDev(
-  devServer: ViteDevServer,
-  config: BuildConfig,
-): Promise<Page[]> {
-  const pagesDir = path.resolve(config.pages);
-  const files = await walkPages(pagesDir);
-  const pages: Page[] = [];
-  for (const file of files) {
-    const rel = path.relative(pagesDir, file).replace(/\\/g, "/");
-    const route = rel.replace(/\.(tsx|md)$/, "");
-    const url = routeToUrl(route);
-    pages.push(await loadPageInDev(devServer, config, file, url));
-  }
-  pages.sort((a, b) => a.url.localeCompare(b.url));
-  return pages;
+  return injectToc(inner, renderToc);
 }
 
 async function collectRenderedPages<C extends BuildConfig>(
   devServer: ViteDevServer,
   config: C,
   renderPage: RenderPageHook<C>,
+  renderToc: RenderTocHook,
 ): Promise<ReadonlyArray<{ url: string; html: string; meta: PageMeta }>> {
-  const pages = await listAllPagesInDev(devServer, config);
+  const pages = await discoverPages(config, devLoadOptions(devServer, config));
   const out: Array<{ url: string; html: string; meta: PageMeta }> = [];
   for (const page of pages) {
     const html = await renderOne(
       devServer,
       config,
       page.file,
-      page.url,
       renderPage,
+      renderToc,
     );
     out.push({
       url: page.url,
@@ -245,29 +208,4 @@ function respondWith(
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));
   response.text().then((body) => res.end(body));
-}
-
-async function walkPages(dir: string): Promise<string[]> {
-  const out: string[] = [];
-  if (!existsSync(dir)) return out;
-  const { readdir } = await import("node:fs/promises");
-  const entries = await readdir(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      out.push(...(await walkPages(full)));
-    } else if (
-      entry.isFile() &&
-      (entry.name.endsWith(".tsx") || entry.name.endsWith(".md"))
-    ) {
-      out.push(full);
-    }
-  }
-  return out;
-}
-
-function routeToUrl(route: string): string {
-  if (route === "index") return "/";
-  if (route.endsWith("/index")) return "/" + route.slice(0, -"/index".length);
-  return "/" + route;
 }

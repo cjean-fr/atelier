@@ -1,0 +1,41 @@
+---
+title: Security
+sidebar:
+  group: Guide
+  order: 3
+---
+
+# Security
+
+Safe by default. One rule to remember.
+
+## ✅ Everything is escaped
+
+Text content, attributes, URLs — all HTML-escaped automatically. No
+configuration needed.
+
+## ⚠️ One rule
+
+**Never use `raw()` with untrusted input.**
+
+<CodeExample src="guide/security/one-rule.tsx" />
+
+## When is `raw()` safe?
+
+Markdown renderers (`marked`, `remark`). Template engines (`EJS`,
+`Handlebars`). Your own hardcoded HTML.
+
+<div class="mt-10 flex justify-between">
+  <a
+    href="/guide/quick-start"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    ← Quick Start
+  </a>
+  <a
+    href="/api/renderToString"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    API →
+  </a>
+</div>

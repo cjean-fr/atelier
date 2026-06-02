@@ -1,0 +1,58 @@
+---
+title: renderToString
+sidebar:
+  group: API
+  order: 1
+---
+
+# renderToString
+
+Renders a JSX tree into an HTML string. Always returns a `Promise<string>`.
+
+## Signature
+
+<CodeExample src="api/renderToString/signature.ts" />
+
+## Basic usage
+
+<CodeExample src="api/renderToString/basic.tsx" />
+
+## With a page component
+
+<CodeExample src="api/renderToString/with-component.tsx" />
+
+## Async components
+
+Any component in the tree can be async. `renderToString` awaits the entire
+resolved tree before returning.
+
+<CodeExample src="api/renderToString/async-tree.tsx" />
+
+## Concurrent renders
+
+Multiple concurrent calls to `renderToString` are safe even when components use
+`context()` and `setContext()` inside a `withScope()`.
+
+<CodeExample src="api/renderToString/concurrent.tsx" />
+
+## JSXNode type
+
+The argument is typed as `JSXNode`, which covers all values a JSX expression
+can produce:
+
+<CodeExample src="api/renderToString/jsx-node.ts" />
+
+<div class="mt-10 flex justify-between">
+  <a
+    href="/guide/quick-start"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    ← Quick Start
+  </a>
+  <a
+    href="/api/context"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    Context API →
+  </a>
+</div>

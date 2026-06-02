@@ -1,0 +1,56 @@
+---
+title: Quick Start
+sidebar:
+  group: Guide
+  order: 2
+---
+
+# Quick Start
+
+Everything you need to start rendering JSX to HTML strings.
+
+## Hello world
+
+`renderToString` always returns a `Promise<string>`, even for synchronous
+trees.
+
+<CodeExample src="guide/quick-start/hello-world.tsx" />
+
+## Components
+
+Components are plain functions. Props are typed. Children are passed via the
+`children` prop or as JSX children.
+
+<CodeExample src="guide/quick-start/component.tsx" />
+
+## Async components
+
+Any component can be an async function. Data fetching happens naturally.
+
+<CodeExample src="guide/quick-start/async-component.tsx" />
+
+## Security: escaping and raw HTML
+
+All string values embedded in JSX are HTML-escaped. Use `raw()` only for
+trusted HTML.
+
+<CodeExample src="guide/quick-start/escaping.tsx" />
+
+## Fragments
+
+<CodeExample src="guide/quick-start/fragment.tsx" />
+
+<div class="mt-10 flex justify-between">
+  <a
+    href="/guide/installation"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    ← Installation
+  </a>
+  <a
+    href="/api/renderToString"
+    class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+  >
+    renderToString API →
+  </a>
+</div>

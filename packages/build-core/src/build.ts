@@ -13,7 +13,7 @@ import { getLastModified, preloadLastModified } from "./git.js";
 import type { MarkdownOptions } from "./markdown.js";
 import { discoverPages, type DiscoverOptions } from "./routing.js";
 import { generateRss, generateSitemap } from "./sitemap.js";
-import { injectToc } from "./toc.js";
+import { injectToc, type RenderTocHook } from "./toc.js";
 import type { CoreConfig, Page, PageMeta, SearchAdapter } from "./types.js";
 import { renderToStatic } from "@cjean-fr/jsx-flow";
 import type { StaticContext } from "@cjean-fr/jsx-flow";
@@ -81,6 +81,8 @@ export type RenderPageHook<C = unknown> = (
 export interface BuildOptions<C = unknown> extends DiscoverOptions {
   /** The distro's renderPage implementation. */
   renderPage: RenderPageHook<C>;
+  /** The distro's TOC markup renderer (build-core stays presentation-free). */
+  renderToc: RenderTocHook;
 }
 
 /**
@@ -141,7 +143,7 @@ export async function buildSite<C extends BuildConfig>(
         editUrl,
         config,
       });
-      const html = injectToc(inner);
+      const html = injectToc(inner, options.renderToc);
       const fullHtml = "<!DOCTYPE html>\n" + html;
       await mkdir(path.dirname(page.outPath), { recursive: true });
       await writeFile(page.outPath, fullHtml, "utf-8");

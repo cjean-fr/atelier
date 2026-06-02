@@ -1,28 +1,38 @@
 /**
  * Filesystem-based page discovery.
  *
- * Walks `config.pages`, imports every `.tsx` and processes every `.md`,
- * producing a normalized `Page[]` ready to be rendered.
+ * Walks `config.pages`, imports every `.tsx` / `.mdx` and processes every
+ * `.md`, producing a normalized `Page[]` ready to be rendered.
  *
- * - `.tsx` files: the default export is the component, `meta` export is
- *   the page metadata.
+ * - `.tsx` / `.mdx` files: the default export is the component, `meta` export
+ *   is the page metadata. (`.mdx` is compiled to a jsx-string component by the
+ *   loader — e.g. the `@mdx-js/rollup` plugin in the user's Vite config —
+ *   with frontmatter surfaced as the `meta` export.)
  * - `.md` files: YAML frontmatter is the meta, the body is rendered to HTML
  *   via the configured unified pipeline and wrapped in a tiny component
  *   that emits `raw(html)`.
+ *
+ * Build and dev share one code path: the build walks every file through
+ * `loadPageFile`; the dev server resolves a single URL with `findPageFile`
+ * and loads it through the same `loadPageFile`. No duplicated discovery.
  */
 import { processMarkdown, type MarkdownOptions } from "./markdown.js";
 import type { CoreConfig, Page, PageMeta } from "./types.js";
 import { raw } from "@cjean-fr/jsx-string";
+import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+/** Recognized page file extensions, in resolution-priority order. */
+export const PAGE_EXTENSIONS = [".tsx", ".mdx", ".md"] as const;
+
 export interface DiscoverOptions {
   /**
-   * Module loader for a `.tsx` page file. Defaults to Node's native dynamic
-   * `import()` — fine when the runtime understands TS (Bun, ts-node, …).
-   * The CLI overrides this with `viteDevServer.ssrLoadModule` so plain
-   * `node`/`npx` can load `.tsx` files without an extra runtime.
+   * Module loader for a `.tsx` / `.mdx` page file. Defaults to Node's native
+   * dynamic `import()` — fine when the runtime understands TS (Bun, ts-node,
+   * …). The CLI overrides this with `viteDevServer.ssrLoadModule` so plain
+   * `node`/`npx` can load `.tsx` / `.mdx` files without an extra runtime.
    */
   loadPage?: (file: string) => Promise<Record<string, unknown>>;
 
@@ -36,40 +46,69 @@ const defaultLoad: PageLoader = (file) =>
   import(/* @vite-ignore */ pathToFileURL(file).href);
 
 /**
- * Recursively discover all `.tsx` and `.md` pages under `config.pages` and
- * return a normalized list. Drafts are kept by default — the caller (build)
- * decides whether to skip them.
+ * Recursively discover all pages under `config.pages` and return a normalized
+ * list. Drafts are kept by default — the caller (build) decides whether to
+ * skip them.
  */
 export async function discoverPages(
   config: CoreConfig,
   options: DiscoverOptions = {},
 ): Promise<Page[]> {
-  const load = options.loadPage ?? defaultLoad;
   const pagesDir = path.resolve(config.pages);
   const found = await walk(pagesDir);
   const pages: Page[] = [];
-
   for (const file of found) {
-    const rel = path.relative(pagesDir, file).replace(/\\/g, "/");
-    const page = file.endsWith(".md")
-      ? await loadMarkdownPage(file, rel, pagesDir, config, options.markdown)
-      : await loadTsxPage(file, rel, pagesDir, config, load);
-    pages.push(page);
+    pages.push(await loadPageFile(file, config, options));
   }
-
   // Stable ordering: by URL, so the order of build output is deterministic.
   pages.sort((a, b) => a.url.localeCompare(b.url));
   return pages;
 }
 
-async function loadTsxPage(
+/**
+ * Load a single page file into a normalized `Page`. Dispatches on extension:
+ * `.md` runs the markdown pipeline; `.tsx` / `.mdx` are imported as modules.
+ * Shared by `discoverPages` (build, every file) and the dev server (one file
+ * per request) so the two never drift.
+ */
+export async function loadPageFile(
+  file: string,
+  config: CoreConfig,
+  options: DiscoverOptions = {},
+): Promise<Page> {
+  const pagesDir = path.resolve(config.pages);
+  const rel = path.relative(pagesDir, file).replace(/\\/g, "/");
+  return file.endsWith(".md")
+    ? loadMarkdownPage(file, rel, config, options.markdown)
+    : loadModulePage(file, rel, config, options.loadPage ?? defaultLoad);
+}
+
+/**
+ * Resolve the page file backing a URL (dev server on-demand lookup). Tries
+ * `<route><ext>` then `<route>/index<ext>` for each known extension; returns
+ * the first that exists, or `null`.
+ */
+export function findPageFile(config: CoreConfig, url: string): string | null {
+  const pagesDir = path.resolve(config.pages);
+  let route = url.replace(/^\//, "") || "index";
+  if (route.endsWith(".html")) route = route.slice(0, -".html".length);
+  if (route.endsWith("/")) route = route + "index";
+  for (const base of [route, `${route}/index`]) {
+    for (const ext of PAGE_EXTENSIONS) {
+      const candidate = path.join(pagesDir, base + ext);
+      if (existsSync(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+async function loadModulePage(
   file: string,
   rel: string,
-  _pagesDir: string,
   config: CoreConfig,
   load: PageLoader,
 ): Promise<Page> {
-  const route = rel.replace(/\.tsx$/, "");
+  const route = rel.replace(/\.(tsx|mdx)$/, "");
   const mod = await load(file);
   const Component = mod["default"];
   if (typeof Component !== "function") {
@@ -83,6 +122,7 @@ async function loadTsxPage(
     url,
     file,
     outPath: path.join(config.out, urlToOutPath(url)),
+    format: file.endsWith(".mdx") ? "mdx" : "tsx",
     meta,
     Component: Component as Page["Component"],
   };
@@ -91,7 +131,6 @@ async function loadTsxPage(
 async function loadMarkdownPage(
   file: string,
   rel: string,
-  _pagesDir: string,
   config: CoreConfig,
   mdOptions: MarkdownOptions | undefined,
 ): Promise<Page> {
@@ -104,6 +143,7 @@ async function loadMarkdownPage(
     url,
     file,
     outPath: path.join(config.out, urlToOutPath(url)),
+    format: "md",
     meta,
     Component: () => rendered,
   };
@@ -111,6 +151,7 @@ async function loadMarkdownPage(
 
 async function walk(dir: string): Promise<string[]> {
   const out: string[] = [];
+  if (!existsSync(dir)) return out;
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
@@ -118,7 +159,7 @@ async function walk(dir: string): Promise<string[]> {
       out.push(...(await walk(fullPath)));
     } else if (
       entry.isFile() &&
-      (entry.name.endsWith(".tsx") || entry.name.endsWith(".md"))
+      PAGE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))
     ) {
       out.push(fullPath);
     }
@@ -153,7 +194,7 @@ function normalizeMeta(raw: unknown, file: string): PageMeta {
  * - `guide/installation` → `/guide/installation`
  * - `guide/index` → `/guide` (directory index)
  */
-function routeToUrl(route: string): string {
+export function routeToUrl(route: string): string {
   if (route === "index") return "/";
   if (route.endsWith("/index")) return "/" + route.slice(0, -"/index".length);
   return "/" + route;

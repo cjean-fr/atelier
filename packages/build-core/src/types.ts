@@ -43,6 +43,9 @@ export interface CoreConfig {
   out: string;
 }
 
+/** Source format a page was authored in. */
+export type PageFormat = "tsx" | "mdx" | "md";
+
 /** A discovered page (post-routing). */
 export interface Page {
   /** Canonical URL (e.g. `/guide/installation`). */
@@ -51,6 +54,11 @@ export interface Page {
   file: string;
   /** Disk output path (absolute, .html). */
   outPath: string;
+  /**
+   * Source format. `"md"` / `"mdx"` are markdown-authored (distros typically
+   * wrap them in a prose container); `"tsx"` is a hand-authored component.
+   */
+  format: PageFormat;
   /** Imported meta from the file. */
   meta: PageMeta;
   /** The default export from the file. */

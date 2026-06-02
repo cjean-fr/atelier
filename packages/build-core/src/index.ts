@@ -39,7 +39,12 @@ export {
 } from "./sitemap.js";
 
 // TOC injection
-export { injectToc, slugify, type TocEntry } from "./toc.js";
+export {
+  injectToc,
+  slugify,
+  type TocEntry,
+  type RenderTocHook,
+} from "./toc.js";
 
 // Markdown processing
 export {
