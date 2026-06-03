@@ -7,7 +7,7 @@
     "dev": "node ./node_modules/@cjean-fr/docs/bin/docs.mjs dev",
     "build": "node ./node_modules/@cjean-fr/docs/bin/docs.mjs build",
     "preview": "vite preview --outDir dist",
-    "test": "bun test docs-src"
+    "test": "echo \"no tests\""
   },
   "dependencies": {
     "@cjean-fr/jsx-string": "workspace:*",

@@ -38,15 +38,15 @@
       "default": "./dist/jsx-runtime.js"
     },
     "./jsx-dev-runtime": {
-      "types": "./dist/jsx-runtime.d.ts",
-      "default": "./dist/jsx-runtime.js"
+      "types": "./dist/jsx-dev-runtime.d.ts",
+      "default": "./dist/jsx-dev-runtime.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "bunup src/index.ts src/jsx-runtime.ts --format esm --minify",
+    "build": "bunup src/index.ts src/jsx-runtime.ts src/jsx-dev-runtime.ts --format esm --minify",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"

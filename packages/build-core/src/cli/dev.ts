@@ -25,6 +25,13 @@ export async function runDev<C extends BuildConfig>(
     server: options?.port ? { port: options.port } : undefined,
     plugins: [plugin as Plugin],
     appType: "custom",
+    // Forcer l'unification ici aussi pour le serveur HMR en temps réel
+    resolve: {
+      dedupe: ["@cjean-fr/jsx-string"],
+    },
+    ssr: {
+      external: ["@cjean-fr/jsx-string"],
+    },
   });
   await server.listen();
   server.printUrls();

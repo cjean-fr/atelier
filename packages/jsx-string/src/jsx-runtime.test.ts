@@ -1,9 +1,10 @@
 // @jsxImportSource @cjean-fr/jsx-string
 import { renderToString } from "./index.js";
+import * as JSXDevRuntime from "./jsx-dev-runtime.js";
+import { jsxDEV } from "./jsx-dev-runtime.js";
 import * as JSXRuntime from "./jsx-runtime.js";
 import {
   jsx,
-  jsxDEV,
   jsxAttr,
   jsxEscape,
   jsxTemplate,
@@ -12,14 +13,23 @@ import {
 import { describe, it, expect } from "bun:test";
 
 describe("JSX Runtime Export Contract", () => {
-  it("should export standard react-like transform factories and precompile trios", () => {
+  it("jsx-runtime should export standard factories (but NOT jsxDEV)", () => {
     expect(typeof JSXRuntime.jsx).toBe("function");
     expect(typeof JSXRuntime.jsxs).toBe("function");
-    expect(typeof JSXRuntime.jsxDEV).toBe("function");
+    expect("jsxDEV" in JSXRuntime).toBe(false);
     expect(JSXRuntime.Fragment).toBeDefined();
     expect(typeof JSXRuntime.jsxTemplate).toBe("function");
     expect(typeof JSXRuntime.jsxAttr).toBe("function");
     expect(typeof JSXRuntime.jsxEscape).toBe("function");
+  });
+
+  it("jsx-dev-runtime should export jsxDEV", () => {
+    expect(typeof JSXDevRuntime.jsxDEV).toBe("function");
+    expect(typeof JSXDevRuntime.jsxs).toBe("function");
+    expect(JSXDevRuntime.Fragment).toBeDefined();
+    expect(typeof JSXDevRuntime.jsxTemplate).toBe("function");
+    expect(typeof JSXDevRuntime.jsxAttr).toBe("function");
+    expect(typeof JSXDevRuntime.jsxEscape).toBe("function");
   });
 });
 

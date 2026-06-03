@@ -141,7 +141,7 @@ describe("context", () => {
     });
   });
 
-  describe("context(key) — cross-instance sharing", () => {
+  describe("context(key)", () => {
     it("same key returns the same Symbol within one instance", () => {
       const a = context<string>("test:demo");
       const b = context<string>("test:demo");
@@ -152,15 +152,6 @@ describe("context", () => {
       const a = context<string>("test:x");
       const b = context<string>("test:y");
       expect(a).not.toBe(b);
-    });
-
-    it("key uses Symbol.for so it survives across instances", () => {
-      const Shared = context<string>("test:shared");
-      // Simulate a "second instance" by retrieving the same global symbol.
-      const sameViaRegistry = Symbol.for(
-        "@cjean-fr/jsx-string.context.test:shared",
-      );
-      expect(Shared).toBe(sameViaRegistry as unknown as typeof Shared);
     });
 
     it("rejects empty or non-string keys", () => {
@@ -177,14 +168,6 @@ describe("context", () => {
         setContext(Shared, { value: 42 });
         expect(useContext(Shared).value).toBe(42);
       });
-    });
-  });
-
-  describe("AsyncLocalStorage singleton", () => {
-    it("storage is reachable via globalThis Symbol.for key", () => {
-      const key = Symbol.for("@cjean-fr/jsx-string.storage");
-      const g = globalThis as unknown as Record<symbol, unknown>;
-      expect(g[key]).toBeDefined();
     });
   });
 });

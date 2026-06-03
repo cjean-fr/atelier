@@ -9,7 +9,7 @@
     "paths": {
       "@cjean-fr/jsx-string": ["./src/index.ts"],
       "@cjean-fr/jsx-string/jsx-runtime": ["./src/jsx-runtime.ts"],
-      "@cjean-fr/jsx-string/jsx-dev-runtime": ["./src/jsx-runtime.ts"]
+      "@cjean-fr/jsx-string/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"]
     },
     "types": ["bun", "react"]
   },
