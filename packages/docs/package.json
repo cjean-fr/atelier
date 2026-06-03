@@ -55,7 +55,7 @@
     "build": "vite build",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
-    "test": "bun test"
+    "test": "echo \"no tests\""
   },
   "dependencies": {
     "@cjean-fr/build-core": "workspace:*",

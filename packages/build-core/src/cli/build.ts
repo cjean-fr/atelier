@@ -28,6 +28,13 @@ export async function runBuild<C extends BuildConfig>(
     server: { middlewareMode: true },
     appType: "custom",
     logLevel: "silent",
+    // Forcer l'unification des références de modules pour le chargeur virtuel de Vite
+    resolve: {
+      dedupe: ["@cjean-fr/jsx-string"],
+    },
+    ssr: {
+      external: ["@cjean-fr/jsx-string"],
+    },
   });
   try {
     const result = await buildSite(config as C, {

@@ -40,22 +40,6 @@ export function jsx<P extends {} = {}>(
 export const jsxs: typeof jsx = jsx;
 
 /**
- * Automatic JSX Transform — dev variant. Signature
- * `(type, props, key, isStaticChildren, source, self)`. All four trailing
- * arguments are diagnostics, NOT children. Same delegation as `jsx`.
- */
-export function jsxDEV<P extends {} = {}>(
-  tag: string | Component<P>,
-  props: P,
-  _key?: unknown,
-  _isStaticChildren?: boolean,
-  _source?: { fileName?: string; lineNumber?: number; columnNumber?: number },
-  _self?: unknown,
-): RenderResult {
-  return jsx(tag, props);
-}
-
-/**
  * JSX Fragment — groups children without wrapping them in a DOM element.
  *
  * Use the shorthand `<>...</>` syntax in JSX; the runtime resolves it to this
