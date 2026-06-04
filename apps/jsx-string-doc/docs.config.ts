@@ -1,4 +1,4 @@
-import { defineConfig } from '@cjean-fr/docs';
+import { defineConfig } from "./docs-src/config.js";
 
 export default defineConfig({
   title: 'jsx-string',

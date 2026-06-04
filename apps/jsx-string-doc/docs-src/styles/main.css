@@ -1,2 +1,7 @@
 @import "tailwindcss";
-@import "@cjean-fr/docs/main.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "./tokens.css";
+@import "./shiki.css";
+@import "./prose.css" layer(components);

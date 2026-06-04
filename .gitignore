@@ -4,6 +4,7 @@ node_modules
 
 # IA
 .agent
+.claude
 
 # output
 dist
