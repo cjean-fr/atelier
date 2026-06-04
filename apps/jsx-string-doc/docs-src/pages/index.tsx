@@ -1,4 +1,6 @@
-import { CodeExample, type PageMeta } from '@cjean-fr/docs';
+/** @jsxImportSource @cjean-fr/jsx-string */
+import { CodeExample } from '../components/CodeExample.js';
+import type { PageMeta } from '../types.js';
 
 export const meta: PageMeta = {
   title: 'Home',

@@ -10,6 +10,6 @@
     "skipLibCheck": true,
     "types": ["vite/client", "bun"]
   },
-  "include": ["docs-src", "vite.config.ts", "vite-plugin-jsx-docs.ts"],
+  "include": ["docs-src", "vite.config.ts"],
   "exclude": ["docs-src/examples"]
 }

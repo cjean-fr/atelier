@@ -8,8 +8,12 @@ on:
         required: true
         type: choice
         options:
+          - eslint-plugin-jsx-string
           - jsx-string
+          - jsx-flow
+          - jsx-vite
           - i18n-tiny
+          - jsonresume-theme-cjean
 
 jobs:
   release:
@@ -33,9 +37,12 @@ jobs:
       - name: Extract Version
         id: meta
         run: |
-          # Lit la version dans le package.json du dossier choisi
-          VERSION=$(jq -r '.version' packages/${{ github.event.inputs.package }}/package.json)
+          PACKAGE_DIR="packages/${{ github.event.inputs.package }}"
+          PACKAGE_NAME=$(jq -r '.name' "$PACKAGE_DIR/package.json")
+          VERSION=$(jq -r '.version' "$PACKAGE_DIR/package.json")
           TAG="${{ github.event.inputs.package }}@$VERSION"
+          echo "package_dir=$PACKAGE_DIR" >> $GITHUB_OUTPUT
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
@@ -50,7 +57,7 @@ jobs:
           fi
 
       - name: Build Package
-        run: bun run build --filter=@cjean-fr/${{ github.event.inputs.package }}
+        run: bun run build --filter="${{ steps.meta.outputs.package_name }}"
 
       - name: Setup Node (for OIDC support)
         uses: actions/setup-node@v5
@@ -60,6 +67,6 @@ jobs:
 
       - name: Publish to NPM
         run: |
-          cd packages/${{ github.event.inputs.package }}
+          cd "${{ steps.meta.outputs.package_dir }}"
           bun pm pack
           npm publish *.tgz --provenance
