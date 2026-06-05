@@ -1,5 +1,7 @@
 # jsonresume-theme-cjean
 
+[![npm version](https://img.shields.io/npm/v/jsonresume-theme-cjean)](https://www.npmjs.com/package/jsonresume-theme-cjean)
+
 A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Tailwind CSS and TypeScript.
 
 ![Theme Preview](https://i.imgur.com/lWBFRBK.png)

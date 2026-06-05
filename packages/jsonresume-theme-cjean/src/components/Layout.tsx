@@ -8,6 +8,7 @@ import Footer from "./Footer.js";
 import Header from "./Header.js";
 import Links from "./Links.js";
 import { ProfilePageJsonLd } from "./ProfilePageJsonLd.js";
+import Projects from "./Projects.js";
 import SEO from "./SEO.js";
 import Skills from "./Skills.js";
 import WorkExperience from "./WorkExperience.js";
@@ -32,7 +33,7 @@ interface LayoutProps extends HTMLAttributes {
 }
 
 export default async ({ resume, css, ...props }: LayoutProps) => {
-  const { basics, work: works, education, certificates, skills, meta } = resume;
+  const { basics, work: works, education, certificates, skills, meta, projects } = resume;
   const { ui, modest } = meta.themeConfig;
 
   const bgTiles = generateTriangulation({
@@ -138,6 +139,9 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
               )}
 
               <WorkExperience works={works} showLogos={ui.showLogos} />
+              {projects && (
+                <Projects projects={projects} showLogos={ui.showLogos} />
+              )}
               <Education education={education} certificates={certificates} />
               <Skills skills={skills} />
             </article>

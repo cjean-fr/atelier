@@ -8,6 +8,7 @@ import { raw, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type ThemeSpec = {
   work_experience: readonly [];
+  projects: readonly [];
   education: readonly [];
   skills: readonly [];
   present: readonly [];
@@ -24,6 +25,7 @@ export type ThemeSpec = {
 
 const en = defineTranslations<ThemeSpec>()({
   work_experience: "Work Experience",
+  projects: "Projects",
   education: "Education",
   skills: "Skills",
   present: "Present",
@@ -40,6 +42,7 @@ const en = defineTranslations<ThemeSpec>()({
 
 const fr = defineTranslations<ThemeSpec>()({
   work_experience: "Expériences professionnelles",
+  projects: "Projets",
   education: "Formations",
   skills: "Compétences",
   present: "Présent",

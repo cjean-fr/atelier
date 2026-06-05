@@ -104,6 +104,15 @@ export const BasicsSchema = z.looseObject({
   profiles: z.optional(z.array(ProfileSchema)),
 });
 
+export const ProjectSchema = z.object({
+  name: z.string(),
+  description: z.optional(z.string()),
+  url: z.optional(z.url()),
+  startDate: z.string(),
+  endDate: z.optional(z.string()),
+  highlights: z.optional(z.array(z.string())),
+});
+
 export const EducationSchema = z.object({
   institution: z.string(),
   url: z.optional(z.url()),
@@ -143,6 +152,7 @@ export const ResumeSchema = z.object({
     {},
   ),
   work: z._default(z.optional(z.array(WorkSchema)), []),
+  projects: z._default(z.optional(z.array(ProjectSchema)), []),
   basics: BasicsSchema,
   education: z._default(z.optional(z.array(EducationSchema)), []),
   certificates: z._default(z.optional(z.array(CertificatesSchema)), []),
