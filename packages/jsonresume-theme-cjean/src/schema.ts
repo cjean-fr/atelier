@@ -15,7 +15,7 @@ export const ThemeConfigSchema = z.object({
           text: z.string(),
           url: z.string(),
           icon: z._default(
-            z.optional(z.string().check(z.regex(/^[a-z]+:[a-z-]+$/))),
+            z.optional(z.string().check(z.regex(/^[a-z0-9-]+:[a-z0-9-]+$/))),
             "tabler:message-circle",
           ),
         }),
