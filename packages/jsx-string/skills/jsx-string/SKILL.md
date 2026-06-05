@@ -107,9 +107,8 @@ const html = renderToString(<AsyncComponent />); // missing await
 Typed, isolated scope for sharing data across the render tree without prop drilling. Backed by `AsyncLocalStorage` — concurrent requests never bleed into each other.
 
 ```ts
-// Define a typed token — once, in its own module. The string key is a
-// globally-unique namespace ("<scope>:<purpose>"); same key → same Symbol
-// across module duplicates (Vite SSR, workers, microfrontends).
+// Define a typed token — once, in its own module. Convention: "<scope>:<purpose>".
+// Same key always resolves to the same Symbol within a given jsx-string instance.
 export const AuthContext = context<{ user: string; locale: string }>(
   "my-app:auth",
 );

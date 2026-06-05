@@ -1,5 +1,7 @@
-import type { ResolvedDocsConfig } from "./types.js";
-import type { DocsConfig } from "./types.js";
+import type { ResolvedDocsConfig, DocsConfig, HandlerEntry } from "./types.js";
+import { JsxStringHandler } from "./handlers/jsx-string.js";
+import { MarkdownHandler } from "./handlers/markdown.js";
+import { Layout } from "./components/Layout.js";
 
 const DEFAULTS = {
   pages: "./docs-src/pages",
@@ -10,10 +12,19 @@ const DEFAULTS = {
   viteManifest: "dist/assets/.vite/manifest.json",
 } as const;
 
+const DEFAULT_HANDLERS: Record<string, HandlerEntry> = {
+  ".tsx": { handler: JsxStringHandler },
+  ".jsx": { handler: JsxStringHandler },
+  ".md":  { handler: MarkdownHandler, prose: true },
+};
+
 export function defineConfig(config: DocsConfig): ResolvedDocsConfig {
   if (!config.title) {
     throw new Error("[jsx-string-doc] defineConfig(): `title` is required.");
   }
+
+  const handlers = { ...DEFAULT_HANDLERS, ...config.handlers };
+
   return {
     title: config.title,
     tagline: config.tagline ?? null,
@@ -28,6 +39,8 @@ export function defineConfig(config: DocsConfig): ResolvedDocsConfig {
     editUrl: config.editUrl ?? null,
     site: config.site ?? null,
     sitemap: config.sitemap !== false && Boolean(config.site),
+    handlers,
+    layout: config.layout ?? Layout,
   };
 }
 
