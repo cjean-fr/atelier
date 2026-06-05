@@ -10,7 +10,11 @@ export default function Section({ name, children, ...props }: SectionProps) {
     : undefined;
 
   return (
-    <section aria-labelledby={sectionId} {...props}>
+    <section
+      aria-labelledby={sectionId}
+      className="content-visibility-auto [contain-intrinsic-size:auto_400px]"
+      {...props}
+    >
       {name && (
         <h2
           id={sectionId}

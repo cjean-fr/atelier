@@ -19,6 +19,7 @@ export type ThemeSpec = {
   last_modified: readonly ["date"];
   profile_page_name: readonly ["name", "label"];
   theme_credit: readonly ["link"];
+  skip_to_content: readonly [];
 };
 
 const en = defineTranslations<ThemeSpec>()({
@@ -34,6 +35,7 @@ const en = defineTranslations<ThemeSpec>()({
   last_modified: "Last updated on {date}",
   profile_page_name: "{name}'s resume - {label}",
   theme_credit: "Theme made with love by {link}",
+  skip_to_content: "Skip to main content",
 });
 
 const fr = defineTranslations<ThemeSpec>()({
@@ -49,6 +51,7 @@ const fr = defineTranslations<ThemeSpec>()({
   last_modified: "Dernière mise à jour le {date}",
   profile_page_name: "CV de {name} - {label}",
   theme_credit: "Thème proposé avec amour par {link}",
+  skip_to_content: "Aller au contenu principal",
 });
 
 const resources = {

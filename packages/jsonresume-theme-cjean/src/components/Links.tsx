@@ -133,10 +133,7 @@ export default function Links({
   };
 
   return (
-    <ul
-      className="my-3 inline-flex flex-wrap gap-x-[2ch] gap-y-2"
-      aria-label={t("contact_info")}
-    >
+    <ul className="my-3 inline-flex flex-wrap gap-x-[2ch] gap-y-2">
       {list.map(renderLink)}
     </ul>
   );

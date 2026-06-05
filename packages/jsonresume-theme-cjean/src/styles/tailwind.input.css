@@ -1,6 +1,34 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
+/* FloatingButton expansion triggers: pointer hover, keyboard focus and the
+   scroll-controlled `fab--extended` class (see FloatingButton.tsx).
+   `fab-open:` styles the button itself (`.fab`), `group-fab-open:` styles
+   its descendants (drawer track, label). */
+@custom-variant fab-open (&:hover, &:focus-visible, &.fab--extended);
+@custom-variant group-fab-open (:where(.fab:hover, .fab:focus-visible, .fab.fab--extended) &);
+
+@view-transition {
+  navigation: auto;
+}
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
 @theme {
   --color-primary: var(--theme-primary);
   --color-header-from: var(--theme-header-from);
@@ -17,6 +45,10 @@
     /* Lower lightness and chroma (saturation) for a softer look on dark backgrounds */
     --color-primary: oklch(from var(--theme-primary) calc(l * 0.9) calc(c * 0.7) h);
   }
+}
+
+@utility content-visibility-* {
+  content-visibility: --value("auto", "hidden", "visible");
 }
 
 @utility kerning-* {
