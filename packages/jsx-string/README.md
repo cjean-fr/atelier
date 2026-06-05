@@ -135,9 +135,8 @@ import {
   renderToString,
 } from "@cjean-fr/jsx-string";
 
-// Define context keys at module level — keys are global strings (Symbol.for)
-// so the same key resolves to the same Symbol even if jsx-string is loaded
-// twice (Vite plugin + Vite SSR, web workers, microfrontends, …).
+// Define context keys at module level — same key always resolves to the same
+// Symbol within a given jsx-string instance.
 const Auth = context<{ userId: string }>("my-app:auth");
 
 const Page = () => <p>User: {useContext(Auth).userId}</p>;

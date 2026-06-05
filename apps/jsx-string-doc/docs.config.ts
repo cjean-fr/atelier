@@ -1,4 +1,5 @@
 import { defineConfig } from "./docs-src/config.js";
+import { MdxHandler } from "./docs-src/handlers/mdx.js";
 
 export default defineConfig({
   title: 'jsx-string',
@@ -13,4 +14,8 @@ export default defineConfig({
   viteManifest: 'dist/assets/.vite/manifest.json',
 
   sidebar: ['Guide', 'API', 'jsx-flow'],
+
+  handlers: {
+    ".mdx": { handler: MdxHandler, prose: true },
+  },
 });
