@@ -1,5 +1,14 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
+// TC39 Async Context proposal (Stage 2, 2025-09)
+// https://github.com/tc39/proposal-async-context
+// When native (≈ ES2028+), replace AsyncLocalStorage with:
+//   const _store = new AsyncContext.Variable<ScopeMap>();
+//   storage.getStore() → _store.get()
+//   storage.run(m, fn) → _store.run(m, fn)
+// All other exports (context, setContext, useContext, withScope, snapshot)
+// keep their signatures unchanged.
+
 declare const __brand: unique symbol;
 
 export interface Context<T> {
