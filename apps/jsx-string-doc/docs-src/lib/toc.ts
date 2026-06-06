@@ -17,15 +17,10 @@ export function injectToc(html: string, renderToc: (entries: TocEntry[]) => stri
 
 function extractTocEntries(html: string): TocEntry[] {
   const entries: TocEntry[] = [];
-  const h2Re = /<h2\s+id="([^"]+)"[^>]*>(.*?)<\/h2>/gi;
-  const h3Re = /<h3\s+id="([^"]+)"[^>]*>(.*?)<\/h3>/gi;
-
+  const re = /<h([23])\s+id="([^"]+)"[^>]*>(.*?)<\/h\1>/gi;
   let match: RegExpExecArray | null;
-  while ((match = h2Re.exec(html)) !== null) {
-    entries.push({ id: match[1], text: stripHtml(match[2]), level: 2 });
-  }
-  while ((match = h3Re.exec(html)) !== null) {
-    entries.push({ id: match[1], text: stripHtml(match[2]), level: 3 });
+  while ((match = re.exec(html)) !== null) {
+    entries.push({ id: match[2], text: stripHtml(match[3]), level: parseInt(match[1], 10) });
   }
   return entries;
 }

@@ -33,13 +33,13 @@ export default function HomePage() {
 
       <div class="flex gap-3 flex-wrap mb-10">
         <a href="https://github.com/cjean-fr/atelier/actions/workflows/ci.yml">
-          <img src="https://github.com/cjean-fr/atelier/actions/workflows/ci.yml/badge.svg" alt="CI" />
+          <img src="https://github.com/cjean-fr/atelier/actions/workflows/ci.yml/badge.svg" alt="CI" height="20" />
         </a>
         <a href="https://www.npmjs.com/package/@cjean-fr/jsx-string">
-          <img src="https://img.shields.io/npm/v/@cjean-fr/jsx-string" alt="npm version" />
+          <img src="https://img.shields.io/npm/v/@cjean-fr/jsx-string" alt="npm version" height="20" />
         </a>
         <a href="https://unpkg.com/@cjean-fr/jsx-string/dist/index.js">
-          <img src="https://img.badgesize.io/https://unpkg.com/@cjean-fr/jsx-string/dist/index.js?compression=gzip&label=gzip" alt="gzip size" />
+          <img src="https://img.badgesize.io/https://unpkg.com/@cjean-fr/jsx-string/dist/index.js?compression=gzip&label=gzip" alt="gzip size" height="20" />
         </a>
       </div>
 
