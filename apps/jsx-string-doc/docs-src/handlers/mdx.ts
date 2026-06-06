@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import grayMatter from "gray-matter";
+import rehypeSlug from "rehype-slug";
 import type { PageHandler, Page, ResolvedDocsConfig } from "../types.js";
 import { getRelativeRoute, normalizeMeta, routeToUrl, urlToOutPath } from "../lib/page-utils.js";
 
@@ -48,6 +49,7 @@ async function compileMdx(file: string): Promise<{ code: string; meta: Record<st
   const compiled = String(await compile(content, {
     jsxImportSource: "@cjean-fr/jsx-string",
     providerImportSource: pathToFileURL(path.resolve("docs-src/mdx-components.jsx")).href,
+    rehypePlugins: [rehypeSlug],
   }));
   return { code: compiled, meta: frontmatter as Record<string, unknown> };
 }

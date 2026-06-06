@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearResults() {
     searchResults.replaceChildren();
     searchResults.classList.add("hidden");
+    searchStatus.classList.remove("hidden");
   }
 
   async function open() {
@@ -82,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     searchStatus.textContent = `${ranked.length} results`;
+    searchStatus.classList.add("hidden");
     selectedIndex = -1;
 
     const items = await Promise.all(
@@ -90,6 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
         url: hit.document.url,
         title: hit.document.title,
         excerpt: snippet(hit.document.text, q),
+        query: q,
       })),
     );
     searchResults.replaceChildren(...items);
@@ -213,7 +216,7 @@ function escapeGlob(value: string): string {
   return value.replace(/[?*[\]{}()!+@#,\\]/g, "\\$&");
 }
 
-function createResultItem(data: { index: number; url: string; title: string; excerpt: string }) {
+function createResultItem(data: { index: number; url: string; title: string; excerpt: string; query: string }) {
   const item = document.createElement("li");
   item.setAttribute("role", "option");
   item.setAttribute("aria-selected", "false");
@@ -225,7 +228,7 @@ function createResultItem(data: { index: number; url: string; title: string; exc
 
   const title = document.createElement("span");
   title.className = "font-medium text-sm text-gray-900 dark:text-gray-100";
-  title.textContent = data.title;
+  appendExcerpt(title, highlightTitle(data.title, data.query));
 
   const excerpt = document.createElement("span");
   excerpt.className = "text-xs text-gray-500 dark:text-gray-400";
@@ -256,6 +259,43 @@ function snippet(text: string, query: string, radius = 50): string {
   const matchedText = escapeHtml(text.slice(match.idx, match.idx + match.term.length));
   const after = escapeHtml(text.slice(match.idx + match.term.length, end));
   return `${prefix}${before}<mark>${matchedText}</mark>${after}${suffix}`;
+}
+
+function highlightTitle(text: string, query: string): string {
+  const terms = query.trim().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return escapeHtml(text);
+
+  const lower = text.toLowerCase();
+  const matches: { start: number; end: number }[] = [];
+  for (const term of terms) {
+    const tl = term.toLowerCase();
+    let idx = lower.indexOf(tl);
+    while (idx >= 0) {
+      matches.push({ start: idx, end: idx + term.length });
+      idx = lower.indexOf(tl, idx + term.length);
+    }
+  }
+
+  matches.sort((a, b) => a.start - b.start);
+  const merged: { start: number; end: number }[] = [];
+  for (const m of matches) {
+    const last = merged[merged.length - 1];
+    if (last && m.start < last.end) {
+      last.end = Math.max(last.end, m.end);
+    } else {
+      merged.push({ ...m });
+    }
+  }
+
+  let result = "";
+  let cursor = 0;
+  for (const { start, end } of merged) {
+    result += escapeHtml(text.slice(cursor, start));
+    result += `<mark>${escapeHtml(text.slice(start, end))}</mark>`;
+    cursor = end;
+  }
+  result += escapeHtml(text.slice(cursor));
+  return result;
 }
 
 function appendExcerpt(target: HTMLElement, html: string): void {
