@@ -1,30 +1,16 @@
-import type { MarkdownOptions } from "./markdown.js";
 import type { ResolvedDocsConfig, Page, HandlerEntry } from "../types.js";
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 
-export interface DiscoverOptions {
-  loadPage?: (file: string) => Promise<Record<string, unknown>>;
-  markdown?: MarkdownOptions;
-  handlers?: Record<string, HandlerEntry>;
-}
-
-type PageLoader = NonNullable<DiscoverOptions["loadPage"]>;
-
-export async function discoverPages(
-  config: ResolvedDocsConfig,
-  options: DiscoverOptions = {},
-): Promise<Page[]> {
+export async function discoverPages(config: ResolvedDocsConfig): Promise<Page[]> {
   const pagesDir = path.resolve(config.pages);
-  const handlers = options.handlers ?? config.handlers;
+  const handlers = config.handlers;
   const extensions = Object.keys(handlers);
   const found = await walk(pagesDir, extensions);
   const pages: Page[] = [];
-  const load = options.loadPage ?? defaultLoader;
   for (const file of found) {
-    pages.push(await loadFile(file, config, load, handlers));
+    pages.push(await loadFile(file, pagesDir, config, handlers));
   }
   pages.sort((a, b) => a.url.localeCompare(b.url));
   return pages;
@@ -32,22 +18,16 @@ export async function discoverPages(
 
 async function loadFile(
   file: string,
+  pagesDir: string,
   config: ResolvedDocsConfig,
-  _load: PageLoader,
   handlers: Record<string, HandlerEntry>,
 ): Promise<Page> {
-  const pagesDir = path.resolve(config.pages);
-  const ext = extname(file);
+  const ext = path.extname(file);
   const entry = handlers[ext];
   if (entry) {
     return entry.handler.load(file, pagesDir, config);
   }
   throw new Error(`[jsx-string-doc] No handler configured for "${ext}" files (${file}).`);
-}
-
-function extname(file: string): string {
-  const dot = file.lastIndexOf(".");
-  return dot === -1 ? "" : file.slice(dot);
 }
 
 export function findPageFile(
@@ -68,10 +48,6 @@ export function findPageFile(
   return null;
 }
 
-function defaultLoader(file: string): Promise<Record<string, unknown>> {
-  return import(/* @vite-ignore */ pathToFileURL(file).href);
-}
-
 async function walk(dir: string, extensions: string[]): Promise<string[]> {
   const out: string[] = [];
   if (!existsSync(dir)) return out;
@@ -79,6 +55,7 @@ async function walk(dir: string, extensions: string[]): Promise<string[]> {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (entry.name === ".compiled") continue;
       out.push(...(await walk(fullPath, extensions)));
     } else if (entry.isFile() && extensions.some((ext) => entry.name.endsWith(ext))) {
       out.push(fullPath);

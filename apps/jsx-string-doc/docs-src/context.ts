@@ -1,4 +1,5 @@
 import type { ResolvedDocsConfig, PageMeta, ResolvedSidebar } from "./types.js";
+import type { NavLink } from "./lib/sidebar.js";
 import {
   context,
   setContext,
@@ -13,6 +14,8 @@ export interface DocsRenderContext {
   sidebar: ResolvedSidebar;
   lastUpdated: string | null;
   editUrl: string | null;
+  prev: NavLink | null;
+  next: NavLink | null;
 }
 
 const DocsContext: Context<DocsRenderContext> = context<DocsRenderContext>(

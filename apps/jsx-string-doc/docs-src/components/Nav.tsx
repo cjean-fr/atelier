@@ -9,7 +9,7 @@ export function Nav() {
   return (
     <nav
       id="docs-nav"
-      class="docs-nav fixed inset-0 z-40 hidden w-full max-w-xs overflow-y-auto border-r border-gray-200 bg-white px-6 py-8 data-[open]:block md:static md:block md:w-56 md:max-w-none md:shrink-0 md:overflow-visible md:px-0 md:pr-6 dark:border-gray-800 dark:bg-gray-950"
+      class="docs-nav fixed inset-0 z-40 hidden w-full max-w-xs overflow-y-auto border-r border-gray-200 bg-white px-6 py-8 data-[open]:block md:sticky md:top-0 md:h-screen md:overflow-y-auto md:block md:w-56 md:max-w-none md:shrink-0 md:px-0 md:pr-6 dark:border-gray-800 dark:bg-gray-950"
       aria-label="Primary navigation"
       tabindex="-1"
     >

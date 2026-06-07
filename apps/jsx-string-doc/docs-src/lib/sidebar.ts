@@ -1,5 +1,30 @@
-import type { PageMeta, SidebarConfig, ResolvedSidebar, ResolvedSidebarItem } from "../types.js";
+import type { PageMeta, SidebarConfig, ResolvedSidebar, ResolvedSidebarItem, ResolvedSidebarPage } from "../types.js";
 import type { Page } from "../types.js";
+
+export interface NavLink {
+  label: string;
+  href: string;
+}
+
+export function resolveNavigation(
+  sidebar: ResolvedSidebar,
+  currentUrl: string,
+): { prev: NavLink | null; next: NavLink | null } {
+  for (const group of sidebar.groups) {
+    const pages = group.items.filter(
+      (item): item is ResolvedSidebarPage => item.kind === "page",
+    );
+    const idx = pages.findIndex((p) => p.href === currentUrl);
+    if (idx === -1) continue;
+
+    return {
+      prev: idx > 0 ? { label: pages[idx - 1].label, href: pages[idx - 1].href } : null,
+      next: idx < pages.length - 1 ? { label: pages[idx + 1].label, href: pages[idx + 1].href } : null,
+    };
+  }
+
+  return { prev: null, next: null };
+}
 
 type DocsPage = Page & { meta: PageMeta };
 

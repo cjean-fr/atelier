@@ -1,5 +1,28 @@
 import path from "node:path";
-import type { PageMeta } from "../types.js";
+import type { Page, PageMeta, ResolvedDocsConfig } from "../types.js";
+
+export function createPage(
+  file: string,
+  pagesDir: string,
+  config: ResolvedDocsConfig,
+  handlerName: string,
+  rawMeta: unknown,
+  Component: (props: object) => unknown,
+): Page {
+  const rel = getRelativeRoute(file, pagesDir);
+  const ext = path.extname(file);
+  const route = rel.slice(0, -ext.length);
+  const meta = normalizeMeta(rawMeta, rel);
+  const url = meta.slug ?? routeToUrl(route);
+  return {
+    url,
+    file,
+    outPath: path.join(config.out, urlToOutPath(url)),
+    handler: handlerName,
+    meta,
+    Component,
+  };
+}
 
 export function routeToUrl(route: string): string {
   if (route === "index") return "/";
