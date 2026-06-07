@@ -6,17 +6,14 @@ import path from "node:path";
 import grayMatter from "gray-matter";
 import rehypeSlug from "rehype-slug";
 import type { PageHandler, Page, ResolvedDocsConfig } from "../types.js";
-import { getRelativeRoute, normalizeMeta, routeToUrl, urlToOutPath } from "../lib/page-utils.js";
+import { getRelativeRoute, createPage } from "../lib/page-utils.js";
 
 export const MdxHandler: PageHandler = {
   name: "mdx",
 
   async load(file: string, pagesDir: string, config: ResolvedDocsConfig): Promise<Page> {
     const rel = getRelativeRoute(file, pagesDir);
-    const ext = path.extname(file);
-    const route = rel.slice(0, -ext.length);
     const { code, meta: rawMeta } = await compileMdx(file);
-
 
     const tmpFile = path.join(pagesDir, ".compiled", rel.replace(/\.mdx$/, ".tsx"));
     const tmpDir = path.dirname(tmpFile);
@@ -30,16 +27,7 @@ export const MdxHandler: PageHandler = {
     if (typeof Component !== "function") {
       throw new Error(`[jsx-string-doc] Compiled MDX ${rel} has no default export.`);
     }
-    const meta = normalizeMeta(rawMeta, rel);
-    const url = meta.slug ?? routeToUrl(route);
-    return {
-      url,
-      file,
-      outPath: path.join(config.out, urlToOutPath(url)),
-      handler: "mdx",
-      meta,
-      Component,
-    };
+    return createPage(file, pagesDir, config, "mdx", rawMeta, Component);
   },
 };
 
