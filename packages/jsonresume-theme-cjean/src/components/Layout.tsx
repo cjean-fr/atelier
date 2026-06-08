@@ -33,7 +33,15 @@ interface LayoutProps extends HTMLAttributes {
 }
 
 export default async ({ resume, css, ...props }: LayoutProps) => {
-  const { basics, work: works, education, certificates, skills, meta, projects } = resume;
+  const {
+    basics,
+    work: works,
+    education,
+    certificates,
+    skills,
+    meta,
+    projects,
+  } = resume;
   const { ui, modest } = meta.themeConfig;
 
   const bgTiles = generateTriangulation({
@@ -139,9 +147,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
               )}
 
               <WorkExperience works={works} showLogos={ui.showLogos} />
-              {projects && (
-                <Projects projects={projects} showLogos={ui.showLogos} />
-              )}
+              <Projects projects={projects} showLogos={ui.showLogos} />
               <Education education={education} certificates={certificates} />
               <Skills skills={skills} />
             </article>
