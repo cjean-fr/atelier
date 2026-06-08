@@ -73,6 +73,10 @@ export function renderAttributes(
   let pending: Promise<string>[] | null = null;
 
   for (const key in props) {
+    // Skip internal props (children/key/ref/dangerouslySetInnerHTML) up front:
+    // jsx() always puts `children` in props, so otherwise every element pays a
+    // renderAttribute call + Promise check just to get "" back.
+    if (INTERNAL_PROPS.has(key)) continue;
     const r = renderAttribute(key, (props as any)[key]);
     if (typeof r === "string") {
       if (r) out += ` ${r}`;
@@ -99,8 +103,28 @@ export function renderAttributes(
  * same element render as separate attributes (no merge) — this matches Deno's
  * precompile transform where each attribute is rendered in isolation.
  */
-function renderAttributeSync(name: string, value: unknown): string {
-  if (INTERNAL_PROPS.has(name) || value === false || value == null) return "";
+/**
+ * Name-derived attribute metadata. Everything in attribute serialization that
+ * depends ONLY on the name — validation, camelCase→kebab remap, event-handler
+ * detection, style/URL classification — is computed once per distinct name and
+ * cached. The value-dependent work (escaping, URL/CSS safety) is never cached.
+ *
+ * `urlKind`: 0 = plain, 1 = URL attribute, 2 = srcset.
+ * A cached `null` means "skip this attribute" (internal prop or invalid name).
+ */
+type AttrMeta = {
+  name: string;
+  isEvent: boolean;
+  isStyle: boolean;
+  urlKind: 0 | 1 | 2;
+};
+
+// Keyed by attribute name. Names come from a small, bounded vocabulary — the
+// same assumption that lets VALID_TAGS cache tag validation.
+const ATTR_META_CACHE = new Map<string, AttrMeta | null>();
+
+function computeAttrMeta(name: string): AttrMeta | null {
+  if (INTERNAL_PROPS.has(name)) return null;
 
   // `isValidAttrName` rejects whitespace, quotes, brackets, `=`, `/`, AND
   // Unicode "Other" chars (controls, ZWSP, LRM, etc.) in one regex test —
@@ -110,7 +134,7 @@ function renderAttributeSync(name: string, value: unknown): string {
   let attrName = name;
   if (!isValidAttrName(attrName)) {
     attrName = sanitize(attrName);
-    if (!isValidAttrName(attrName)) return "";
+    if (!isValidAttrName(attrName)) return null;
   }
 
   // Only camelCase attribute names ever need remapping (the map keys all have
@@ -120,23 +144,57 @@ function renderAttributeSync(name: string, value: unknown): string {
     attrName = ATTRIBUTE_NAME_MAP.get(attrName) ?? attrName;
   }
   // Event-handler check: REGEX_EVENT_HANDLER is case-insensitive and must run
-  // regardless of casing — `onclick={fn}` is just as dangerous as
-  // `onClick={fn}`. Cheap pre-filter: only names starting with 'o'/'O' can
-  // possibly match, avoiding the regex test on every non-event attribute.
+  // regardless of casing — `onclick` is just as dangerous as `onClick`. Cheap
+  // pre-filter: only names starting with 'o'/'O' can possibly match. Event
+  // names are emitted lowercased.
   const c0 = attrName.charCodeAt(0);
-  if ((c0 === 79 || c0 === 111) && REGEX_EVENT_HANDLER.test(attrName)) {
+  const isEvent =
+    (c0 === 79 || c0 === 111) && REGEX_EVENT_HANDLER.test(attrName);
+  if (isEvent && hasUpper) attrName = attrName.toLowerCase();
+
+  if (attrName === "style") {
+    return { name: attrName, isEvent: false, isStyle: true, urlKind: 0 };
+  }
+
+  // URL_ATTRIBUTES is keyed lowercase. After remapping, mapped names are
+  // already lowercase, so only re-lowercase when the name still has uppercase
+  // (e.g. "HREF" written verbatim).
+  const urlKey = REGEX_HAS_UPPER.test(attrName)
+    ? attrName.toLowerCase()
+    : attrName;
+  const urlKind: 0 | 1 | 2 =
+    urlKey === "srcset" ? 2 : URL_ATTRIBUTES.has(urlKey) ? 1 : 0;
+
+  return { name: attrName, isEvent, isStyle: false, urlKind };
+}
+
+function getAttrMeta(name: string): AttrMeta | null {
+  const cached = ATTR_META_CACHE.get(name);
+  if (cached !== undefined) return cached;
+  const meta = computeAttrMeta(name);
+  ATTR_META_CACHE.set(name, meta);
+  return meta;
+}
+
+function renderAttributeSync(name: string, value: unknown): string {
+  if (value === false || value == null) return "";
+
+  const meta = getAttrMeta(name);
+  if (meta === null) return "";
+  const attrName = meta.name;
+
+  if (meta.isEvent) {
     if (typeof value === "function") {
       console.warn(
-        `[jsx-string] Event handler "${attrName}" was passed a function. ` +
+        `[jsx-string] Event handler "${name}" was passed a function. ` +
           `This is not supported in static HTML rendering. Use a string instead.`,
       );
       return "";
     }
     if (typeof value !== "string") return "";
-    if (hasUpper) attrName = attrName.toLowerCase();
   }
 
-  if (attrName === "style") {
+  if (meta.isStyle) {
     let style: string;
     if (value !== null && typeof value === "object") {
       style = renderStyle(value as CSSProperties);
@@ -151,16 +209,11 @@ function renderAttributeSync(name: string, value: unknown): string {
   if (value === true) return attrName;
 
   let str = typeof value === "string" ? value : String(value);
-  // URL_ATTRIBUTES is keyed lowercase. After remapping, mapped names are
-  // already lowercase, so only re-lowercase when the original had uppercase
-  // and survived without remapping (e.g. "HREF" written verbatim).
-  const urlKey =
-    hasUpper && REGEX_HAS_UPPER.test(attrName)
-      ? attrName.toLowerCase()
-      : attrName;
-  if (urlKey === "srcset") {
+  if (meta.urlKind === 2) {
     if (!isSafeSrcset(str)) str = "#blocked";
-  } else if (URL_ATTRIBUTES.has(urlKey) && !isSafeUrl(str)) str = "#blocked";
+  } else if (meta.urlKind === 1 && !isSafeUrl(str)) {
+    str = "#blocked";
+  }
   return `${attrName}="${escapeAttr(str)}"`;
 }
 
@@ -253,7 +306,24 @@ export function renderChild(child: JSXNode): string | Promise<string> {
     return out;
   }
   if (child instanceof Promise) return child.then(renderChild);
+  // Iterables — placed after every hot-path check (string/number/RawString/
+  // Array/Promise all return first), so common children never reach this.
+  // Sync iterables (Set, Map values, generators) render like an array; async
+  // iterables (async generators) are buffered, then concatenated. Streaming an
+  // async source progressively is jsx-flow's job, not renderToString's.
+  if (typeof (child as any)[Symbol.iterator] === "function")
+    return renderChild(Array.from(child as Iterable<JSXNode>));
+  if (typeof (child as any)[Symbol.asyncIterator] === "function")
+    return renderAsyncIterable(child as AsyncIterable<JSXNode>);
   return escapeContent(String(child));
+}
+
+async function renderAsyncIterable(
+  iterable: AsyncIterable<JSXNode>,
+): Promise<string> {
+  let out = "";
+  for await (const item of iterable) out += await renderChild(item);
+  return out;
 }
 
 /**

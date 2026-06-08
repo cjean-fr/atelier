@@ -77,7 +77,7 @@ export async function renderToReadableStream(
   adapter: PatchAdapter,
 ): Promise<ReadableStream<string>> {
   return withFlow(
-    async function ({ fragments }) {
+    async function ({ fragments, streams }) {
       return new ReadableStream<string>({
         async start(controller) {
           const shell = await renderToString(node());
@@ -85,7 +85,7 @@ export async function renderToReadableStream(
             ? adapter.transformShell(shell)
             : shell;
 
-          if (fragments.size === 0) {
+          if (fragments.size === 0 && streams.length === 0) {
             controller.enqueue(`${prepared}\n`);
           } else {
             const match = prepared.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
@@ -95,9 +95,14 @@ export async function renderToReadableStream(
               : prepared;
 
             controller.enqueue(`${before}\n`);
-            await streamFragments(fragments, adapter, (_id, html) => {
-              controller.enqueue(`${html}\n`);
-            });
+            await streamFragments(
+              fragments,
+              adapter,
+              (_id, html) => {
+                controller.enqueue(`${html}\n`);
+              },
+              streams,
+            );
             controller.enqueue(`${closing}\n`);
           }
 
@@ -155,9 +160,14 @@ export async function renderToStatic<T>(
               "jsx-flow: emitFragments requires an adapter. Pass { adapter } to renderToStatic.",
             );
           }
-          await streamFragments(ctx.fragments, adapter, async (id, html) => {
-            await cb(id, generatePath(id), html);
-          });
+          await streamFragments(
+            ctx.fragments,
+            adapter,
+            async (id, html) => {
+              await cb(id, generatePath(id), html);
+            },
+            ctx.streams,
+          );
         },
       };
       return handler(staticCtx);

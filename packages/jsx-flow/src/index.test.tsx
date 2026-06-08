@@ -3,6 +3,7 @@ import {
   initFlow,
   Deferred,
   Patch,
+  Generator,
   streamFragments,
   TurboAdapter,
   HtmxAdapter,
@@ -276,6 +277,73 @@ describe("renderToReadableStream", () => {
     const chunks = await collectChunks(stream);
     expect(chunks).toHaveLength(1);
     expect(chunks[0]).toContain("</html>");
+  });
+
+  // A child <Deferred> is registered while its parent renders. The drain loop
+  // in streamFragments must pick it up and stream it after its parent.
+  it("streams a synchronously-nested <Deferred>", async () => {
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <Deferred fallback={<p>outer</p>}>
+              {() => (
+                <section>
+                  OUTER
+                  <Deferred fallback={<p>inner</p>}>
+                    {() => <span>INNER-SYNC</span>}
+                  </Deferred>
+                </section>
+              )}
+            </Deferred>
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const chunks = await collectChunks(stream);
+    expect(chunks.join("")).toContain("INNER-SYNC");
+
+    // Parent fragment must be patched before its nested child.
+    const parent = chunks.findIndex((c) => c.includes('target="fragment-1"'));
+    const child = chunks.findIndex((c) => c.includes('target="fragment-2"'));
+    expect(parent).toBeGreaterThan(-1);
+    expect(child).toBeGreaterThan(-1);
+    expect(parent).toBeLessThan(child);
+  });
+
+  // Regression: a child <Deferred> revealed only after an await inside an async
+  // parent used to be dropped — the single-pass loop had already finished.
+  it("streams a <Deferred> nested behind an await", async () => {
+    const Inner = async () => {
+      await Promise.resolve();
+      return (
+        <section>
+          OUTER
+          <Deferred fallback={<p>inner</p>}>
+            {() => <span>INNER-ASYNC</span>}
+          </Deferred>
+        </section>
+      );
+    };
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <Deferred fallback={<p>outer</p>}>{() => <Inner />}</Deferred>
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const chunks = await collectChunks(stream);
+    expect(chunks.join("")).toContain("INNER-ASYNC");
+
+    const parent = chunks.findIndex((c) => c.includes('target="fragment-1"'));
+    const child = chunks.findIndex((c) => c.includes('target="fragment-2"'));
+    expect(parent).toBeGreaterThan(-1);
+    expect(child).toBeGreaterThan(-1);
+    expect(parent).toBeLessThan(child);
   });
 });
 
@@ -619,5 +687,119 @@ describe("adapters", () => {
     expect(html).toBe("content");
     expect(html).not.toContain("esi:");
     expect(html).not.toContain("id=");
+  });
+});
+
+describe("Generator", () => {
+  const collect = async (stream: ReadableStream<string>): Promise<string> => {
+    let out = "";
+    for await (const chunk of stream) out += chunk;
+    return out;
+  };
+
+  it("registers a stream effect (headless, append by default)", async () => {
+    await withScope(async () => {
+      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+      async function* g() {
+        yield <li>x</li>;
+      }
+      const html = await renderToString(
+        <Generator target="feed" source={() => g()} />,
+      );
+      expect(html).toBe("");
+      const { streams } = useContext(Flow);
+      expect(streams).toHaveLength(1);
+      expect(streams[0]!.target).toBe("feed");
+      expect(streams[0]!.merge).toBe("append");
+    });
+  });
+
+  it("streams each yield of an async generator as an append patch", async () => {
+    async function* rows() {
+      yield <li>a</li>;
+      yield <li>b</li>;
+    }
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <ul id="feed" />
+            <Generator target="feed" source={() => rows()} />
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const html = await collect(stream);
+    expect(html).toContain("<li>a</li>");
+    expect(html).toContain("<li>b</li>");
+    expect((html.match(/target="feed"/g) ?? []).length).toBe(2);
+    expect(html).toContain('action="append"');
+  });
+
+  it("maps raw data items through `map`", async () => {
+    function* data() {
+      yield { n: 1 };
+      yield { n: 2 };
+    }
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <ol id="list" />
+            <Generator
+              target="list"
+              source={() => data()}
+              map={(d) => <li>{d.n}</li>}
+            />
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const html = await collect(stream);
+    expect(html).toContain("<li>1</li>");
+    expect(html).toContain("<li>2</li>");
+  });
+
+  it("streams a sync iterable source", async () => {
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <ul id="feed" />
+            <Generator
+              target="feed"
+              source={() => ["x", "y"]}
+              map={(t) => <li>{t}</li>}
+            />
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const html = await collect(stream);
+    expect(html).toContain("<li>x</li>");
+    expect(html).toContain("<li>y</li>");
+  });
+
+  it("streams even when no <Deferred> fragments are present", async () => {
+    async function* rows() {
+      yield <li>only</li>;
+    }
+    const stream = await renderToReadableStream(
+      () => (
+        <html>
+          <body>
+            <ul id="feed" />
+            <Generator target="feed" source={() => rows()} />
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+    );
+    const html = await collect(stream);
+    expect(html).toContain("<li>only</li>");
+    expect(html).toContain("</html>");
   });
 });

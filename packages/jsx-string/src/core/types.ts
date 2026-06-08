@@ -196,7 +196,9 @@ export type JSXNode =
   | undefined
   | JSXElement
   | Promise<JSXNode>
-  | JSXNode[];
+  | JSXNode[]
+  | Iterable<JSXNode>
+  | AsyncIterable<JSXNode>;
 
 export type Component<P = {}> = (
   props: P & HTMLAttributes & { children?: JSXNode },
