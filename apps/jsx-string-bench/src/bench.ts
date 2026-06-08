@@ -1,30 +1,42 @@
 /**
- * Benchmarks: jsx-string vs preact-render-to-string vs react-dom/server.
+ * Benchmarks: jsx-string vs preact-render-to-string vs react-dom/server
+ * vs hono/jsx vs @kitajs/html (v5, pre-release).
  *
- * The two main suites (`text` and `stack`) are ports of preact's official
- * benchmark scenarios — same shape, same content, comparable across runners.
- * The `async` suite is jsx-string-only (React/Preact don't render async
- * components) and exercises the concurrent Promise resolution path.
+ * Suites:
+ *   - text:      1000× a text-heavy 2-span block (wide tree) — preact bench port
+ *   - stack:     10× a 1000-deep recursive tree (deep tree) — preact bench port
+ *   - realworld: a full page (layout/head/header/footer/purchases/sidebar) —
+ *                port of @kitajs/html's RealWorldPage; one .tsx per runner under
+ *                ./realworld so each keeps its own JSX pragma.
+ *   - async:     jsx-string only (React/Preact don't render async components).
  *
  * Run: `bun run bench` (requires `bun run build` in packages/jsx-string first).
  */
-
-import { bench, group, run } from "mitata";
-
+// realworld scenario — one renderer per runner (each file keeps its own pragma)
+import { NAME, PURCHASES } from "./realworld/data.js";
+import { render as realworldHono } from "./realworld/hono.js";
+import { render as realworldJsxString } from "./realworld/jsx-string.js";
+import { render as realworldKita } from "./realworld/kitajs.js";
+import { render as realworldPreact } from "./realworld/preact.js";
+import { render as realworldReact } from "./realworld/react.js";
+import { renderToString } from "@cjean-fr/jsx-string";
 // jsx-string
 import { jsx } from "@cjean-fr/jsx-string/jsx-runtime";
-import { renderToString } from "@cjean-fr/jsx-string";
-
+// @kitajs/html — JSX factory returns a string directly (synchronous concat).
+// Note: kitajs does not escape children by default; the bench content has no
+// HTML-special characters so output is identical across runners.
+import { createElement as kita } from "@kitajs/html";
+// Hono
+import { jsx as honoJsx } from "hono/jsx";
+import { bench, group, run } from "mitata";
+// Preact
+import { h } from "preact";
+import { render as preactRender } from "preact-render-to-string";
 // React
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-// Preact
-import { h } from "preact";
-import { render as preactRender } from "preact-render-to-string";
-
-// Hono
-import { jsx as honoJsx } from "hono/jsx";
+type KitaCreate = typeof kita;
 
 // ---------------------------------------------------------------------------
 // Async benchmark — jsx-string only (React/Preact don't support async components)
@@ -99,32 +111,46 @@ const bavariaPreact = () =>
   h(
     "div",
     null,
-    h(
-      "span",
-      { class: "foo", "data-testid": "foo" },
-      BAVARIA_1,
-    ),
-    h(
-      "span",
-      { class: "bar", "data-testid": "bar" },
-      BAVARIA_2,
-    ),
+    h("span", { class: "foo", "data-testid": "foo" }, BAVARIA_1),
+    h("span", { class: "bar", "data-testid": "bar" }, BAVARIA_2),
   );
 const bavariaHono = () =>
   honoJsx(
     "div",
     {},
-    honoJsx(
-      "span",
-      { class: "foo", "data-testid": "foo" },
-      BAVARIA_1,
-    ),
-    honoJsx(
-      "span",
-      { class: "bar", "data-testid": "bar" },
-      BAVARIA_2,
-    ),
+    honoJsx("span", { class: "foo", "data-testid": "foo" }, BAVARIA_1),
+    honoJsx("span", { class: "bar", "data-testid": "bar" }, BAVARIA_2),
   );
+// Build the `text` and `stack` apps for a given kitajs createElement factory.
+function makeKitaBuilders(k: KitaCreate) {
+  const bavaria = () =>
+    k(
+      "div",
+      null,
+      k("span", { class: "foo", "data-testid": "foo" }, BAVARIA_1),
+      k("span", { class: "bar", "data-testid": "bar" }, BAVARIA_2),
+    );
+  const textApp = () => {
+    const children = new Array(TEXT_REPEATS);
+    for (let i = 0; i < TEXT_REPEATS; i++) children[i] = bavaria();
+    return k("div", null, children);
+  };
+  const stack = (depth: number): any =>
+    depth <= 0
+      ? k(
+          "div",
+          null,
+          k("span", { class: "foo", "data-testid": "stack" }, "deep stack"),
+        )
+      : k("div", null, stack(depth - 1));
+  const stackApp = () => {
+    const children = new Array(STACK_REPEATS);
+    for (let i = 0; i < STACK_REPEATS; i++) children[i] = stack(STACK_DEPTH);
+    return k("div", null, children);
+  };
+  return { textApp, stackApp };
+}
+const kitaBench = makeKitaBuilders(kita);
 
 function textAppJsxString() {
   const children = new Array(TEXT_REPEATS);
@@ -215,8 +241,7 @@ function stackAppPreact() {
 }
 function stackAppHono() {
   const children = new Array(STACK_REPEATS);
-  for (let i = 0; i < STACK_REPEATS; i++)
-    children[i] = stackHono(STACK_DEPTH);
+  for (let i = 0; i < STACK_REPEATS; i++) children[i] = stackHono(STACK_DEPTH);
   return honoJsx("div", {}, children);
 }
 
@@ -232,6 +257,9 @@ group(`text — ${TEXT_REPEATS}× Bavaria block (preact bench port)`, () => {
   });
   bench("hono/jsx (toString)", () => {
     String(textAppHono());
+  });
+  bench("@kitajs/html", () => {
+    kitaBench.textApp();
   });
 });
 
@@ -249,6 +277,30 @@ group(
     });
     bench("hono/jsx (toString)", () => {
       String(stackAppHono());
+    });
+    bench("@kitajs/html", () => {
+      kitaBench.stackApp();
+    });
+  },
+);
+
+group(
+  `realworld — full page, ${PURCHASES.length} purchases (kitajs port)`,
+  () => {
+    bench("jsx-string", async () => {
+      await realworldJsxString(NAME, PURCHASES);
+    });
+    bench("react (renderToStaticMarkup)", () => {
+      realworldReact(NAME, PURCHASES);
+    });
+    bench("preact (render)", () => {
+      realworldPreact(NAME, PURCHASES);
+    });
+    bench("hono/jsx (toString)", () => {
+      realworldHono(NAME, PURCHASES);
+    });
+    bench("@kitajs/html", () => {
+      realworldKita(NAME, PURCHASES);
     });
   },
 );

@@ -176,3 +176,55 @@ describe("Attribute Processing, Hardening & Sanitization", () => {
     ).toBe("<div>Symbol(test) 123</div>");
   });
 });
+
+describe("Iterable & Generator Children", () => {
+  it("renders a sync generator", async () => {
+    function* items() {
+      yield <li>1</li>;
+      yield <li>2</li>;
+    }
+    expect(await renderToString(<ul>{items()}</ul>)).toBe(
+      "<ul><li>1</li><li>2</li></ul>",
+    );
+  });
+
+  it("renders a Set", async () => {
+    expect(await renderToString(<div>{new Set(["a", "b"])}</div>)).toBe(
+      "<div>ab</div>",
+    );
+  });
+
+  it("renders Map values()", async () => {
+    const m = new Map([
+      ["x", 1],
+      ["y", 2],
+    ]);
+    expect(await renderToString(<div>{m.values()}</div>)).toBe("<div>12</div>");
+  });
+
+  it("escapes string items from an iterable", async () => {
+    expect(await renderToString(<div>{new Set(["<b>"])}</div>)).toBe(
+      "<div>&lt;b&gt;</div>",
+    );
+  });
+
+  it("renders a generator yielding mixed primitives and elements", async () => {
+    function* g() {
+      yield "x";
+      yield 1;
+      yield <b>y</b>;
+    }
+    expect(await renderToString(<p>{g()}</p>)).toBe("<p>x1<b>y</b></p>");
+  });
+
+  it("renders an async generator (buffered)", async () => {
+    async function* items() {
+      yield <li>a</li>;
+      await Promise.resolve();
+      yield <li>b</li>;
+    }
+    expect(await renderToString(<ul>{items()}</ul>)).toBe(
+      "<ul><li>a</li><li>b</li></ul>",
+    );
+  });
+});
