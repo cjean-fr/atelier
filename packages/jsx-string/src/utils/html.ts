@@ -176,7 +176,7 @@ function getAttrMeta(name: string): AttrMeta | null {
   return meta;
 }
 
-function renderAttributeSync(name: string, value: unknown): string {
+export function renderAttributeSync(name: string, value: unknown): string {
   if (value === false || value == null) return "";
 
   const meta = getAttrMeta(name);

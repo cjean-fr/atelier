@@ -4,11 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bench": "bun run src/bench.ts",
+    "build:precompile": "bun run scripts/build-precompile.ts",
+"bench": "bun run build:precompile && bun run src/bench.ts",
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@cjean-fr/jsx-string": "workspace:*"
+    "@cjean-fr/jsx-string": "workspace:*",
+    "@cjean-fr/vite-plugin-precompile": "workspace:*"
   },
   "devDependencies": {
     "@kitajs/html": "5.0.0-next.1",
@@ -21,6 +23,7 @@
     "preact-render-to-string": "^6",
     "react": "^19",
     "react-dom": "^19",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "^8"
   }
 }

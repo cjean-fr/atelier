@@ -1,0 +1,207 @@
+import { describe, it, expect } from "bun:test";
+import {
+  collapseJsxWhitespace,
+  escapeAttr,
+  isEventHandlerName,
+  isLower,
+  isLowercaseTag,
+  isUrlAttribute,
+  isValidAttrName,
+  isVoidElement,
+  normalizeText,
+  hasSpreadOrInnerHTML,
+  remapAttrName,
+  RUNTIME_SOURCE,
+} from "./index.js";
+
+describe("precompile-core", () => {
+  describe("isLower", () => {
+    it("returns true for lowercase first char", () => {
+      expect(isLower("div")).toBe(true);
+      expect(isLower("span")).toBe(true);
+      expect(isLower("svg")).toBe(true);
+      expect(isLower("a")).toBe(true);
+    });
+
+    it("returns false for uppercase first char", () => {
+      expect(isLower("Div")).toBe(false);
+      expect(isLower("MyComponent")).toBe(false);
+      expect(isLower("A")).toBe(false);
+    });
+
+    it("returns false for non-alpha first char", () => {
+      expect(isLower("123")).toBe(false);
+      expect(isLower("")).toBe(false);
+    });
+  });
+
+  describe("isLowercaseTag", () => {
+    it("delegates to isLower", () => {
+      expect(isLowercaseTag("div")).toBe(true);
+      expect(isLowercaseTag("MyComponent")).toBe(false);
+    });
+  });
+
+  describe("normalizeText", () => {
+    it("trims leading newlines", () => {
+      expect(normalizeText("\n\n  hello")).toBe("  hello");
+    });
+
+    it("trims trailing newlines", () => {
+      expect(normalizeText("hello  \n\n")).toBe("hello  ");
+    });
+
+    it("replaces internal newlines with space", () => {
+      expect(normalizeText("hello\nworld")).toBe("hello world");
+      expect(normalizeText("line1\n\nline2")).toBe("line1 line2");
+    });
+
+    it("replaces carriage returns", () => {
+      expect(normalizeText("hello\r\nworld")).toBe("hello world");
+    });
+  });
+
+  describe("hasSpreadOrInnerHTML", () => {
+    it("returns false for simple attrs", () => {
+      expect(hasSpreadOrInnerHTML([
+        { kind: "attribute" as const, name: "class" },
+        { kind: "attribute" as const, name: "id" },
+      ])).toBe(false);
+    });
+
+    it("returns true for spread attrs", () => {
+      expect(hasSpreadOrInnerHTML([
+        { kind: "attribute" as const, name: "class" },
+        { kind: "spread" as const },
+      ])).toBe(true);
+    });
+
+    it("returns true for dangerouslySetInnerHTML", () => {
+      expect(hasSpreadOrInnerHTML([
+        { kind: "attribute" as const, name: "dangerouslySetInnerHTML" },
+      ])).toBe(true);
+    });
+
+    it("returns false for empty iterable", () => {
+      expect(hasSpreadOrInnerHTML([])).toBe(false);
+    });
+  });
+
+  describe("collapseJsxWhitespace", () => {
+    it("drops whitespace-only text that spans a newline", () => {
+      expect(collapseJsxWhitespace("\n          ")).toBe("");
+      expect(collapseJsxWhitespace("\n  hello\n")).toBe("hello");
+    });
+
+    it("joins non-blank lines with a single space", () => {
+      expect(collapseJsxWhitespace("hello\n  world")).toBe("hello world");
+    });
+
+    it("preserves single-line significant whitespace", () => {
+      expect(collapseJsxWhitespace("hello ")).toBe("hello ");
+      expect(collapseJsxWhitespace(" ")).toBe(" ");
+      expect(collapseJsxWhitespace("a b c")).toBe("a b c");
+    });
+
+    it("treats tabs as spaces", () => {
+      expect(collapseJsxWhitespace("a\tb")).toBe("a b");
+    });
+  });
+
+  describe("isVoidElement", () => {
+    it("is true for HTML void elements", () => {
+      expect(isVoidElement("input")).toBe(true);
+      expect(isVoidElement("br")).toBe(true);
+      expect(isVoidElement("img")).toBe(true);
+    });
+
+    it("is false for normal elements", () => {
+      expect(isVoidElement("div")).toBe(false);
+      expect(isVoidElement("span")).toBe(false);
+    });
+  });
+
+  describe("escapeAttr", () => {
+    it("returns clean values unchanged", () => {
+      expect(escapeAttr("/path?a=1")).toBe("/path?a=1");
+      expect(escapeAttr("hello world")).toBe("hello world");
+    });
+
+    it("escapes &, <, >, and double quotes", () => {
+      expect(escapeAttr(`a"b`)).toBe("a&quot;b");
+      expect(escapeAttr("a&b<c>d")).toBe("a&amp;b&lt;c&gt;d");
+    });
+
+    it("does not escape single quotes", () => {
+      expect(escapeAttr("a'b")).toBe("a'b");
+    });
+  });
+
+  describe("isUrlAttribute", () => {
+    it("is true for URL-bearing attributes", () => {
+      expect(isUrlAttribute("href")).toBe(true);
+      expect(isUrlAttribute("src")).toBe(true);
+      expect(isUrlAttribute("srcset")).toBe(true);
+      expect(isUrlAttribute("xlink:href")).toBe(true);
+    });
+
+    it("is case-insensitive", () => {
+      expect(isUrlAttribute("HREF")).toBe(true);
+    });
+
+    it("is false for ordinary attributes", () => {
+      expect(isUrlAttribute("class")).toBe(false);
+      expect(isUrlAttribute("id")).toBe(false);
+      expect(isUrlAttribute("alt")).toBe(false);
+    });
+  });
+
+  describe("remapAttrName", () => {
+    it("rewrites camelCase names to their HTML form", () => {
+      expect(remapAttrName("className")).toBe("class");
+      expect(remapAttrName("htmlFor")).toBe("for");
+      expect(remapAttrName("tabIndex")).toBe("tabindex");
+      expect(remapAttrName("srcSet")).toBe("srcset");
+    });
+
+    it("leaves unmapped names unchanged", () => {
+      expect(remapAttrName("class")).toBe("class");
+      expect(remapAttrName("id")).toBe("id");
+      expect(remapAttrName("data-x")).toBe("data-x");
+    });
+  });
+
+  describe("isEventHandlerName", () => {
+    it("matches on* handlers regardless of case", () => {
+      expect(isEventHandlerName("onClick")).toBe(true);
+      expect(isEventHandlerName("onclick")).toBe(true);
+      expect(isEventHandlerName("onMouseEnter")).toBe(true);
+    });
+
+    it("does not match ordinary names", () => {
+      expect(isEventHandlerName("on")).toBe(false); // needs a letter after "on"
+      expect(isEventHandlerName("on-off")).toBe(false);
+      expect(isEventHandlerName("class")).toBe(false);
+    });
+  });
+
+  describe("isValidAttrName", () => {
+    it("accepts clean names", () => {
+      expect(isValidAttrName("class")).toBe(true);
+      expect(isValidAttrName("data-x")).toBe(true);
+      expect(isValidAttrName("xlink:href")).toBe(true);
+    });
+
+    it("rejects names with whitespace, quotes, or =", () => {
+      expect(isValidAttrName("a b")).toBe(false);
+      expect(isValidAttrName('a"b')).toBe(false);
+      expect(isValidAttrName("a=b")).toBe(false);
+    });
+  });
+
+  describe("RUNTIME_SOURCE", () => {
+    it("is the jsx-string jsx-runtime path", () => {
+      expect(RUNTIME_SOURCE).toBe("@cjean-fr/jsx-string/jsx-runtime");
+    });
+  });
+});
