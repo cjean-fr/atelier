@@ -1,5 +1,5 @@
 import type { JSXNode } from "./core/types.js";
-import { renderChild } from "./utils/html.js";
+import { RawString, renderChild } from "./utils/html.js";
 
 export { raw } from "./core/types.js";
 export { Fragment } from "./jsx-runtime.js";
@@ -48,5 +48,10 @@ export {
  * ```
  */
 export async function renderToString(node: JSXNode): Promise<string> {
+  if (node instanceof RawString) return node.value;
+  if (node instanceof Promise)
+    return node.then((r) =>
+      r instanceof RawString ? r.value : renderChild(r),
+    );
   return renderChild(node);
 }

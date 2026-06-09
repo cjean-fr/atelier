@@ -18,6 +18,7 @@ import { render as realworldHono } from "./realworld/hono.js";
 import { render as realworldJsxString } from "./realworld/jsx-string.js";
 import { render as realworldKita } from "./realworld/kitajs.js";
 import { render as realworldPreact } from "./realworld/preact.js";
+import { render as realworldPrecompile } from "./realworld/precompile.js";
 import { render as realworldReact } from "./realworld/react.js";
 import { renderToString } from "@cjean-fr/jsx-string";
 // jsx-string
@@ -301,6 +302,9 @@ group(
     });
     bench("@kitajs/html", () => {
       realworldKita(NAME, PURCHASES);
+    });
+    bench("jsx-string precompile", async () => {
+      await realworldPrecompile(NAME, PURCHASES);
     });
   },
 );

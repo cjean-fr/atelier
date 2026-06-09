@@ -1,0 +1,40 @@
+{
+  "name": "@cjean-fr/vite-plugin-precompile",
+  "version": "0.1.0",
+  "description": "Vite plugin that precompiles JSX into tagged template literals (Deno-style precompile) for @cjean-fr/jsx-string",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./transformer": {
+      "types": "./dist/transformer.d.ts",
+      "default": "./dist/transformer.js"
+    }
+  },
+  "scripts": {
+    "build": "bun run build.ts",
+    "check": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@cjean-fr/precompile-core": "workspace:*",
+    "oxc-parser": "^0.135.0"
+  },
+  "peerDependencies": {
+    "vite": "^5 || ^6 || ^7 || ^8"
+  },
+  "devDependencies": {
+    "@cjean-fr/jsx-string": "workspace:*",
+    "vite": "^8"
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  }
+}

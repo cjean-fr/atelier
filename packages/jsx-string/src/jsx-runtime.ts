@@ -1,6 +1,11 @@
 import type { Component, JSXNode, HTMLAttributes } from "./core/types.js";
 import { RawString, type RenderResult } from "./core/types.js";
-import { renderAttribute, renderChild, renderElement } from "./utils/html.js";
+import {
+  renderAttribute,
+  renderAttributeSync,
+  renderChild,
+  renderElement,
+} from "./utils/html.js";
 
 export type { JSX } from "./core/types.js";
 
@@ -82,6 +87,7 @@ export function jsxAttr(
   name: string,
   value: unknown,
 ): string | Promise<string> {
+  if (!(value instanceof Promise)) return renderAttributeSync(name, value);
   return renderAttribute(name, value);
 }
 
@@ -135,19 +141,19 @@ export function jsxEscape(value: unknown): unknown {
  */
 export function jsxTemplate(
   templates: ArrayLike<string>,
-  ...exprs: unknown[]
+  ...values: unknown[]
 ): RenderResult {
-  let hasAsync = false;
-  for (let i = 0; i < exprs.length; i++) {
-    if (exprs[i] instanceof Promise) {
-      hasAsync = true;
-      break;
+  let out = templates[0] ?? "";
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
+    if (value instanceof Promise) {
+      return Promise.all(values).then(
+        (resolved) => new RawString(joinTemplate(templates, resolved)),
+      );
     }
+    out += flattenExpr(value) + (templates[i + 1] ?? "");
   }
-  if (!hasAsync) return new RawString(joinTemplate(templates, exprs));
-  return Promise.all(exprs).then(
-    (resolved) => new RawString(joinTemplate(templates, resolved)),
-  );
+  return new RawString(out);
 }
 
 /**
@@ -165,6 +171,7 @@ function joinTemplate(templates: ArrayLike<string>, exprs: unknown[]): string {
  * Internal helper to flatten and stringify structural values (arrays, RawStrings).
  */
 function flattenExpr(value: unknown): string {
+  if (typeof value === "string") return value;
   if (value == null || value === false || value === true) return "";
   if (value instanceof RawString) return value.value;
   if (Array.isArray(value)) {
