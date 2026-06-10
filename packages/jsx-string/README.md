@@ -348,6 +348,7 @@ _Ryzen 7 PRO 8840HS, median of 3 runs._
 - **Client-side rendering:** Server-only. No hydration.
 - **React compatibility:** No hooks, no refs, no React runtime.
 - **React Server Components:** Not RSC-aware (use Next.js App Router’s built-in renderer).
+- **Circular references:** Circular structures in children or props are not supported — rendering them exhausts the call stack, same as `JSON.stringify`.
 
 ### 💡 Key Differences from React
 

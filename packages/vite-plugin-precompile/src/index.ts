@@ -18,15 +18,25 @@ export default function vitePrecompile(config?: PluginConfig): Plugin {
     configResolved(resolvedConfig: ResolvedConfig) {
       if (config?.runtimeSource) {
         rs = config.runtimeSource;
-        return;
+      } else {
+        const src = (resolvedConfig.esbuild as { jsxImportSource?: string })
+          ?.jsxImportSource;
+        rs = src ? src + "/jsx-runtime" : RUNTIME_SOURCE;
       }
-      const src = (resolvedConfig.esbuild as { jsxImportSource?: string })
+      // Warn on inconsistent esbuild config (non-precompiled JSX using wrong runtime)
+      const esb = (resolvedConfig.esbuild as { jsxImportSource?: string })
         ?.jsxImportSource;
-      if (src) {
-        rs = src + "/jsx-runtime";
-        return;
+      const warn = (this as { warn?: (msg: string) => void }).warn;
+      if (!esb) {
+        warn?.(
+          `esbuild.jsxImportSource is not set — non-precompiled JSX (components) will use ` +
+          `Vite's default ("react") while templates use "${rs}". Set esbuild.jsxImportSource.`,
+        );
+      } else if (config?.runtimeSource && config.runtimeSource !== esb + "/jsx-runtime") {
+        warn?.(
+          `runtimeSource ("${config.runtimeSource}") and esbuild.jsxImportSource ("${esb}") disagree — mixed runtimes.`,
+        );
       }
-      rs = RUNTIME_SOURCE;
     },
 
     async buildStart() {
@@ -42,15 +52,13 @@ export default function vitePrecompile(config?: PluginConfig): Plugin {
         if (typeof mod.jsxAttr === "function") {
           renderAttr = mod.jsxAttr;
         } else {
-          this.warn(
-            `secure mode: "${source}" has no "jsxAttr" export; ` +
-              `static attributes will be inlined without sanitization`,
+          this.error(
+            `secure mode: "${source}" has no "jsxAttr" export — cannot sanitize static attributes`,
           );
         }
       } catch (err) {
-        this.warn(
-          `secure mode: failed to load "${source}" (${String(err)}); ` +
-            `static attributes will be inlined without sanitization`,
+        this.error(
+          `secure mode: failed to load "${source}" (${String(err)})`,
         );
       }
     },
@@ -68,7 +76,7 @@ export default function vitePrecompile(config?: PluginConfig): Plugin {
       );
 
       if (!result || result.code === code) return;
-      return { code: result.code };
+      return { code: result.code, map: result.map };
     },
   };
 }

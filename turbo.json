@@ -16,9 +16,6 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
-    "publish": {
-      "dependsOn": ["test", "build"]
-    },
     "dev": {
       "cache": false,
       "persistent": true

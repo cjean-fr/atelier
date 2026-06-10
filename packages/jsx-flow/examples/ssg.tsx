@@ -4,7 +4,7 @@
  *
  * Run: bun examples/ssg.tsx
  *
- * Writes dist/index.html (shell) and dist/fragments/*.html (islands).
+ * Writes dist/index.html (shell) and dist/fragments/*.html (deferred).
  * The shell uses <turbo-frame src="..."> placeholders; Turbo lazy-loads
  * each fragment on page load and replaces the frame with its content.
  *
@@ -12,7 +12,7 @@
  * format Turbo frame lazy-loading expects (distinct from the inline
  * <turbo-stream> format used in streaming SSR).
  */
-import { Island, renderToStatic, TurboAdapter } from "../src/index.js";
+import { Deferred, renderToStatic, TurboAdapter } from "../src/index.js";
 import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -46,7 +46,7 @@ function Feed() {
   );
 }
 
-// Shell — <Island> in static mode auto-generates src via generatePath
+// Shell — <Deferred> in static mode auto-generates src via generatePath
 
 function Shell() {
   return (
@@ -69,17 +69,14 @@ function Shell() {
         <h1>Dashboard</h1>
 
         <h2>Stats</h2>
-        <Island
-          name="stats"
-          fallback={<p class="placeholder">Loading stats…</p>}
-        >
+        <Deferred fallback={<p class="placeholder">Loading stats…</p>}>
           {() => <Stats />}
-        </Island>
+        </Deferred>
 
         <h2>Activity feed</h2>
-        <Island name="feed" fallback={<p class="placeholder">Loading feed…</p>}>
+        <Deferred fallback={<p class="placeholder">Loading feed…</p>}>
           {() => <Feed />}
-        </Island>
+        </Deferred>
       </body>
     </html>
   );
@@ -99,7 +96,7 @@ const { pages, fragments } = await renderToStatic(
     // TurboAdapter.Frame produces <turbo-frame id="id"> which Turbo fetches and
     // replaces the placeholder frame with. Distinct from Patch's <turbo-stream>.
     const fragments = new Map<string, string>();
-    for (const [id, { factory }] of ctx.channels.fragment) {
+    for (const [id, { factory }] of ctx.fragments) {
       const content = await renderToString(
         TurboAdapter.Frame({ id, children: factory() as JSXNode }),
       );
@@ -108,8 +105,7 @@ const { pages, fragments } = await renderToStatic(
 
     return { pages: new Map([["/index.html", html]]), fragments };
   },
-  TurboAdapter,
-  generatePath,
+  { adapter: TurboAdapter, generatePath },
 );
 
 // Write output

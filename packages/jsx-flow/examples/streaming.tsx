@@ -11,7 +11,12 @@
  * Native in Chrome 130+. The MutationObserver polyfill below covers
  * other modern browsers.
  */
-import { Island, renderToReadableStream, NativeAdapter } from "../src/index.js";
+import {
+  Deferred,
+  Generator,
+  renderToReadableStream,
+  NativeAdapter,
+} from "../src/index.js";
 
 // Slow async components
 
@@ -35,6 +40,15 @@ async function SlowFeed() {
   );
 }
 
+// Live sequence: each yield is patched into #events as it arrives.
+async function* liveEvents() {
+  const events = ["Build started", "Tests green", "Deployed to prod"];
+  for (const e of events) {
+    await Bun.sleep(600);
+    yield <li>{e}</li>;
+  }
+}
+
 // Shell
 
 function Shell() {
@@ -54,14 +68,18 @@ function Shell() {
         <h1>Dashboard</h1>
 
         <h2>Stats</h2>
-        <Island fallback={<p class="placeholder">Loading stats…</p>}>
+        <Deferred fallback={<p class="placeholder">Loading stats…</p>}>
           {() => <SlowStats />}
-        </Island>
+        </Deferred>
 
         <h2>Activity feed</h2>
-        <Island fallback={<p class="placeholder">Loading feed…</p>}>
+        <Deferred fallback={<p class="placeholder">Loading feed…</p>}>
           {() => <SlowFeed />}
-        </Island>
+        </Deferred>
+
+        <h2>Live events</h2>
+        <ul id="events" />
+        <Generator target="events" source={() => liveEvents()} />
       </body>
     </html>
   );
@@ -70,7 +88,7 @@ function Shell() {
 Bun.serve({
   port: 3080,
   async fetch() {
-    const stream = await renderToReadableStream(() => <Shell />, NativeAdapter);
+    const stream = renderToReadableStream(() => <Shell />, NativeAdapter);
     return new Response(stream.pipeThrough(new TextEncoderStream()), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });

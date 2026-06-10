@@ -6,7 +6,7 @@ import {
   RawString,
   raw,
 } from "./html.js";
-import { expect, describe, it } from "bun:test";
+import { expect, describe, it, spyOn } from "bun:test";
 
 const resolve = (v: string | Promise<string>) => Promise.resolve(v);
 
@@ -196,6 +196,23 @@ describe("html utilities", () => {
       });
       expect(result).toBe(' style="color:red;margin-top:4px"');
     });
+
+    it("should warn only once per attribute name for function event handlers", () => {
+      // WARNED_EVENT_HANDLERS is module-global and never cleared, so this
+      // test must use an attribute name no other test passes a function to.
+      const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        for (let i = 0; i < 3; i++) {
+          expect(
+            renderAttributes({ onPointerCancel: (() => {}) as any, id: "btn" }),
+          ).toBe(' id="btn"');
+        }
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(String(warnSpy.mock.calls[0]?.[0])).toContain("onPointerCancel");
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
   });
 
   describe("renderStyle", () => {
@@ -314,7 +331,37 @@ describe("html utilities", () => {
     });
   });
 
-  describe("regression — REGEX_CSS_URL lastIndex corruption", () => {
+  describe("renderElement — dangerouslySetInnerHTML with Promise __html", () => {
+  it("renders resolved Promise __html", async () => {
+    const result = await renderElement(
+      "div",
+      { dangerouslySetInnerHTML: { __html: Promise.resolve("<b>ok</b>") } },
+      [],
+    );
+    expect(result.value).toBe("<div><b>ok</b></div>");
+  });
+
+  it("renders empty for Promise __html resolving to null", async () => {
+    const result = await renderElement(
+      "div",
+      { dangerouslySetInnerHTML: { __html: Promise.resolve(null) } },
+      [],
+    );
+    expect(result.value).toBe("<div></div>");
+  });
+
+  it("rejects when Promise __html rejects", async () => {
+    await expect(
+      renderElement(
+        "div",
+        { dangerouslySetInnerHTML: { __html: Promise.reject(new Error("fail")) } },
+        [],
+      ),
+    ).rejects.toThrow("fail");
+  });
+});
+
+describe("regression — REGEX_CSS_URL lastIndex corruption", () => {
     const UNSAFE_DATA = "url('data:text/html,<h1>xss</h1>')";
 
     it("should block unsafe data on consecutive calls", async () => {

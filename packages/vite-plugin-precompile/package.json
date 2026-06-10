@@ -24,6 +24,8 @@
   },
   "dependencies": {
     "@cjean-fr/precompile-core": "workspace:*",
+    "@oxc-parser/binding-linux-x64-gnu": "^0.135.0",
+    "magic-string": "^0.30.21",
     "oxc-parser": "^0.135.0"
   },
   "peerDependencies": {
@@ -31,9 +33,12 @@
   },
   "devDependencies": {
     "@cjean-fr/jsx-string": "workspace:*",
+    "@jridgewell/trace-mapping": "^0.3.31",
     "vite": "^8"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   }

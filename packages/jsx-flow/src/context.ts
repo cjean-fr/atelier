@@ -1,4 +1,5 @@
-import type { PatchAdapter, MergeType } from "./adapters.js";
+import type { PatchAdapter } from "./adapters.js";
+import type { MergeType } from "./events.js";
 import { assertFragmentId } from "./fragmentId.js";
 import {
   context,
@@ -38,7 +39,7 @@ export type Config =
 
 export interface FlowContext {
   config: Config;
-  /** Pending fragments, in registration order. Exposed for inspection and streamFragments. */
+  /** Pending fragments, in registration order. Exposed for inspection and streamFlow. */
   fragments: Map<string, FragmentEffect>;
   /** Pending streamed sequences, in registration order. */
   streams: StreamEffect[];

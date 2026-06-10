@@ -177,6 +177,60 @@ describe("Attribute Processing, Hardening & Sanitization", () => {
   });
 });
 
+describe("Error propagation", () => {
+  it("propagates a sync component throw through jsx()", () => {
+    const Crash = () => {
+      throw new Error("boom");
+    };
+    expect(() => renderToString(<Crash />)).toThrow("boom");
+  });
+
+  it("rejects renderToString when an async component rejects", async () => {
+    const AsyncCrash = async () => {
+      await Promise.resolve();
+      throw new Error("async-boom");
+    };
+    await expect(renderToString(<AsyncCrash />)).rejects.toThrow("async-boom");
+  });
+
+  it("rejects renderToString when a Promise child rejects", async () => {
+    await expect(
+      renderToString(<div>{Promise.reject(new Error("child-boom"))}</div>),
+    ).rejects.toThrow("child-boom");
+  });
+});
+
+describe("__html Promise", () => {
+  it("resolves a Promise __html into rendered HTML", async () => {
+    const html = await renderToString(
+      <div dangerouslySetInnerHTML={{ __html: Promise.resolve("<b>safe</b>") }} />,
+    );
+    expect(html).toBe("<div><b>safe</b></div>");
+  });
+
+  it("handles Promise __html that resolves to null", async () => {
+    const html = await renderToString(
+      <div dangerouslySetInnerHTML={{ __html: Promise.resolve(null) as any }} />,
+    );
+    expect(html).toBe("<div></div>");
+  });
+
+  it("rejects renderToString when Promise __html rejects", async () => {
+    await expect(
+      renderToString(
+        <div dangerouslySetInnerHTML={{ __html: Promise.reject(new Error("html-boom")) }} />,
+      ),
+    ).rejects.toThrow("html-boom");
+  });
+});
+
+describe("class + className together", () => {
+  it("emits both attributes, no merge", async () => {
+    const html = await renderToString(<div class="a" className="b">x</div>);
+    expect(html).toBe('<div class="a" class="b">x</div>');
+  });
+});
+
 describe("Iterable & Generator Children", () => {
   it("renders a sync generator", async () => {
     function* items() {

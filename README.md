@@ -11,8 +11,6 @@ Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML 
 | [`@cjean-fr/jsx-string`](./packages/jsx-string) | JSX-to-HTML string renderer. Zero dependencies. |
 | [`@cjean-fr/jsx-flow`](./packages/jsx-flow) | Orchestration layer for deferred fragments and DOM patching (`<Deferred>`, `<Patch>`, Turbo / HTMX / Native adapters). |
 | [`@cjean-fr/jsx-vite`](./packages/jsx-vite) | Vite asset integration — `<Asset>`, `assetUrl`, manifest resolution. |
-| [`@cjean-fr/build-core`](./packages/build-core) | SSG kernel shared by site builders: filesystem routing, markdown, TOC, sitemap, RSS, git last-modified, search adapters, CLI. |
-| [`@cjean-fr/docs`](./packages/docs) | Documentation site builder on top of the jsx-string stack. |
 
 ### Other tools
 
@@ -20,7 +18,7 @@ Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML 
 | :--- | :--- |
 | [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for safe jsx-string usage. |
 | [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny) | Zero-dependency, type-safe minimalist i18n. |
-| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript). |
+| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript + JSX). |
 
 ### Apps (internal)
 

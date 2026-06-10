@@ -122,6 +122,7 @@ type AttrMeta = {
 // Keyed by attribute name. Names come from a small, bounded vocabulary — the
 // same assumption that lets VALID_TAGS cache tag validation.
 const ATTR_META_CACHE = new Map<string, AttrMeta | null>();
+const WARNED_EVENT_HANDLERS = new Set<string>();
 
 function computeAttrMeta(name: string): AttrMeta | null {
   if (INTERNAL_PROPS.has(name)) return null;
@@ -185,10 +186,13 @@ export function renderAttributeSync(name: string, value: unknown): string {
 
   if (meta.isEvent) {
     if (typeof value === "function") {
-      console.warn(
-        `[jsx-string] Event handler "${name}" was passed a function. ` +
-          `This is not supported in static HTML rendering. Use a string instead.`,
-      );
+      if (!WARNED_EVENT_HANDLERS.has(name)) {
+        WARNED_EVENT_HANDLERS.add(name);
+        console.warn(
+          `[jsx-string] Event handler "${name}" was passed a function. ` +
+            `This is not supported in static HTML rendering. Use a string instead.`,
+        );
+      }
       return "";
     }
     if (typeof value !== "string") return "";
@@ -359,10 +363,13 @@ export function renderElement(
     VALID_TAGS.add(tag);
   }
   const attrs = renderAttributes(props);
+  const inner = props.dangerouslySetInnerHTML?.__html;
   const content = props.dangerouslySetInnerHTML
-    ? props.dangerouslySetInnerHTML.__html == null
+    ? inner == null
       ? ""
-      : String(props.dangerouslySetInnerHTML.__html)
+      : inner instanceof Promise
+        ? inner.then((v: unknown) => (v == null ? "" : String(v)))
+        : String(inner)
     : renderChild(children);
 
   if (typeof attrs === "string" && typeof content === "string") {

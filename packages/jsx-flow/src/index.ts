@@ -18,15 +18,16 @@ export type {
   FlowContext,
   Config,
 } from "./context.js";
-export { streamFragments } from "./streamFragments.js";
-export { renderToReadableStream, renderToStatic } from "./render.js";
+export { streamFlow } from "./streamFlow.js";
+export { renderToFlowEvents, renderToReadableStream, renderToStatic } from "./render.js";
 export type { StaticContext, StaticOptions } from "./render.js";
+export type { MergeType, FlowEvent, FlowErrorInfo, FlowOptions, Negotiation } from "./events.js";
+export type { PatchAdapter } from "./adapters.js";
 export {
-  type MergeType,
-  type PatchAdapter,
   NativeAdapter,
   TurboAdapter,
   HtmxAdapter,
   WebPlatformAdapter,
   EsiAdapter,
 } from "./adapters.js";
+export { flowResponse, UnpolyAdapter } from "./http.js";

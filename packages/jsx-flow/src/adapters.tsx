@@ -1,8 +1,10 @@
 // @jsxImportSource @cjean-fr/jsx-string
 import { injectIntoHead } from "./utils.js";
-import { raw, type JSXNode } from "@cjean-fr/jsx-string";
+import { raw, renderToString, type JSXNode } from "@cjean-fr/jsx-string";
+import type { FlowEvent, MergeType, Negotiation } from "./events.js";
 
-export type MergeType = "replace" | "append" | "prepend" | "before" | "after";
+/** Re-export for consumers. */
+export type { MergeType };
 
 export type PatchAdapter = {
   /** Renders the placeholder in the shell (both streaming and SSG). */
@@ -18,9 +20,45 @@ export type PatchAdapter = {
   /**
    * Optional shell transformation applied before streaming fragments.
    * Use it to inject adapter-specific scripts or markup into the rendered shell HTML.
+   * Applied exactly once, by `renderToFlowEvents` (streaming) or `renderPage` (static).
    */
   transformShell?(shell: string): string;
+  /**
+   * Encode semantic `FlowEvent` values into the wire format of this adapter.
+   * Called by `renderToReadableStream` to produce the final string stream.
+   * `shell`/`close` events pass through as-is (transformShell already applied).
+   */
+  encode(): TransformStream<FlowEvent, string>;
+  /**
+   * Optional HTTP negotiation: extract hints from an incoming Request to
+   * decide encoding mode, headers, and target element.
+   */
+  negotiate?(req: Request): Negotiation;
 };
+
+/**
+ * Encode `FlowEvent`s by delegating the patch wire format to the adapter's own
+ * `Patch` component — a single source of truth shared by streaming and JSX.
+ * `ev.html` is already-rendered (escaped) HTML, hence `raw()`.
+ */
+function encodeWith(
+  adapter: Pick<PatchAdapter, "Patch">,
+): TransformStream<FlowEvent, string> {
+  return new TransformStream<FlowEvent, string>({
+    async transform(ev, c) {
+      if (ev.type === "patch") {
+        const wire = await renderToString(
+          adapter.Patch({ id: ev.id, children: raw(ev.html), merge: ev.merge }),
+        );
+        c.enqueue(wire + "\n");
+      } else {
+        c.enqueue(ev.html + "\n");
+      }
+    },
+  });
+}
+
+// ── Turbo ────────────────────────────────────────────────────────────────
 
 export const TurboAdapter: PatchAdapter = {
   Placeholder: function ({ id, src, children }) {
@@ -33,58 +71,20 @@ export const TurboAdapter: PatchAdapter = {
     );
   },
 
-  // Inline streaming: <turbo-stream> tells Turbo how to patch the live DOM.
   Patch: ({ id, children, merge }) => (
     <turbo-stream action={merge} target={id}>
       <template>{children}</template>
     </turbo-stream>
   ),
 
-  // SSG lazy-load: Turbo fetches src and looks for a matching <turbo-frame> in the response.
   Frame: ({ id, children }) => <turbo-frame id={id}>{children}</turbo-frame>,
+
+  encode: () => encodeWith(TurboAdapter),
 };
 
-// https://github.com/WICG/declarative-partial-updates
-// Pure spec adapter — replace only, zero JS.
-// ⚠️  Experimental: requires chrome://flags/#enable-experimental-web-platform-features.
-// Add a polyfill in your shell component (e.g. template-for-polyfill) or use NativeAdapter
-// which bundles a minimal inline polyfill and supports all merge types.
-export const WebPlatformAdapter: PatchAdapter = {
-  Placeholder: function ({ id, src, children }) {
-    // <?start> and <?end> are processing instructions that JSX syntax cannot express
-    // (tag names starting with "?" are rejected by the parser). They are injected via
-    // raw() — id is guaranteed safe by assertFragmentId in Deferred and Patch.
-    const open = raw(`<?start name="${id}">`);
-    const close = raw(`<?end>`);
-    if (src) {
-      const safeJsonSrc = JSON.stringify(src).replace(/<\//g, "<\\/");
-      // patchsrc="..." would be the declarative equivalent (future potential addition to
-      // the spec — not yet in template-for-polyfill). Until then, a fetch script is needed.
-      const script = raw(
-        `<script>(function(){fetch(${safeJsonSrc}).then(function(r){document.body.streamAppendHTML(r.body)})})();</script>`,
-      );
-      return [open, children, close, script];
-    }
-    return [open, children, close];
-  },
-
-  // Inline streaming: <template for> applied by the HTML parser (or external polyfill).
-  Patch: ({ id, children, merge }) => {
-    if (merge !== "replace") {
-      throw new Error(
-        `WebPlatformAdapter only supports "replace" (WICG spec). Use NativeAdapter for other merge types.`,
-      );
-    }
-    return <template htmlFor={id}>{children}</template>;
-  },
-
-  Frame: ({ id, children }) => <template htmlFor={id}>{children}</template>,
-};
+// ── Native (inline polyfill) ─────────────────────────────────────────────
 
 // Minimal MutationObserver polyfill for <template for> streaming support.
-// Watches for <template for="id"> elements added by the streaming HTML parser
-// and applies them to the <?start name="id">…<?end> regions.
-// HTML5 parses <?start name="id"> as a Comment with nodeValue `?start name="id"`.
 const POLYFILL = `(function(){function a(t){var n=t.getAttribute('for'),it=document.createNodeIterator(document.body||document.documentElement,128),nd,s=null,e=null;while((nd=it.nextNode())){if(!s&&nd.nodeValue==='?start name="'+n+'"'){s=nd;continue;}if(s&&nd.nodeValue==='?end'){e=nd;break;}}if(!s)return;var c=s.nextSibling;while(c&&c!==e){var x=c.nextSibling;c.remove();c=x;}s.after(t.content.cloneNode(true));t.remove();}new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeName==='TEMPLATE'&&n.getAttribute&&n.getAttribute('for'))a(n);});});}).observe(document.documentElement,{childList:true,subtree:true});})()`;
 
 const ADJ: Record<Exclude<MergeType, "replace">, string> = {
@@ -94,20 +94,27 @@ const ADJ: Record<Exclude<MergeType, "replace">, string> = {
   after: "afterend",
 };
 
-// Self-contained adapter: bundles the minimal polyfill and supports all merge types
-// via insertAdjacentHTML for non-replace cases.
 export const NativeAdapter: PatchAdapter = {
-  // Inject the minimal polyfill into <head> — no external CDN required.
   transformShell: (shell) =>
     injectIntoHead(shell, `<script>${POLYFILL}</script>`),
 
-  Placeholder: WebPlatformAdapter.Placeholder,
+  Placeholder: function ({ id, src, children }) {
+    const open = raw(`<?start name="${id}">`);
+    const close = raw(`<?end>`);
+    if (src) {
+      const safeJsonSrc = JSON.stringify(src).replace(/<\//g, "<\\/");
+      const script = raw(
+        `<script>(function(){fetch(${safeJsonSrc}).then(function(r){document.body.streamAppendHTML(r.body)})})();</script>`,
+      );
+      return [open, children, close, script];
+    }
+    return [open, children, close];
+  },
 
   Patch: ({ id, children, merge }) => {
     if (merge === "replace") {
       return <template htmlFor={id}>{children}</template>;
     }
-    // insertAdjacentHTML for merge types not yet supported by the WICG spec.
     const tmplId = `patch-${id}`;
     const script = raw(
       `<script>(function(){var t=document.getElementById(${JSON.stringify(tmplId)});var el=document.getElementById(${JSON.stringify(id)});if(t&&el){el.insertAdjacentHTML(${JSON.stringify(ADJ[merge])},t.innerHTML);t.remove();}})();</script>`,
@@ -116,26 +123,59 @@ export const NativeAdapter: PatchAdapter = {
   },
 
   Frame: ({ id, children }) => <template htmlFor={id}>{children}</template>,
+
+  encode: () => encodeWith(NativeAdapter),
 };
 
-// ESI (Edge Side Includes) — CDN-level composition via esi:include / esi:inline (ESI 1.0).
-// Primary use case: SSG where each fragment is a standalone URL fetched by the CDN.
-// The shell contains <esi:include src="..."> tags; the CDN fetches, caches and assembles
-// them independently with per-fragment TTL.
-//
-// Streaming note: Patch emits <esi:inline fetchable="yes"> which some CDN implementations
-// (Varnish, Fastly) can serve as internal subrequests. Without a CDN ESI processor,
-// esi:inline tags are inert in the browser.
-//
-// Only supports "replace" — ESI has no native insert/append/prepend semantics.
+// ── HTMX ─────────────────────────────────────────────────────────────────
+
+const SWAP: Record<MergeType, string> = {
+  replace: "outerHTML",
+  append: "beforeend",
+  prepend: "afterbegin",
+  before: "beforebegin",
+  after: "afterend",
+};
+
+export const HtmxAdapter: PatchAdapter = {
+  Placeholder: function ({ id, src, children }) {
+    return src ? (
+      <div id={id} hx-get={src} hx-trigger="load" hx-swap="outerHTML">
+        {children}
+      </div>
+    ) : (
+      <div id={id}>{children}</div>
+    );
+  },
+
+  Patch: ({ id, children, merge }) => {
+    return (
+      <div id={id} hx-swap-oob={SWAP[merge]}>
+        {children}
+      </div>
+    );
+  },
+
+  Frame: ({ id, children }) => <div id={id}>{children}</div>,
+
+  encode: () => encodeWith(HtmxAdapter),
+
+  negotiate(req: Request): Negotiation {
+    const target = req.headers.get("HX-Target") ?? undefined;
+    // Vary on the headers this negotiation actually reads, so shared caches
+    // never serve a fragment response to a full-page navigation.
+    return { headers: { Vary: "HX-Target" }, target, mode: "full" };
+  },
+};
+
+// ── ESI (Edge Side Includes) ──────────────────────────────────────────────
+
 export const EsiAdapter: PatchAdapter = {
   Placeholder: ({ src, children }) => {
     if (src) {
-      // id is safe (validated by assertFragmentId), src may contain & or "
       const safeSrc = src.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
       return raw(`<esi:include src="${safeSrc}" />`);
     }
-    // No src (streaming mode): ESI requires a URL — render fallback inline.
     return children;
   },
 
@@ -152,38 +192,37 @@ export const EsiAdapter: PatchAdapter = {
     ] as JSXNode;
   },
 
-  // Fragment file served at the URL referenced by esi:include.
-  // Plain HTML — the CDN inserts the response body in place of the include tag.
   Frame: ({ children }) => children,
+
+  // ESI has no meaningful streaming encode — it is CDN-level composition.
+  // Calling encode() at runtime throws; use renderToStatic.emitFragments instead.
+  encode(): TransformStream<FlowEvent, string> {
+    throw new Error(
+      "EsiAdapter.encode() is not supported — ESI is CDN-level. Use renderToStatic with emitFragments instead.",
+    );
+  },
 };
 
-export const HtmxAdapter: PatchAdapter = {
-  Placeholder: function ({ id, src, children }) {
-    return src ? (
-      <div id={id} hx-get={src} hx-trigger="load" hx-swap="outerHTML">
-        {children}
-      </div>
-    ) : (
-      <div id={id}>{children}</div>
-    );
-  },
+// ── WebPlatform (WICG experimental) ──────────────────────────────────────
+// https://github.com/WICG/declarative-partial-updates
+// Kept on purpose even though the spec hasn't shipped: it is the zero-JS
+// endgame — once browsers implement it, no polyfill and no inline scripts.
+// NativeAdapter is the same wire format plus the interim polyfill; this
+// adapter is the pure-spec subset (replace only, no injected script).
 
-  // Inline streaming: OOB swap patches the live DOM without a round-trip.
+export const WebPlatformAdapter: PatchAdapter = {
+  Placeholder: NativeAdapter.Placeholder,
+
   Patch: ({ id, children, merge }) => {
-    const swap: Record<MergeType, string> = {
-      replace: "outerHTML",
-      append: "beforeend",
-      prepend: "afterbegin",
-      before: "beforebegin",
-      after: "afterend",
-    };
-    return (
-      <div id={id} hx-swap-oob={swap[merge]}>
-        {children}
-      </div>
-    );
+    if (merge !== "replace") {
+      throw new Error(
+        `WebPlatformAdapter only supports "replace" (WICG spec). Use NativeAdapter for other merge types.`,
+      );
+    }
+    return <template htmlFor={id}>{children}</template>;
   },
 
-  // SSG lazy-load: hx-get fetches and replaces the placeholder via hx-swap="outerHTML".
-  Frame: ({ id, children }) => <div id={id}>{children}</div>,
+  Frame: NativeAdapter.Frame,
+
+  encode: () => encodeWith(WebPlatformAdapter),
 };
