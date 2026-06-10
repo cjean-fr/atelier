@@ -51,7 +51,6 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "bun x eslint --fix",
       "prettier --write"
     ],
     "*.json": [
@@ -83,8 +82,7 @@
     "build": "turbo build",
     "check": "turbo check",
     "format": "turbo format",
-    "test": "turbo test",
-    "publish": "turbo publish"
+    "test": "turbo test"
   },
   "packageManager": "bun@1.3.10"
 }

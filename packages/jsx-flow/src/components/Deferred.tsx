@@ -1,5 +1,6 @@
 import type { MergeType } from "../adapters.js";
 import { Flow } from "../context.js";
+import { assertFragmentId } from "../fragmentId.js";
 import {
   useContext,
   type JSXNode,
@@ -38,6 +39,9 @@ export function Deferred(props: DeferredProps): any {
   const { config, nextId, patch } = useContext(Flow);
 
   const id = name ?? nextId();
+  // The src branch never goes through patch(), so validate here: some adapters
+  // interpolate the id into raw() markup that bypasses jsx-string escaping.
+  assertFragmentId(id, "Deferred");
 
   if (src) {
     return config.adapter.Placeholder({ id, src, children: fallback });

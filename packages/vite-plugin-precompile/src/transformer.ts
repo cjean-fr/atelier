@@ -1,14 +1,3 @@
-import { parseSync } from "oxc-parser";
-import type {
-  Expression,
-  JSXAttribute,
-  JSXAttributeItem,
-  JSXChild,
-  JSXElement,
-  JSXFragment,
-  JSXIdentifier,
-  Program,
-} from "@oxc-project/types";
 import {
   collapseJsxWhitespace,
   escapeAttr,
@@ -19,6 +8,19 @@ import {
   remapAttrName,
   RUNTIME_SOURCE,
 } from "@cjean-fr/precompile-core";
+import type {
+  Expression,
+  ImportDeclaration,
+  JSXAttribute,
+  JSXAttributeItem,
+  JSXChild,
+  JSXElement,
+  JSXFragment,
+  JSXIdentifier,
+  Program,
+} from "@oxc-project/types";
+import MagicString from "magic-string";
+import { parseSync } from "oxc-parser";
 
 export interface PluginConfig {
   runtimeSource?: string;
@@ -40,11 +42,14 @@ export interface PluginConfig {
  * transformer itself stays dependency-free and synchronous. For a static
  * string/boolean value `jsxAttr` always returns synchronously.
  */
-export type RenderAttr = (name: string, value: unknown) => string | Promise<string>;
+export type RenderAttr = (
+  name: string,
+  value: unknown,
+) => string | Promise<string>;
 
 export interface TransformResult {
   code: string;
-  map?: null;
+  map?: ReturnType<MagicString["generateMap"]>;
 }
 
 /**
@@ -102,7 +107,7 @@ export default function precompileTransform(
   const ctx: Ctx = {
     source: code,
     used: new Set<string>(),
-    renderAttr: config?.secure ? renderAttr ?? null : null,
+    renderAttr: config?.secure ? (renderAttr ?? null) : null,
   };
   const replacements: Replacement[] = [];
 
@@ -112,17 +117,17 @@ export default function precompileTransform(
 
   if (replacements.length === 0) return null;
 
-  let outCode = code;
-  for (let i = replacements.length - 1; i >= 0; i--) {
-    const r = replacements[i];
-    if (!r) continue;
-    outCode = outCode.slice(0, r.start) + r.text + outCode.slice(r.end);
-  }
+  const s = new MagicString(code);
+  for (const r of replacements) s.overwrite(r.start, r.end, r.text);
+  // Inject the import through the same MagicString, BEFORE generateMap —
+  // a post-hoc string splice would shift every line below it out of the map.
+  injectRuntimeImport(s, program, code, rtSource, [...ctx.used]);
 
-  outCode = ensureRuntimeImport(outCode, rtSource, [...ctx.used]);
-
-  if (outCode === code) return null;
-  return { code: outCode };
+  if (!s.hasChanged()) return null;
+  return {
+    code: s.toString(),
+    map: s.generateMap({ hires: "boundary", source: id, includeContent: true }),
+  };
 }
 
 /**
@@ -225,9 +230,9 @@ function emitOpening(
     if (attr.type === "JSXAttribute") {
       emitAttribute(attr, parts, exprs, ctx);
     } else {
-      ctx.used.add("jsxAttr");
-      const exprWithJsx = processExpressionForJsx(attr.argument, ctx);
-      addDynamic(parts, exprs, `jsxAttr("...spread", ${exprWithJsx})`);
+      throw new Error(
+        "[vite-plugin-precompile] internal: spread attribute reached emitOpening — isEligibleElement should have rejected this element",
+      );
     }
   }
 
@@ -262,7 +267,11 @@ function emitAttribute(
     if (expr.type !== "JSXEmptyExpression") {
       ctx.used.add("jsxAttr");
       const exprText = processExpressionForJsx(expr, ctx);
-      addDynamic(parts, exprs, `jsxAttr(${JSON.stringify(rawName)}, ${exprText})`);
+      addDynamic(
+        parts,
+        exprs,
+        `jsxAttr(${JSON.stringify(rawName)}, ${exprText})`,
+      );
       return;
     }
     appendStatic(parts, ` ${remapAttrName(rawName)}=""`);
@@ -296,8 +305,9 @@ function emitStaticAttr(
       if (rendered) appendStatic(parts, ` ${rendered}`);
       return;
     }
-    // A Promise should never occur for a static string/boolean value; fall
-    // through to the default inline path defensively.
+    throw new Error(
+      `[vite-plugin-precompile] secure mode: jsxAttr returned a Promise for static value "${rawName}" — this should never happen`,
+    );
   }
 
   let name = remapAttrName(rawName);
@@ -380,11 +390,7 @@ function replaceNestedJsx(node: Expression, text: string, ctx: Ctx): string {
   return result;
 }
 
-function findNestedJsx(
-  node: AnyNode,
-  out: Replacement[],
-  ctx: Ctx,
-): void {
+function findNestedJsx(node: AnyNode, out: Replacement[], ctx: Ctx): void {
   if (node.type === "JSXElement") {
     const el = node as unknown as JSXElement;
     if (isEligibleElement(el)) {
@@ -470,60 +476,68 @@ function buildTaggedTemplate(parts: string[], exprs: string[]): string {
   return result;
 }
 
-function ensureRuntimeImport(
-  code: string,
+/**
+ * Make sure the helpers used by the rewritten code are imported from
+ * `rtSource`, editing through the MagicString so the sourcemap stays aligned.
+ *
+ * - Existing named (value) import from `rtSource`: missing helpers are merged
+ *   into its braces, original specifier texts (aliases included) preserved.
+ * - Otherwise a new import line is inserted before the first statement —
+ *   after any leading comments, so pragma comments stay on top.
+ */
+function injectRuntimeImport(
+  s: MagicString,
+  program: Program,
+  source: string,
   rtSource: string,
   helpers: string[],
-): string {
-  if (helpers.length === 0) return code;
+): void {
+  if (helpers.length === 0) return;
 
-  const importRegex = new RegExp(
-    `import\\s*\\{[^}]*\\}\\s*from\\s*["']${escapeRegex(rtSource)}["'];?`,
-  );
+  for (const stmt of program.body) {
+    if (stmt.type !== "ImportDeclaration") continue;
+    const decl = stmt as ImportDeclaration;
+    if (decl.source.value !== rtSource) continue;
+    if (decl.importKind === "type") continue;
+    const named = (decl.specifiers ?? []).filter(
+      (sp) => sp.type === "ImportSpecifier",
+    );
+    // Default-only / namespace / side-effect import: no braces to merge into.
+    if (named.length === 0) continue;
 
-  const existingMatch = code.match(importRegex);
-  if (existingMatch) {
-    const importLine = existingMatch[0];
-    const existingHelpers = new Set<string>();
-    const specifierRegex = /(\w+)(?:\s+as\s+\w+)?(?:\s*,\s*|\s*})/g;
-    let m: RegExpExecArray | null;
-    while ((m = specifierRegex.exec(importLine)) !== null) {
-      if (m[1] !== undefined) existingHelpers.add(m[1]);
-    }
+    // Only an un-aliased specifier satisfies a helper: the generated code
+    // references the canonical name, so `jsxTemplate as tpl` does not count.
+    const existing = new Set(
+      named
+        .filter(
+          (sp) =>
+            sp.imported.type === "Identifier" &&
+            sp.local.name === sp.imported.name,
+        )
+        .map((sp) => (sp.imported as { name: string }).name),
+    );
+    const missing = helpers.filter((h) => !existing.has(h));
+    if (missing.length === 0) return;
 
-    const missing = helpers.filter((h) => !existingHelpers.has(h));
-    if (missing.length === 0) return code;
-
-    const newImportLine = importLine.replace(/\{([^}]*)\}/, (_, inner: string) => {
-      const existing = inner
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
-      const all = [...new Set([...existing, ...missing])];
-      return `{ ${all.join(", ")} }`;
-    });
-
-    return code.replace(importLine, newImportLine);
+    const declText = source.slice(decl.start, decl.end);
+    const braceStart = decl.start + declText.indexOf("{");
+    const braceEnd = decl.start + declText.indexOf("}");
+    const specifierTexts = named.map((sp) => source.slice(sp.start, sp.end));
+    s.overwrite(
+      braceStart,
+      braceEnd + 1,
+      `{ ${[...specifierTexts, ...missing].join(", ")} }`,
+    );
+    return;
   }
 
   const importLine = `import { ${helpers.join(", ")} } from "${rtSource}";\n`;
-  const lines = code.split("\n");
-  const firstRealIndex = lines.findIndex(
-    (l) =>
-      l.trim() !== "" &&
-      !l.trim().startsWith("//") &&
-      !l.trim().startsWith("/*"),
-  );
-  if (firstRealIndex >= 0) {
-    lines.splice(firstRealIndex, 0, importLine);
+  const firstStmt = program.body[0];
+  if (firstStmt) {
+    s.appendLeft(firstStmt.start, importLine);
   } else {
-    lines.unshift(importLine);
+    s.prepend(importLine);
   }
-  return lines.join("\n");
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 const VISITOR_KEYS: Record<string, string[]> = {

@@ -4,9 +4,11 @@ import mdx from '@mdx-js/rollup';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import remarkGfm from 'remark-gfm';
+import precompile from '@cjean-fr/vite-plugin-precompile';
 
 export default defineConfig({
   plugins: [
+    precompile(),
     mdx({
       jsxImportSource: '@cjean-fr/jsx-string',
       providerImportSource: './docs-src/mdx-components.jsx',

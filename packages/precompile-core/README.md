@@ -1,6 +1,6 @@
 # @cjean-fr/precompile-core
 
-AST-agnostic shared helpers for JSX precompile transforms. Used by `@cjean-fr/vite-plugin-precompile` and `@cjean-fr/babel-plugin-precompile`.
+AST-agnostic shared helpers for JSX precompile transforms. Used by `@cjean-fr/vite-plugin-precompile`.
 
 ## Install
 

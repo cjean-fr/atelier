@@ -25,6 +25,7 @@
     "unified": "^11"
   },
   "devDependencies": {
+    "@cjean-fr/vite-plugin-precompile": "workspace:*",
     "@mdx-js/rollup": "^3.1.1",
     "@tailwindcss/vite": "catalog:",
     "@types/bun": "catalog:",

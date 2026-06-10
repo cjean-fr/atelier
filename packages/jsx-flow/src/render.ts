@@ -1,6 +1,7 @@
 import { type PatchAdapter } from "./adapters.js";
 import { type FlowContext, type Config, initFlow, Flow } from "./context.js";
-import { streamFragments } from "./streamFragments.js";
+import { streamFlow } from "./streamFlow.js";
+import type { FlowEvent, FlowOptions } from "./events.js";
 import {
   renderToString,
   withScope,
@@ -39,6 +40,11 @@ const NOOP_ADAPTER: PatchAdapter = {
       "jsx-flow: deferred fragments require an adapter. Pass { adapter } to renderToStatic.",
     );
   },
+  encode: () => {
+    throw new Error(
+      "jsx-flow: encode requires an adapter. Pass { adapter } to renderToReadableStream.",
+    );
+  },
 };
 
 const DEFAULT_GENERATE_PATH = (id: string) => `/fragments/${id}.html`;
@@ -52,9 +58,10 @@ export interface StaticContext extends FlowContext {
   /** Render a page node, applying adapter.transformShell if present. */
   renderPage(node: () => JSXNode): Promise<string>;
   /**
-   * Render every pending fragment via the configured adapter and pass each one
-   * to `cb`. `url` is the path produced by `generatePath(id)`.
-   * Throws if no adapter was configured.
+   * Render every pending fragment and pass it to `cb` as raw HTML (no adapter
+   * wrapper). `url` is the path produced by `generatePath(id)`. For lazy-load
+   * formats that need a wrapper (Turbo frames, Native templates), wrap with
+   * `adapter.Frame` before writing. Throws if no adapter was configured.
    */
   emitFragments(
     cb: (id: string, url: string, html: string) => void | Promise<void>,
@@ -69,49 +76,82 @@ export interface StaticOptions {
 }
 
 /**
- * @example
- * const stream = await renderToReadableStream(() => <App />, TurboAdapter);
+ * Return a `ReadableStream<FlowEvent>` with proper backpressure and cancellation.
+ *
+ * - `pull()` is called by the consumer; `emit()` waits when `desiredSize <= 0`.
+ * - `cancel(reason)` and `opts.signal` both feed one combined `AbortSignal`
+ *   (pre-aborted signals included), which stops fragment rendering, generator
+ *   iteration, and releases any producer parked on backpressure.
  */
-export async function renderToReadableStream(
+export function renderToFlowEvents(
   node: () => JSXNode,
   adapter: PatchAdapter,
-): Promise<ReadableStream<string>> {
-  return withFlow(
-    async function ({ fragments, streams }) {
-      return new ReadableStream<string>({
-        async start(controller) {
-          const shell = await renderToString(node());
-          const prepared = adapter.transformShell
-            ? adapter.transformShell(shell)
-            : shell;
+  opts: FlowOptions & { mode?: "full" | "patches-only" } = {},
+): ReadableStream<FlowEvent> {
+  const internal = new AbortController();
+  const signal = opts.signal
+    ? AbortSignal.any([opts.signal, internal.signal])
+    : internal.signal;
+  let controller!: ReadableStreamDefaultController<FlowEvent>;
+  const waiters: Array<() => void> = [];
+  const flushWaiters = () => {
+    for (const r of waiters.splice(0)) r();
+  };
+  signal.addEventListener("abort", flushWaiters, { once: true });
 
-          if (fragments.size === 0 && streams.length === 0) {
-            controller.enqueue(`${prepared}\n`);
-          } else {
-            const match = prepared.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
-            const closing = match?.[1] ?? "";
-            const before = closing
-              ? prepared.slice(0, -closing.length)
-              : prepared;
+  const emit = async (ev: FlowEvent) => {
+    if (signal.aborted) return;
+    controller.enqueue(ev);
+    while ((controller.desiredSize ?? 1) <= 0 && !signal.aborted)
+      await new Promise<void>((r) => waiters.push(r));
+  };
 
-            controller.enqueue(`${before}\n`);
-            await streamFragments(
-              fragments,
-              adapter,
-              (_id, html) => {
-                controller.enqueue(`${html}\n`);
-              },
-              streams,
-            );
-            controller.enqueue(`${closing}\n`);
-          }
+  const run = () =>
+    withFlow(async ({ fragments, streams }) => {
+      if (signal.aborted) return;
+      const shell = await renderToString(node());
+      const match = shell.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
+      const closing = match?.[1] ?? "";
+      if (opts.mode !== "patches-only") {
+        const body = closing ? shell.slice(0, -closing.length) : shell;
+        await emit({
+          type: "shell",
+          html: adapter.transformShell ? adapter.transformShell(body) : body,
+        });
+      }
+      await streamFlow({ fragments, streams }, emit, { ...opts, signal });
+      if (opts.mode !== "patches-only" && closing)
+        await emit({ type: "close", html: closing });
+    }, { adapter, mode: "streaming" });
 
-          controller.close();
-        },
-      });
+  return new ReadableStream<FlowEvent>({
+    start(c) {
+      controller = c;
+      run().then(
+        () => { try { c.close(); } catch {} },
+        (e) => { try { c.error(e); } catch {} },
+      );
     },
-    { adapter, mode: "streaming" },
-  );
+    pull() {
+      flushWaiters();
+    },
+    cancel(reason) {
+      internal.abort(reason);
+    },
+  });
+}
+
+/**
+ * @example
+ * const stream = renderToReadableStream(() => <App />, TurboAdapter);
+ * // stream is a ReadableStream<string>
+ */
+export function renderToReadableStream(
+  node: () => JSXNode,
+  adapter: PatchAdapter,
+  opts?: FlowOptions & { mode?: "full" | "patches-only" },
+): ReadableStream<string> {
+  return renderToFlowEvents(node, adapter, opts).pipeThrough(adapter.encode());
 }
 
 /**
@@ -126,15 +166,18 @@ export async function renderToReadableStream(
  *   }
  * });
  *
- * When pages use <Deferred>, pass { adapter } and materialize fragments:
+ * When pages use <Deferred>, pass { adapter } and materialize fragments.
+ * `html` is the raw fragment — wrap it with `adapter.Frame` so the lazy-load
+ * mechanism can target the placeholder:
  * @example
  * await renderToStatic(async (ctx) => {
  *   for (const page of pages) {
  *     const html = await ctx.renderPage(() => page.component({ ... }));
  *     await Bun.write(page.outPath, "<!DOCTYPE html>\n" + html);
  *   }
- *   await ctx.emitFragments(async (_id, url, html) => {
- *     await Bun.write("./out" + url, html);
+ *   await ctx.emitFragments(async (id, url, html) => {
+ *     const framed = NativeAdapter.Frame({ id, children: raw(html) });
+ *     await Bun.write("./out" + url, await renderToString(framed));
  *   });
  * }, { adapter: NativeAdapter });
  */
@@ -160,13 +203,13 @@ export async function renderToStatic<T>(
               "jsx-flow: emitFragments requires an adapter. Pass { adapter } to renderToStatic.",
             );
           }
-          await streamFragments(
-            ctx.fragments,
-            adapter,
-            async (id, html) => {
-              await cb(id, generatePath(id), html);
+          await streamFlow(
+            ctx,
+            async (ev) => {
+              if (ev.type === "patch") {
+                await cb(ev.id, generatePath(ev.id), ev.html);
+              }
             },
-            ctx.streams,
           );
         },
       };

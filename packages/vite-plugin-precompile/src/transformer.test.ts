@@ -1,6 +1,7 @@
-import { describe, it, expect } from "bun:test";
-import { jsxAttr } from "@cjean-fr/jsx-string/jsx-runtime";
 import precompileTransform from "./transformer.js";
+import { jsxAttr } from "@cjean-fr/jsx-string/jsx-runtime";
+import { TraceMap, originalPositionFor } from "@jridgewell/trace-mapping";
+import { describe, it, expect } from "bun:test";
 
 const RT = "@cjean-fr/jsx-string/jsx-runtime";
 
@@ -18,7 +19,7 @@ describe("precompileTransform", () => {
   it("emits jsxTemplate and the runtime import for a static element", () => {
     const out = transform(`const a = <div class="x">hello</div>;`);
     expect(out).toContain(`import { jsxTemplate } from "${RT}";`);
-    expect(out).toContain("jsxTemplate`<div class=\"x\">hello</div>`");
+    expect(out).toContain('jsxTemplate`<div class="x">hello</div>`');
   });
 
   it("escapes dynamic children with jsxEscape", () => {
@@ -36,13 +37,21 @@ describe("precompileTransform", () => {
   });
 
   it("precompiles JSX nested inside an expression (ternary)", () => {
-    const out = transform(`const a = <div>{cond ? <span>a</span> : <b>b</b>}</div>;`);
-    expect(out).toContain("cond ? jsxTemplate`<span>a</span>` : jsxTemplate`<b>b</b>`");
+    const out = transform(
+      `const a = <div>{cond ? <span>a</span> : <b>b</b>}</div>;`,
+    );
+    expect(out).toContain(
+      "cond ? jsxTemplate`<span>a</span>` : jsxTemplate`<b>b</b>`",
+    );
   });
 
   it("precompiles JSX returned from a .map() callback", () => {
-    const out = transform(`const a = <ul>{items.map((i) => <li>{i}</li>)}</ul>;`);
-    expect(out).toContain("items.map((i) => jsxTemplate`<li>${jsxEscape(i)}</li>`)");
+    const out = transform(
+      `const a = <ul>{items.map((i) => <li>{i}</li>)}</ul>;`,
+    );
+    expect(out).toContain(
+      "items.map((i) => jsxTemplate`<li>${jsxEscape(i)}</li>`)",
+    );
   });
 
   it("flattens fragments into the parent template", () => {
@@ -104,7 +113,7 @@ describe("precompileTransform", () => {
   it("keeps nested static elements byte-identical to handwritten HTML", () => {
     expect(
       transform(`const a = <div><span class="y">deep</span></div>;`),
-    ).toContain("jsxTemplate`<div><span class=\"y\">deep</span></div>`");
+    ).toContain('jsxTemplate`<div><span class="y">deep</span></div>`');
   });
 
   it("collapses JSX whitespace between elements (standard JSX rules)", () => {
@@ -183,14 +192,18 @@ describe("precompileTransform", () => {
     }
 
     it("sanitizes static URL attributes at build time (output stays static)", () => {
-      const out = transformSecure(`const a = <a href="javascript:alert(1)">x</a>;`);
+      const out = transformSecure(
+        `const a = <a href="javascript:alert(1)">x</a>;`,
+      );
       expect(out).toContain('<a href="#blocked">x</a>');
       expect(out).not.toContain("jsxAttr"); // sanitized at build time, not at runtime
       expect(out).not.toContain("javascript:");
     });
 
     it("keeps safe URLs intact and still remaps names", () => {
-      const out = transformSecure(`const a = <a href="/path" className="link">x</a>;`);
+      const out = transformSecure(
+        `const a = <a href="/path" className="link">x</a>;`,
+      );
       expect(out).toContain('<a href="/path" class="link">x</a>');
     });
 
@@ -215,5 +228,80 @@ describe("precompileTransform", () => {
     expect(importLine).toContain("jsxEscape");
     // exactly one import from the runtime
     expect(out.match(new RegExp(RT, "g"))?.length).toBe(1);
+  });
+
+  it("leaves elements with spread attributes untransformed", () => {
+    expect(
+      precompileTransform(
+        `const a = <div {...props} id="x" />;`,
+        "/src/app.tsx",
+        {
+          runtimeSource: RT,
+        },
+      ),
+    ).toBeNull();
+  });
+
+  it("merges missing helpers into an existing runtime import, preserving aliases", () => {
+    const code = [
+      `import { jsxTemplate as tpl } from "${RT}";`,
+      `const a = <div>{name}</div>;`,
+    ].join("\n");
+    const result = precompileTransform(code, "/src/app.tsx", {
+      runtimeSource: RT,
+    })!;
+    expect(result.code).toContain(
+      `import { jsxTemplate as tpl, jsxTemplate, jsxEscape } from "${RT}";`,
+    );
+    expect(result.code.match(new RegExp(RT, "g"))?.length).toBe(1);
+  });
+
+  describe("sourcemaps", () => {
+    function tracePosition(code: string, needle: string) {
+      const result = precompileTransform(code, "/src/app.tsx", {
+        runtimeSource: RT,
+      });
+      if (!result?.map)
+        throw new Error("expected a transform result with a map");
+      const lines = result.code.split("\n");
+      const lineIdx = lines.findIndex((l) => l.includes(needle));
+      if (lineIdx < 0) throw new Error(`"${needle}" not found in output`);
+      const tracer = new TraceMap(result.map as any);
+      return originalPositionFor(tracer, {
+        line: lineIdx + 1,
+        column: lines[lineIdx]!.indexOf(needle),
+      });
+    }
+
+    it("emits non-empty mappings when a transform happens", () => {
+      const result = precompileTransform(
+        `const a = <div>{name}</div>;`,
+        "/src/app.tsx",
+        { runtimeSource: RT },
+      )!;
+      expect(result.map).toBeDefined();
+      expect(result.map!.mappings.length).toBeGreaterThan(0);
+    });
+
+    it("maps a dynamic expression back to its source line when the import is prepended", () => {
+      // The injected import shifts every line down by one — the map must
+      // describe the final code, not the pre-injection code (regression).
+      const code = [
+        `const before = 1;`,
+        `const a = <div>{userName}</div>;`,
+      ].join("\n");
+      const pos = tracePosition(code, "userName");
+      expect(pos.line).toBe(2);
+    });
+
+    it("maps a dynamic expression back to its source line when merging an existing import", () => {
+      const code = [
+        `import { jsxTemplate } from "${RT}";`,
+        `const x = 1;`,
+        `const a = <div>{userName}</div>;`,
+      ].join("\n");
+      const pos = tracePosition(code, "userName");
+      expect(pos.line).toBe(3);
+    });
   });
 });
