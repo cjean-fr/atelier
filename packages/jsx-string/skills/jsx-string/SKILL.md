@@ -1,6 +1,6 @@
 ---
 name: jsx-string
-description: Use this skill when the user wants to render JSX to HTML strings, create static sites (SSG), build email templates, generate HTML strings on the server without using React runtime or client-side hydration, generate PDF content, or needs secure HTML rendering. Trigger on JSX-to-string tasks, email template generation, server-side rendering without React, or static site generation.
+description: Use this skill when the user wants to render JSX to HTML strings, create static sites (SSG), build email templates, generate HTML strings on the server without using React runtime or client-side hydration, generate PDF content, or needs secure HTML rendering with escaped content. Trigger on JSX-to-string tasks, email template generation, server-side rendering without React, or static site generation.
 license: MIT
 compatibility: Node.js, Bun, Deno, Vite, esbuild, TypeScript
 ---
@@ -60,10 +60,10 @@ import { renderToString, raw } from "@cjean-fr/jsx-string";
 // renderToString ALWAYS returns Promise<string> — even for sync components
 const html = await renderToString(<div>Hello</div>);
 
-// Trusted HTML — bypasses escaping
+// Trusted HTML — bypasses escaping. Never use raw() or dangerouslySetInnerHTML with untrusted input.
 const html = await renderToString(<div>{raw("<b>Bold</b>")}</div>);
 
-// Or via dangerouslySetInnerHTML
+// Or via dangerouslySetInnerHTML with pre-sanitized content only
 const html = await renderToString(
   <div dangerouslySetInnerHTML={{ __html: "<b>Bold</b>" }} />,
 );
