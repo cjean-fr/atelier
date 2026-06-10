@@ -17,7 +17,7 @@ The `@cjean-fr/i18n-tiny` library relies heavily on TypeScript's type system to 
 
 ## Workflows
 
-Default path for new work is **Spec-First**. Use **Spec-First** for all new translation keys and new projects. Use **Translation-First** only when the existing locale object is the source of truth and you need to infer the spec from that object; do not mix the two approaches in the same file.
+Default path for new work is **Spec-First**. Use **Spec-First** for all new translation keys and new projects. Use **Translation-First** only when the existing locale object is the source of truth and you need to infer the spec from that object; do not mix the two approaches in the same file. Apply ICU interpolation only when a string uses ICU syntax; otherwise keep the default simple `{variable}` interpolation.
 
 ### Workflow A: Spec-First
 
@@ -151,6 +151,6 @@ t("items-count", { count: 1 }); // "1 item"
 ## Guidelines for AI Agents
 
 - **Types Over Constants**: Defining the spec as a `type Spec = { key: readonly ["param"] }` is currently preferred over creating a runtime object for the spec.
-- **Always use `createTranslationBuilder<Spec>()`** to create a domain builder, then call it directly (e.g. `defineLocale({...})`). This is critical because `satisfies ValidTranslations<Spec>` only validates keys uniformly across languages, while `createTranslationBuilder` natively catches inline placeholder typo errors (`{nom}` vs expected `{name}`) without double invocation.
+- **Under Spec-First, use `createTranslationBuilder<Spec>()`** to create a domain builder, then call it directly (e.g. `defineLocale({...})`). This is critical because `satisfies ValidTranslations<Spec>` only validates keys uniformly across languages, while `createTranslationBuilder` natively catches inline placeholder typo errors (`{nom}` vs expected `{name}`) without double invocation.
 - **Adding Keys**: If the project uses a `TranslationSpec` type, you **must** add any new key directly to the spec type before adding it to localized objects.
 - **Interpolators**: `@cjean-fr/i18n-tiny` default string interpolation is basic (`{variable}`). If any translation string contains ICU syntax such as `{count, plural,...}` or `{gender, select,...}`, create the translator with a custom `interpolate` function using `intl-messageformat`, and install `intl-messageformat` if it is not already present in the project. If ICU syntax is present but no compatible interpolator is configured, fail safely and explain that ICU formatting cannot be verified.
