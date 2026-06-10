@@ -1,8 +1,6 @@
 {
-  "extends": "../../packages/typescript-config/base.json",
+  "extends": "../../packages/typescript-config/react.json",
   "compilerOptions": {
-    "skipLibCheck": true,
-    "jsx": "react-jsx",
     "types": ["bun", "react", "react-dom"]
   },
   "include": ["src"]

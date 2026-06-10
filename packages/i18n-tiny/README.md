@@ -1,5 +1,9 @@
 # @cjean-fr/i18n-tiny
 
+[![CI](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml/badge.svg)](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@cjean-fr/i18n-tiny)](https://www.npmjs.com/package/@cjean-fr/i18n-tiny)
+[![gzip size](https://img.badgesize.io/https://unpkg.com/@cjean-fr/i18n-tiny/dist/index.js?compression=gzip&label=gzip)](https://unpkg.com/@cjean-fr/i18n-tiny/dist/index.js)
+
 **Zero-dependency, type-safe, minimalist internationalization library.**
 
 Provides a simple way to manage translations with **strict TypeScript inference**, ensuring you never miss a translation key or a required parameter.

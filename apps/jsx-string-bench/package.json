@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "build:precompile": "bun run scripts/build-precompile.ts",
-"bench": "bun run build:precompile && bun run src/bench.ts",
-    "check": "tsc --noEmit"
+    "bench": "bun run build:precompile && bun run src/bench.ts"
   },
   "dependencies": {
     "@cjean-fr/jsx-string": "workspace:*",

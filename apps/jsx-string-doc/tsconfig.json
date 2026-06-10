@@ -1,13 +1,6 @@
 {
+  "extends": "../../packages/typescript-config/react.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "jsxImportSource": "@cjean-fr/jsx-string",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "types": ["vite/client", "bun"]
   },
   "include": ["docs-src", "vite.config.ts"],
