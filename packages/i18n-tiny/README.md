@@ -27,7 +27,10 @@ npm install @cjean-fr/i18n-tiny
 Define the structure of your translations (Keys -> List of required params). It's recommended to define a `type` with `readonly` arrays.
 
 ```typescript
-import { createTranslator, defineTranslations } from "@cjean-fr/i18n-tiny";
+import {
+  createTranslator,
+  createTranslationBuilder,
+} from "@cjean-fr/i18n-tiny";
 
 export type AppTranslationSpec = {
   welcome: readonly ["name"]; // Requires 'name'
@@ -39,10 +42,12 @@ export type AppTranslationSpec = {
 
 ### 2. Implement Languages
 
-Use the `defineTranslations` helper to strictly enforce keys AND inline placeholders. This is the **most bulletproof** way to catch typos like `{nom}` instead of `{name}` at compile time.
+Create a domain-specific builder with `createTranslationBuilder`, then use it to enforce keys AND inline placeholders. This is the **most bulletproof** way to catch typos like `{nom}` instead of `{name}` at compile time.
 
 ```typescript
-export const en = defineTranslations<AppTranslationSpec>()({
+const defineAppLocale = createTranslationBuilder<AppTranslationSpec>();
+
+export const en = defineAppLocale({
   welcome: "Welcome back, {name}!",
   notifications: "You have {count} new messages.",
   logout: "Log out",
@@ -50,7 +55,7 @@ export const en = defineTranslations<AppTranslationSpec>()({
 });
 
 // A typo in a placeholder will trigger a TypeScript error!
-// export const fr = defineTranslations<AppTranslationSpec>()({
+// export const fr = defineAppLocale({
 //   welcome: "Bienvenue {nom} !", // ❌ Error: Type '"Bienvenue {nom} !"' is not assignable...
 //   ...
 // });
@@ -73,7 +78,7 @@ If you prefer to write your translations first, you can use `InferSpec` to autom
 ```typescript
 import {
   type InferSpec,
-  defineTranslations,
+  createTranslationBuilder,
   createTranslator,
 } from "@cjean-fr/i18n-tiny";
 
@@ -86,8 +91,10 @@ const baseEn = {
 // 2. Infer the Spec automatically
 type AppSpec = InferSpec<typeof baseEn>;
 
-// 3. Keep other languages strictly typed based on the inferred spec
-const fr = defineTranslations<AppSpec>()({
+// 3. Create a domain builder and keep other languages strictly typed
+const defineAppLocale = createTranslationBuilder<AppSpec>();
+
+const fr = defineAppLocale({
   welcome: "Bienvenue {name}",
   logout: "Se déconnecter",
 });

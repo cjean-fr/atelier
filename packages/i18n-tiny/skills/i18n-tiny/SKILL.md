@@ -5,21 +5,21 @@ description: Minimalist, type-safe internationalization library. Use this skill 
 
 # i18n-tiny Skill
 
-This skill provides a complete guide for an AI to implement, extend, and maintain internationalization using the `@cjean-fr/i18n-tiny` library. This library is centered around **type safety**, **minimalism**, and an adaptable workflow (either spec-first or inference-first).
+This skill provides a complete guide for an AI to implement, extend, and maintain internationalization using the `@cjean-fr/i18n-tiny` library. This library is centered around **type safety**, **minimalism**, and a predictable workflow. Use Spec-First for all new translation keys and new projects. Use Translation-First only when the existing locale object is the source of truth and you need to infer the spec from that object; do not mix the two approaches in the same file.
 
 ## Core Concepts
 
 The `@cjean-fr/i18n-tiny` library relies heavily on TypeScript's type system to ensure that translations are complete, parameters are correct, and placeholders exactly match expected variables.
 
 1.  **Specification (`TranslationSpec`)**: A type or object where keys map to an array of the exact parameter names they require.
-2.  **Translations**: An object containing the localized strings. Must satisfy the spec (correct keys). Placeholders in the string (like `{name}`) are strictly checked against the spec parameters.
+2.  **Translations**: An object containing the localized strings. Must satisfy the spec (correct keys). If a locale object is missing a required key or contains a key not declared in the spec, stop and report the exact key names instead of inventing a fallback value. Do not generate a partial translation.
 3.  **Translator (`createTranslator`)**: A strongly-typed function that takes a translation key and enforces passing of its required parameters.
 
 ## Workflows
 
-You can adopt one of two main workflows: **Spec-First** (recommended for clarity) or **Translation-First** (quickest setup).
+Default path for new work is **Spec-First**. Use **Spec-First** for all new translation keys and new projects. Use **Translation-First** only when the existing locale object is the source of truth and you need to infer the spec from that object; do not mix the two approaches in the same file.
 
-### Workflow A: Spec-First (Recommended)
+### Workflow A: Spec-First
 
 #### 1. Define the Translation Specification
 
@@ -36,20 +36,22 @@ export type AppTranslationSpec = {
 
 #### 2. Implement Languages
 
-For strict type-checking of both the keys AND the inline placeholders (`{name}`), it's best to use the `defineTranslations` helper. It catches mismatches immediately.
+Create a domain-specific builder with `createTranslationBuilder`, then use it to enforce keys AND inline placeholders. It catches mismatches immediately.
 
 ```typescript
 // locales/en.ts
 import type { AppTranslationSpec } from "../types/i18n";
-import { defineTranslations } from "@cjean-fr/i18n-tiny";
+import { createTranslationBuilder } from "@cjean-fr/i18n-tiny";
 
-export const en = defineTranslations<AppTranslationSpec>()({
+const defineAppLocale = createTranslationBuilder<AppTranslationSpec>();
+
+export const en = defineAppLocale({
   welcome: "Welcome back, {name}!",
   "items-count": "You have {count} items.",
   logout: "Sign Out",
 });
 
-export const fr = defineTranslations<AppTranslationSpec>()({
+export const fr = defineAppLocale({
   welcome: "Bienvenue, {name} !",
   "items-count": "Vous avez {count} articles.",
   logout: "Se déconnecter",
@@ -82,7 +84,7 @@ If you prefer writing your base localization first and automatically inferring t
 import {
   createTranslator,
   type InferSpec,
-  defineTranslations,
+  createTranslationBuilder,
 } from "@cjean-fr/i18n-tiny";
 
 // 1. Define base language with `as const`
@@ -94,8 +96,10 @@ export const enBase = {
 // 2. Automatically infer the Specification!
 export type AppSpec = InferSpec<typeof enBase>;
 
-// 3. Keep other languages strictly typed based on inferred spec
-export const fr = defineTranslations<AppSpec>()({
+// 3. Create a domain builder and keep other languages strictly typed
+const defineAppLocale = createTranslationBuilder<AppSpec>();
+
+export const fr = defineAppLocale({
   welcome: "Bienvenue {name}",
   logout: "Se déconnecter",
 });
@@ -147,6 +151,6 @@ t("items-count", { count: 1 }); // "1 item"
 ## Guidelines for AI Agents
 
 - **Types Over Constants**: Defining the spec as a `type Spec = { key: readonly ["param"] }` is currently preferred over creating a runtime object for the spec.
-- **Always prioritize `defineTranslations<Spec>()({ ... })`** when implementing translation objects. This is critical because `satisfies ValidTranslations<Spec>` only validates keys uniformly across languages, while `defineTranslations` natively catches inline placeholder typo errors (`{nom}` vs expected `{name}`).
+- **Always use `createTranslationBuilder<Spec>()`** to create a domain builder, then call it directly (e.g. `defineLocale({...})`). This is critical because `satisfies ValidTranslations<Spec>` only validates keys uniformly across languages, while `createTranslationBuilder` natively catches inline placeholder typo errors (`{nom}` vs expected `{name}`) without double invocation.
 - **Adding Keys**: If the project uses a `TranslationSpec` type, you **must** add any new key directly to the spec type before adding it to localized objects.
-- **Interpolators**: `@cjean-fr/i18n-tiny` default string interpolation is basic (`{variable}`). If you encounter a project using ICU features (`plural`, `select`), ensure custom `interpolate` logic via `intl-messageformat` is configured.
+- **Interpolators**: `@cjean-fr/i18n-tiny` default string interpolation is basic (`{variable}`). If any translation string contains ICU syntax such as `{count, plural,...}` or `{gender, select,...}`, create the translator with a custom `interpolate` function using `intl-messageformat`, and install `intl-messageformat` if it is not already present in the project. If ICU syntax is present but no compatible interpolator is configured, fail safely and explain that ICU formatting cannot be verified.

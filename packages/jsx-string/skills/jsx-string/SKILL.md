@@ -1,6 +1,6 @@
 ---
 name: jsx-string
-description: Use this skill when the user wants to render JSX to HTML strings, create static sites (SSG), build email templates, implement lightweight SSR, generate PDF content, or needs secure HTML rendering. Trigger on JSX-to-string tasks, email template generation, server-side rendering without React, or static site generation.
+description: Use this skill when the user wants to render JSX to HTML strings, create static sites (SSG), build email templates, generate HTML strings on the server without using React runtime or client-side hydration, generate PDF content, or needs secure HTML rendering. Trigger on JSX-to-string tasks, email template generation, server-side rendering without React, or static site generation.
 license: MIT
 compatibility: Node.js, Bun, Deno, Vite, esbuild, TypeScript
 ---
@@ -41,20 +41,16 @@ esbuild: {
 
 ## Decision Tree
 
-```
-Need to render JSX to HTML?
-│
-├─ Static content / Email / SSG? → renderToString()
-│
-├─ Components that fetch data? → async components (native support)
-│
-├─ Shared data across the tree? → context() + withScope() + setContext() / useContext()
-│
-└─ Streaming / DOM patches / islands? → @cjean-fr/jsx-flow
-      ├─ <Island> — deferred render with placeholder (streaming or static)
-      ├─ <Patch>  — push to an existing DOM target, no placeholder
-      └─ enqueue  — imperative API for plugins (via useContext(Fragments))
-```
+If the request is unclear, ask one clarifying question.
+
+| Need | Use |
+|---|---|
+| HTML strings only | `renderToString()` |
+| Component itself must await data before returning JSX | async components |
+| Shared state in the render tree | `context()` + `withScope()` + `setContext()` / `useContext()` |
+| DOM streaming, islands, or browser patching | `@cjean-fr/jsx-flow` |
+
+If the user wants browser DOM updates, hydration, hooks, event handlers, or client-side interactivity, do not use this package for that task; explain that `jsx-string` is for HTML-string generation and server-side rendering only.
 
 ## Core API
 
@@ -99,6 +95,8 @@ const html = await renderToString(
 // => <div>async text</div>
 
 // ❌ Rendering a Promise without await on renderToString — will hang
+// If renderToString is called without await, explain that it returns a Promise<string>
+// and the caller must await it; do not treat the result as a string.
 const html = renderToString(<AsyncComponent />); // missing await
 ```
 
@@ -212,7 +210,7 @@ await Promise.all(
 
 ## Security (Built-in)
 
-No opt-in required — all output is OWASP-aligned by default.
+No opt-in required — output is OWASP-aligned by default when content is escaped. `raw()` and `dangerouslySetInnerHTML` bypass escaping and must only be used with pre-sanitized, trusted HTML. If the input is untrusted, refuse to use `raw()` or `dangerouslySetInnerHTML` and explain that escaping is required to keep the output safe.
 
 ```tsx
 // Text content escaped

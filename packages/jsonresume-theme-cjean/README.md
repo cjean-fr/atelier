@@ -147,7 +147,7 @@ To add a new locale (e.g., Spanish `es`):
 2.  Add the new translations to the `fr` or `en` model to stay in sync with the `ThemeSpec`.
 3.  Define the new locale resource:
     ```typescript
-    const es = defineTranslations<ThemeSpec>()({
+    const es = defineThemeLocale({
       work_experience: "Experiencia laboral",
       // ... copy and translate all keys
     });

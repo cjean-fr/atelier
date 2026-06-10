@@ -1,8 +1,10 @@
 import {
   createTranslator,
+  createTranslationBuilder,
   interpolate,
   type ValidTranslations,
   type TranslatorConfig,
+  type InferSpec,
 } from "./index";
 import { describe, it, expect, mock } from "bun:test";
 
@@ -131,6 +133,37 @@ describe("translation system", () => {
 
     it("should handle non-string values gracefully", () => {
       expect(interpolate("Count: {count}", { count: 42 })).toBe("Count: 42");
+    });
+  });
+
+  describe("createTranslationBuilder & InferSpec", () => {
+    it("doit inférer et valider une langue secondaire à partir d'une référence 'as const'", () => {
+      const billingEn = {
+        invoice_count: "You have {count} pending invoices.",
+        pay_button: "Pay now",
+      } as const;
+
+      type BillingSpec = InferSpec<typeof billingEn>;
+
+      const defineBillingLocale = createTranslationBuilder<BillingSpec>();
+
+      const billingFr = defineBillingLocale({
+        invoice_count: "Vous avez {count} factures en attente.",
+        pay_button: "Payer maintenant",
+      });
+
+      expect(billingFr.pay_button).toBe("Payer maintenant");
+    });
+
+    it("doit lever une erreur de type si un paramètre est invalide ou manquant", () => {
+      const base = { test: "Hello {name}" } as const;
+      type Spec = InferSpec<typeof base>;
+      const defineLocale = createTranslationBuilder<Spec>();
+
+      defineLocale({
+        // @ts-expect-error - {nom} ne correspond pas à 'name'
+        test: "Bonjour {nom}",
+      });
     });
   });
 
