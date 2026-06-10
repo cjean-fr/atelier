@@ -1,9 +1,7 @@
 {
-  "extends": "../../packages/typescript-config/base.json",
+  "extends": "../../packages/typescript-config/react.json",
   "compilerOptions": {
     "types": ["vite/client", "react"],
-    "jsx": "react-jsx",
-    "jsxImportSource": "@cjean-fr/jsx-string",
     "outDir": "./dist",
     "rootDir": "./src"
   },
