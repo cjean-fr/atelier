@@ -1,10 +1,12 @@
 import {
   createTranslator,
+  createTranslationBuilder,
   type ValidTranslations,
   type Translator,
-  defineTranslations,
 } from "@cjean-fr/i18n-tiny";
 import { raw, type JSXNode } from "@cjean-fr/jsx-string";
+
+const defineThemeLocale = createTranslationBuilder<ThemeSpec>();
 
 export type ThemeSpec = {
   work_experience: readonly [];
@@ -23,7 +25,7 @@ export type ThemeSpec = {
   skip_to_content: readonly [];
 };
 
-const en = defineTranslations<ThemeSpec>()({
+const en = defineThemeLocale({
   work_experience: "Work Experience",
   projects: "Projects",
   education: "Education",
@@ -40,7 +42,7 @@ const en = defineTranslations<ThemeSpec>()({
   skip_to_content: "Skip to main content",
 });
 
-const fr = defineTranslations<ThemeSpec>()({
+const fr = defineThemeLocale({
   work_experience: "Expériences professionnelles",
   projects: "Projets",
   education: "Formations",

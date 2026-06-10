@@ -4,4 +4,5 @@
 
 ### Minor Changes
 
+- replace `defineTranslations` by `createTranslationBuilder` to prevent double invocation
 - add SKILL for AI agents

@@ -162,8 +162,23 @@ export function createTranslator<
 }
 
 /**
- * Helper to define translations with strict placeholder validation.
- * Use this to catch errors at the definition point.
+ * Creates a type-safe translation builder for a specific domain.
+ * Eliminates synchronous currying for better DX.
+ *
+ * @template S Specification of keys and parameters for the domain.
+ */
+export function createTranslationBuilder<S extends TranslationSpec>(): <
+  const V extends ValidTranslations<S>,
+>(
+  translations: V & {
+    [K in keyof S]: CheckParams<V[K] & string, S[K][number]>;
+  },
+) => V {
+  return (translations) => translations;
+}
+
+/**
+ * @deprecated Use `createTranslationBuilder` to isolate your domains without double invocation.
  */
 export function defineTranslations<S extends TranslationSpec>(): <
   const V extends ValidTranslations<S>,
