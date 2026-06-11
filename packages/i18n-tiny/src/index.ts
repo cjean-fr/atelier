@@ -43,10 +43,12 @@ type CleanKey<K extends string> = K extends `${infer Name}${"," | " "}${string}`
  * // Params is of type "name"
  */
 
-export type ExtractParams<S extends string> =
-  S extends `${string}{${infer P}}${infer Rest}`
-    ? CleanKey<P> | ExtractParams<Rest>
-    : never;
+export type ExtractParams<
+  S extends string,
+  Acc extends string = never,
+> = S extends `${string}{${infer P}}${infer Rest}`
+  ? ExtractParams<Rest, Acc | CleanKey<P>>
+  : Acc;
 
 /**
  * Automatically generates a TranslationSpec from a translation object.
