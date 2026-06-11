@@ -209,12 +209,9 @@ describe("streamFlow", () => {
     });
 
     const results: FlowEvent[] = [];
-    await streamFlow(
-      { fragments, streams: [] },
-      async (ev) => {
-        results.push(ev);
-      },
-    );
+    await streamFlow({ fragments, streams: [] }, async (ev) => {
+      results.push(ev);
+    });
 
     expect(results.length).toBe(1);
     expect(results[0]!.type).toBe("patch");
@@ -234,12 +231,9 @@ describe("streamFlow", () => {
     });
 
     const results: FlowEvent[] = [];
-    await streamFlow(
-      { fragments, streams: [] },
-      async (ev) => {
-        results.push(ev);
-      },
-    );
+    await streamFlow({ fragments, streams: [] }, async (ev) => {
+      results.push(ev);
+    });
 
     expect(results.length).toBe(1);
     expect(results[0]!.type).toBe("patch");
@@ -343,7 +337,9 @@ describe("renderToFlowEvents", () => {
       TurboAdapter,
     );
     const events = await collectEvents(stream);
-    const patches = events.filter((e): e is FlowEvent & { type: "patch" } => e.type === "patch");
+    const patches = events.filter(
+      (e): e is FlowEvent & { type: "patch" } => e.type === "patch",
+    );
     expect(patches.length).toBe(2);
     expect(patches[0]!.id).toBe("fragment-1");
     expect(patches[1]!.id).toBe("fragment-2");
@@ -1332,4 +1328,3 @@ describe("B6 — Edge cases", () => {
     expect(html).toContain("</html>");
   });
 });
-

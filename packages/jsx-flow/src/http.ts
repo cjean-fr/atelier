@@ -1,6 +1,6 @@
 import { NativeAdapter, type PatchAdapter } from "./adapters.js";
-import { renderToFlowEvents } from "./render.js";
 import type { FlowOptions, Negotiation } from "./events.js";
+import { renderToFlowEvents } from "./render.js";
 import { type JSXNode } from "@cjean-fr/jsx-string";
 
 export type { Negotiation };

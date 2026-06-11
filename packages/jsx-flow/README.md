@@ -104,14 +104,14 @@ Both `<Deferred>` and `<Patch>` accept a `merge` prop describing how the content
 
 Each adapter implements `Placeholder`/`Patch`/`Frame` (JSX), `encode()` (streaming wire format, delegated to `Patch`), plus optional `transformShell` and `negotiate(req)` for HTTP hints.
 
-| Adapter              | `Placeholder`          | `Patch` (streaming inline)                     | `Frame` (SSG lazy-load) |
-| -------------------- | ---------------------- | ---------------------------------------------- | ----------------------- |
-| `TurboAdapter`       | `<turbo-frame>`        | `<turbo-stream action="…">`                    | `<turbo-frame id="…">`  |
-| `HtmxAdapter`        | `<div hx-get>`         | `<div hx-swap-oob="…">`                        | `<div id="…">`          |
-| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)          | `<template for="…">`    |
-| `NativeAdapter`      | `<?start name>…<?end>` | `<template for>` + `insertAdjacentHTML`        | `<template for="…">`    |
-| `UnpolyAdapter`      | same as Native         | same as Native                                 | same as Native          |
-| `EsiAdapter`         | `<esi:include src>`    | `<esi:inline name fetchable>` (static only)    | raw HTML                |
+| Adapter              | `Placeholder`          | `Patch` (streaming inline)                  | `Frame` (SSG lazy-load) |
+| -------------------- | ---------------------- | ------------------------------------------- | ----------------------- |
+| `TurboAdapter`       | `<turbo-frame>`        | `<turbo-stream action="…">`                 | `<turbo-frame id="…">`  |
+| `HtmxAdapter`        | `<div hx-get>`         | `<div hx-swap-oob="…">`                     | `<div id="…">`          |
+| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)       | `<template for="…">`    |
+| `NativeAdapter`      | `<?start name>…<?end>` | `<template for>` + `insertAdjacentHTML`     | `<template for="…">`    |
+| `UnpolyAdapter`      | same as Native         | same as Native                              | same as Native          |
+| `EsiAdapter`         | `<esi:include src>`    | `<esi:inline name fetchable>` (static only) | raw HTML                |
 
 - **`Patch`** — fragment delivered inline in the same HTTP response as the shell.
 - **`Frame`** — fragment served as a standalone file fetched by the client (SSG).
@@ -251,13 +251,13 @@ patch("toast-list", () => <li>Saved</li>, "append");
 
 ### Renderers
 
-| Export                                          | Description                                                                                                                                         |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `renderToReadableStream(node, adapter, opts?)`  | Streams shell + fragments as a `ReadableStream<string>`. `opts`: `signal`, `onError`, `mode`                                                        |
-| `renderToFlowEvents(node, adapter, opts?)`      | Lower level: `ReadableStream<FlowEvent>` (semantic events, before adapter encoding) with backpressure and cancellation                              |
-| `flowResponse(req, page, adapter, opts?)`       | Full HTTP `Response` — runs `adapter.negotiate(req)`, encodes, sets protocol + Vary headers                                                          |
-| `renderToStatic(handler, options?)`             | Runs `handler` inside a static render scope. `options.adapter` + `options.generatePath` required only when using `<Deferred>` / `ctx.emitFragments` |
-| `streamFlow(ctx, emit, opts?)`                  | Low-level supervisor: drains fragments and streams to quiescence, calling `emit(FlowEvent)` for each                                                |
+| Export                                         | Description                                                                                                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `renderToReadableStream(node, adapter, opts?)` | Streams shell + fragments as a `ReadableStream<string>`. `opts`: `signal`, `onError`, `mode`                                                        |
+| `renderToFlowEvents(node, adapter, opts?)`     | Lower level: `ReadableStream<FlowEvent>` (semantic events, before adapter encoding) with backpressure and cancellation                              |
+| `flowResponse(req, page, adapter, opts?)`      | Full HTTP `Response` — runs `adapter.negotiate(req)`, encodes, sets protocol + Vary headers                                                         |
+| `renderToStatic(handler, options?)`            | Runs `handler` inside a static render scope. `options.adapter` + `options.generatePath` required only when using `<Deferred>` / `ctx.emitFragments` |
+| `streamFlow(ctx, emit, opts?)`                 | Low-level supervisor: drains fragments and streams to quiescence, calling `emit(FlowEvent)` for each                                                |
 
 ### Context & scope
 

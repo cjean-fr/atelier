@@ -203,14 +203,18 @@ describe("Error propagation", () => {
 describe("__html Promise", () => {
   it("resolves a Promise __html into rendered HTML", async () => {
     const html = await renderToString(
-      <div dangerouslySetInnerHTML={{ __html: Promise.resolve("<b>safe</b>") }} />,
+      <div
+        dangerouslySetInnerHTML={{ __html: Promise.resolve("<b>safe</b>") }}
+      />,
     );
     expect(html).toBe("<div><b>safe</b></div>");
   });
 
   it("handles Promise __html that resolves to null", async () => {
     const html = await renderToString(
-      <div dangerouslySetInnerHTML={{ __html: Promise.resolve(null) as any }} />,
+      <div
+        dangerouslySetInnerHTML={{ __html: Promise.resolve(null) as any }}
+      />,
     );
     expect(html).toBe("<div></div>");
   });
@@ -218,7 +222,11 @@ describe("__html Promise", () => {
   it("rejects renderToString when Promise __html rejects", async () => {
     await expect(
       renderToString(
-        <div dangerouslySetInnerHTML={{ __html: Promise.reject(new Error("html-boom")) }} />,
+        <div
+          dangerouslySetInnerHTML={{
+            __html: Promise.reject(new Error("html-boom")),
+          }}
+        />,
       ),
     ).rejects.toThrow("html-boom");
   });
@@ -226,7 +234,11 @@ describe("__html Promise", () => {
 
 describe("class + className together", () => {
   it("emits both attributes, no merge", async () => {
-    const html = await renderToString(<div class="a" className="b">x</div>);
+    const html = await renderToString(
+      <div class="a" className="b">
+        x
+      </div>,
+    );
     expect(html).toBe('<div class="a" class="b">x</div>');
   });
 });
