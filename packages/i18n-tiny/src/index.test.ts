@@ -5,6 +5,7 @@ import {
   type ValidTranslations,
   type TranslatorConfig,
   type InferSpec,
+  type ExtractParams,
 } from "./index";
 import { describe, it, expect, mock } from "bun:test";
 
@@ -164,6 +165,26 @@ describe("translation system", () => {
         // @ts-expect-error - {nom} ne correspond pas à 'name'
         test: "Bonjour {nom}",
       });
+    });
+  });
+
+  describe("ExtractParams recursion (static verification only)", () => {
+    it("doit extraire les paramètres d'un template long sans dépasser la limite de récursion", () => {
+      // 80 placeholders : sans récursion terminale (accumulateur), ExtractParams
+      // dépasse la limite (~50) des conditional types et tsc échoue avec TS2589.
+      // Cette régression est détectée par `tsc --noEmit` (script check), pas par bun test.
+      type Chunk = "{p1} {p2} {p3} {p4} {p5} {p6} {p7} {p8} {p9} {p10}";
+      type LongTemplate =
+        `${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk}`;
+
+      type Params = ExtractParams<LongTemplate>;
+      const param: Params = "p10";
+
+      // @ts-expect-error - "p11" n'existe pas dans le template
+      const invalid: Params = "p11";
+
+      expect(param).toBe("p10");
+      expect(invalid).toBeDefined();
     });
   });
 
