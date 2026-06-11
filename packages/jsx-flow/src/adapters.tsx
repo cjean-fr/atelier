@@ -1,7 +1,7 @@
 // @jsxImportSource @cjean-fr/jsx-string
+import type { FlowEvent, MergeType, Negotiation } from "./events.js";
 import { injectIntoHead } from "./utils.js";
 import { raw, renderToString, type JSXNode } from "@cjean-fr/jsx-string";
-import type { FlowEvent, MergeType, Negotiation } from "./events.js";
 
 /** Re-export for consumers. */
 export type { MergeType };

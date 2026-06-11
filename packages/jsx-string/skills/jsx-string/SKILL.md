@@ -43,12 +43,12 @@ esbuild: {
 
 If the request is unclear, ask one clarifying question.
 
-| Need | Use |
-|---|---|
-| HTML strings only | `renderToString()` |
-| Component itself must await data before returning JSX | async components |
-| Shared state in the render tree | `context()` + `withScope()` + `setContext()` / `useContext()` |
-| DOM streaming, islands, or browser patching | `@cjean-fr/jsx-flow` |
+| Need                                                  | Use                                                           |
+| ----------------------------------------------------- | ------------------------------------------------------------- |
+| HTML strings only                                     | `renderToString()`                                            |
+| Component itself must await data before returning JSX | async components                                              |
+| Shared state in the render tree                       | `context()` + `withScope()` + `setContext()` / `useContext()` |
+| DOM streaming, islands, or browser patching           | `@cjean-fr/jsx-flow`                                          |
 
 If the user wants browser DOM updates, hydration, hooks, event handlers, or client-side interactivity, do not use this package for that task; explain that `jsx-string` is for HTML-string generation and server-side rendering only.
 

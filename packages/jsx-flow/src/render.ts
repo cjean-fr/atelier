@@ -1,7 +1,7 @@
 import { type PatchAdapter } from "./adapters.js";
 import { type FlowContext, type Config, initFlow, Flow } from "./context.js";
-import { streamFlow } from "./streamFlow.js";
 import type { FlowEvent, FlowOptions } from "./events.js";
+import { streamFlow } from "./streamFlow.js";
 import {
   renderToString,
   withScope,
@@ -107,29 +107,40 @@ export function renderToFlowEvents(
   };
 
   const run = () =>
-    withFlow(async ({ fragments, streams }) => {
-      if (signal.aborted) return;
-      const shell = await renderToString(node());
-      const match = shell.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
-      const closing = match?.[1] ?? "";
-      if (opts.mode !== "patches-only") {
-        const body = closing ? shell.slice(0, -closing.length) : shell;
-        await emit({
-          type: "shell",
-          html: adapter.transformShell ? adapter.transformShell(body) : body,
-        });
-      }
-      await streamFlow({ fragments, streams }, emit, { ...opts, signal });
-      if (opts.mode !== "patches-only" && closing)
-        await emit({ type: "close", html: closing });
-    }, { adapter, mode: "streaming" });
+    withFlow(
+      async ({ fragments, streams }) => {
+        if (signal.aborted) return;
+        const shell = await renderToString(node());
+        const match = shell.match(/((?:<\/body>)?\s*<\/html>\s*)$/i);
+        const closing = match?.[1] ?? "";
+        if (opts.mode !== "patches-only") {
+          const body = closing ? shell.slice(0, -closing.length) : shell;
+          await emit({
+            type: "shell",
+            html: adapter.transformShell ? adapter.transformShell(body) : body,
+          });
+        }
+        await streamFlow({ fragments, streams }, emit, { ...opts, signal });
+        if (opts.mode !== "patches-only" && closing)
+          await emit({ type: "close", html: closing });
+      },
+      { adapter, mode: "streaming" },
+    );
 
   return new ReadableStream<FlowEvent>({
     start(c) {
       controller = c;
       run().then(
-        () => { try { c.close(); } catch {} },
-        (e) => { try { c.error(e); } catch {} },
+        () => {
+          try {
+            c.close();
+          } catch {}
+        },
+        (e) => {
+          try {
+            c.error(e);
+          } catch {}
+        },
       );
     },
     pull() {
@@ -203,14 +214,11 @@ export async function renderToStatic<T>(
               "jsx-flow: emitFragments requires an adapter. Pass { adapter } to renderToStatic.",
             );
           }
-          await streamFlow(
-            ctx,
-            async (ev) => {
-              if (ev.type === "patch") {
-                await cb(ev.id, generatePath(ev.id), ev.html);
-              }
-            },
-          );
+          await streamFlow(ctx, async (ev) => {
+            if (ev.type === "patch") {
+              await cb(ev.id, generatePath(ev.id), ev.html);
+            }
+          });
         },
       };
       return handler(staticCtx);

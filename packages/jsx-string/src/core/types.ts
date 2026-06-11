@@ -139,7 +139,9 @@ export type ToStatic<T = {}> = {
   className?: string;
   style?: string | CSSProperties | Promise<string | CSSProperties>;
   children?: JSXNode;
-  dangerouslySetInnerHTML?: { __html: string | null | undefined | Promise<string | null | undefined> };
+  dangerouslySetInnerHTML?: {
+    __html: string | null | undefined | Promise<string | null | undefined>;
+  };
 } & StringEventHandlers;
 
 /**
@@ -153,7 +155,9 @@ export interface HTMLAttributes extends ToStatic {
   className?: string;
   style?: string | CSSProperties | Promise<string | CSSProperties>;
   children?: JSXNode;
-  dangerouslySetInnerHTML?: { __html: string | null | undefined | Promise<string | null | undefined> };
+  dangerouslySetInnerHTML?: {
+    __html: string | null | undefined | Promise<string | null | undefined>;
+  };
   lang?: string;
   dir?: "ltr" | "rtl" | "auto";
   role?: string;

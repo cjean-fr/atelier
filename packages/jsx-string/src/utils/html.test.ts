@@ -332,36 +332,40 @@ describe("html utilities", () => {
   });
 
   describe("renderElement — dangerouslySetInnerHTML with Promise __html", () => {
-  it("renders resolved Promise __html", async () => {
-    const result = await renderElement(
-      "div",
-      { dangerouslySetInnerHTML: { __html: Promise.resolve("<b>ok</b>") } },
-      [],
-    );
-    expect(result.value).toBe("<div><b>ok</b></div>");
-  });
-
-  it("renders empty for Promise __html resolving to null", async () => {
-    const result = await renderElement(
-      "div",
-      { dangerouslySetInnerHTML: { __html: Promise.resolve(null) } },
-      [],
-    );
-    expect(result.value).toBe("<div></div>");
-  });
-
-  it("rejects when Promise __html rejects", async () => {
-    await expect(
-      renderElement(
+    it("renders resolved Promise __html", async () => {
+      const result = await renderElement(
         "div",
-        { dangerouslySetInnerHTML: { __html: Promise.reject(new Error("fail")) } },
+        { dangerouslySetInnerHTML: { __html: Promise.resolve("<b>ok</b>") } },
         [],
-      ),
-    ).rejects.toThrow("fail");
-  });
-});
+      );
+      expect(result.value).toBe("<div><b>ok</b></div>");
+    });
 
-describe("regression — REGEX_CSS_URL lastIndex corruption", () => {
+    it("renders empty for Promise __html resolving to null", async () => {
+      const result = await renderElement(
+        "div",
+        { dangerouslySetInnerHTML: { __html: Promise.resolve(null) } },
+        [],
+      );
+      expect(result.value).toBe("<div></div>");
+    });
+
+    it("rejects when Promise __html rejects", async () => {
+      await expect(
+        renderElement(
+          "div",
+          {
+            dangerouslySetInnerHTML: {
+              __html: Promise.reject(new Error("fail")),
+            },
+          },
+          [],
+        ),
+      ).rejects.toThrow("fail");
+    });
+  });
+
+  describe("regression — REGEX_CSS_URL lastIndex corruption", () => {
     const UNSAFE_DATA = "url('data:text/html,<h1>xss</h1>')";
 
     it("should block unsafe data on consecutive calls", async () => {
