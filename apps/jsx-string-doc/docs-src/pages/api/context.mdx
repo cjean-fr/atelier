@@ -11,37 +11,51 @@ sidebar:
 Pass data through a component tree without prop-drilling. Built on
 `AsyncLocalStorage` — concurrent renders are fully isolated.
 
+Two concepts only: a **token** created with `context(key)`, read anywhere
+below a render with `token.get()` — and a **binding** built with
+`token.with(value)`, installed declaratively through the `context` option of
+a render entry point. There is no imperative write and no scope to manage:
+the scope is the render.
+
 ## API signatures
 
 <CodeExample src="api/context/signatures.ts" />
 
 ## Basic example
 
-Create a context key once at module level, provide a value with `setContext`
-inside a `withScope`, and read it anywhere in the tree with `useContext`.
+Create a context token once at module level, bind a value at the render entry
+point, and read it anywhere in the tree with `token.get()`.
+
+Note the factory form (`() => <App />`): JSX evaluates eagerly, so the tree
+must be built *inside* the render for the bindings to be visible. Passing a
+pre-built node together with `context` is a type error.
 
 <CodeExample src="api/context/basic.tsx" />
 
 ## Concurrent renders
 
-Each `withScope` call creates an isolated `AsyncLocalStorage` store. Concurrent
-renders never interfere with each other.
+Each render installs its own bindings. Concurrent renders never interfere
+with each other.
 
 <CodeExample src="api/context/concurrent.tsx" />
 
-## snapshot()
-
-Capture all current context values and pass them as a `seed` to a new scope.
-Useful for spawning child renders that inherit the parent's context.
-
-<CodeExample src="api/context/snapshot.tsx" />
-
 ## Per-request context
 
-A common pattern for HTTP servers: inject request-specific data into the
-context at the top level.
+A common pattern for HTTP servers: bind request-specific data at the render
+entry point.
 
 <CodeExample src="api/context/per-request.tsx" />
+
+## Plumbing: withContext() and snapshot()
+
+You only need these when building a custom render entry point (jsx-flow is
+built on `withContext`). `withContext(bindings, fn)` runs `fn` with bindings
+installed, inheriting whatever is already active — nested renders see their
+surroundings. `snapshot()` captures the active bindings as a replay function,
+for work that escapes the current async call tree (a queue, a timer) but must
+still render under the bindings of the scope that scheduled it.
+
+<CodeExample src="api/context/snapshot.tsx" />
 
 <div class="mt-10 flex justify-start">
   <a

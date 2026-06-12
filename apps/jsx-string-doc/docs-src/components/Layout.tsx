@@ -1,15 +1,14 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
-import { useDocs } from "../context.js";
-import type { JSXNode } from "@cjean-fr/jsx-string";
-import { Asset } from "@cjean-fr/jsx-vite";
+import { Docs } from "../context.js";
 import { Nav } from "./Nav.js";
 import { NavToggle } from "./NavToggle.js";
 import { PageFooter } from "./PageFooter.js";
 import { TableOfContents } from "./TableOfContents.js";
 import { themeInitScript } from "./ThemeToggle.js";
+import type { JSXNode } from "@cjean-fr/jsx-string";
+import { Asset } from "@cjean-fr/jsx-vite";
 
 export function Layout({ children }: { children: JSXNode }) {
-  const { config, meta } = useDocs();
+  const { config, meta } = Docs.get();
   const title = meta.title ? `${meta.title} — ${config.title}` : config.title;
   const description = meta.description ?? config.description;
 

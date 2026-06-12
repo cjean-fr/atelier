@@ -1,5 +1,50 @@
 # Changelog
 
+## 3.0.0 (unreleased)
+
+### Breaking changes
+
+- **Context: declarative bindings replace the scope API.**
+  `withScope`, `setContext` and `useContext` are removed. The token returned by
+  `context(key)` now carries the whole API: `token.get()` reads, and
+  `token.with(value)` builds a `ContextBinding` that you install through the
+  `context` option of a render entry point. The scope is the render — there is
+  nothing to open, order or clean up.
+
+  ```tsx
+  // Before (v2.x)
+  const html = await withScope(async () => {
+    setContext(Auth, { userId: "42" });
+    return renderToString(<Page />);
+  });
+
+  // After (v3.0)
+  const html = await renderToString(() => <Page />, {
+    context: [Auth.with({ userId: "42" })],
+  });
+  ```
+
+  The factory form (`() => <Page />`) is required with bindings: JSX evaluates
+  eagerly, so a pre-built node would have run before the bindings were
+  installed. Reads migrate mechanically: `useContext(Token)` → `Token.get()`.
+
+- **`snapshot()` returns a replay function instead of a `Map`.**
+  `snapshot()` captures the bindings active at call time and returns
+  `restore(fn)`, which runs `fn` under them later. The `seed` option it used to
+  feed is gone. Together with the new `withContext(bindings, fn)` plumbing,
+  this is the renderer-author surface — jsx-flow uses both so deferred
+  fragments render under the bindings captured at registration.
+
+### Added
+
+- **`withContext(bindings, fn)`** — installs bindings around `fn`, inheriting
+  the enclosing scope. Nested renders see their surroundings plus their own
+  bindings (child rebinding never leaks back).
+- **`renderToString(factory, { context })`** — overload accepting a node
+  factory plus bindings; the plain-node call is unchanged.
+- The unbound-token error now includes the token key and the remedy
+  (`renderToString(() => <App />, { context: [token.with(value)] })`).
+
 ## 2.0.0
 
 ### Breaking changes

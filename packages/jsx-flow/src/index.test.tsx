@@ -1,10 +1,8 @@
-// @jsxImportSource @cjean-fr/jsx-string
+import { createFlowContext } from "./context.js";
 import {
-  initFlow,
   Deferred,
   Patch,
   Generator,
-  streamFlow,
   TurboAdapter,
   HtmxAdapter,
   NativeAdapter,
@@ -17,29 +15,50 @@ import {
   flowResponse,
   UnpolyAdapter,
   type FlowEvent,
+  type Config,
+  type FlowContext,
 } from "./index.js";
-import { withScope, renderToString, useContext } from "@cjean-fr/jsx-string";
+import { streamFlow } from "./streamFlow.js";
+import { withContext, renderToString, context } from "@cjean-fr/jsx-string";
 import { describe, it, expect } from "bun:test";
 
-describe("initFlow", () => {
-  it("should initialize flow context", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      expect(() => useContext(Flow)).not.toThrow();
+/**
+ * Test-side equivalent of what the render entry points do: bind a fresh
+ * FlowContext for the duration of `fn`.
+ */
+function withFlow<T>(
+  config: Config,
+  fn: (ctx: FlowContext) => T | Promise<T>,
+): Promise<T> {
+  const ctx = createFlowContext(config);
+  return withContext([Flow.with(ctx)], () => fn(ctx));
+}
+
+const STREAMING: Config = { adapter: TurboAdapter, mode: "streaming" };
+
+describe("createFlowContext", () => {
+  it("builds a context readable through the Flow token once bound", async () => {
+    await withFlow(STREAMING, (ctx) => {
+      expect(Flow.get()).toBe(ctx);
     });
   });
 
-  it("should throw when used outside withScope", () => {
-    expect(() =>
-      initFlow({ adapter: TurboAdapter, mode: "streaming" }),
-    ).toThrow();
+  it("components throw a clear error when Flow is not bound", () => {
+    // JSX evaluates eagerly: the component runs (and throws) at JSX
+    // evaluation time, before any renderToString call.
+    expect(() => (
+      <Deferred fallback={<div>loading...</div>}>
+        {() => <span>content</span>}
+      </Deferred>
+    )).toThrow(
+      /<Deferred> must render inside renderToFlowEvents\(\) or renderToStatic\(\)/,
+    );
   });
 });
 
 describe("Deferred", () => {
   it("should render with fallback in streaming mode", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async () => {
       const html = await renderToString(
         <Deferred fallback={<div>loading...</div>}>
           {() => <span>content</span>}
@@ -51,8 +70,7 @@ describe("Deferred", () => {
   });
 
   it("should render external island with explicit src", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async () => {
       const html = await renderToString(
         <Deferred src="/api/fragment" fallback={<div>loading...</div>} />,
       );
@@ -61,109 +79,100 @@ describe("Deferred", () => {
   });
 
   it("should generate src in static mode", async () => {
-    await withScope(async () => {
-      initFlow({
+    await withFlow(
+      {
         adapter: TurboAdapter,
         mode: "static",
         generatePath: (id) => `/f/${id}.html`,
-      });
-      const html = await renderToString(
-        <Deferred fallback={<div>loading...</div>}>
-          {() => <span>content</span>}
-        </Deferred>,
-      );
-      expect(html).toContain('src="/f/fragment-1.html"');
-    });
+      },
+      async () => {
+        const html = await renderToString(
+          <Deferred fallback={<div>loading...</div>}>
+            {() => <span>content</span>}
+          </Deferred>,
+        );
+        expect(html).toContain('src="/f/fragment-1.html"');
+      },
+    );
   });
 
   it("should register the fragment", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async (ctx) => {
       await renderToString(
         <Deferred fallback={<div>loading...</div>}>
           {() => <span>content</span>}
         </Deferred>,
       );
-      const { fragments } = useContext(Flow);
-      expect(fragments.size).toBe(1);
+      expect(ctx.fragments.size).toBe(1);
     });
   });
 
   it("should default merge to replace", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async (ctx) => {
       await renderToString(
         <Deferred fallback={<div>loading...</div>}>
           {() => <span>content</span>}
         </Deferred>,
       );
-      const { fragments } = useContext(Flow);
-      expect(fragments.get("fragment-1")?.merge).toBe("replace");
+      expect(ctx.fragments.get("fragment-1")?.merge).toBe("replace");
     });
   });
 
   it("should store explicit merge type", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async (ctx) => {
       await renderToString(
         <Deferred merge="append" fallback={<ul />}>
           {() => <li>item</li>}
         </Deferred>,
       );
-      const { fragments } = useContext(Flow);
-      expect(fragments.get("fragment-1")?.merge).toBe("append");
+      expect(ctx.fragments.get("fragment-1")?.merge).toBe("append");
     });
   });
 });
 
 describe("Patch", () => {
   it("should register a fragment without rendering a placeholder", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async (ctx) => {
       const html = await renderToString(
         <Patch target="toast-list" merge="append">
           {() => <li>Notification</li>}
         </Patch>,
       );
       expect(html).toBe("");
-      const { fragments } = useContext(Flow);
-      expect(fragments.size).toBe(1);
-      expect(fragments.get("toast-list")?.merge).toBe("append");
+      expect(ctx.fragments.size).toBe(1);
+      expect(ctx.fragments.get("toast-list")?.merge).toBe("append");
     });
   });
 
   it("should default merge to replace", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async (ctx) => {
       await renderToString(
         <Patch target="some-target">{() => <span>content</span>}</Patch>,
       );
-      const { fragments } = useContext(Flow);
-      expect(fragments.get("some-target")?.merge).toBe("replace");
+      expect(ctx.fragments.get("some-target")?.merge).toBe("replace");
     });
   });
 
   it("should work in static mode", async () => {
-    await withScope(async () => {
-      initFlow({
+    await withFlow(
+      {
         adapter: TurboAdapter,
         mode: "static",
         generatePath: (id) => `/f/${id}.html`,
-      });
-      await renderToString(
-        <Patch target="some-target">{() => <span />}</Patch>,
-      );
-      const { fragments } = useContext(Flow);
-      expect(fragments.size).toBe(1);
-    });
+      },
+      async (ctx) => {
+        await renderToString(
+          <Patch target="some-target">{() => <span />}</Patch>,
+        );
+        expect(ctx.fragments.size).toBe(1);
+      },
+    );
   });
 });
 
 describe("patch()", () => {
   it("registers a fragment imperatively", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch, fragments } = useContext(Flow);
+    await withFlow(STREAMING, ({ patch, fragments }) => {
       patch("badge", () => <span>42</span>, "replace");
       expect(fragments.size).toBe(1);
       expect(fragments.get("badge")?.merge).toBe("replace");
@@ -171,27 +180,21 @@ describe("patch()", () => {
   });
 
   it("defaults merge to replace", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch, fragments } = useContext(Flow);
+    await withFlow(STREAMING, ({ patch, fragments }) => {
       patch("badge", () => <span>42</span>);
       expect(fragments.get("badge")?.merge).toBe("replace");
     });
   });
 
   it("rejects invalid ids", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch } = useContext(Flow);
+    await withFlow(STREAMING, ({ patch }) => {
       expect(() => patch("", () => <span />)).toThrow();
       expect(() => patch("has space", () => <span />)).toThrow();
     });
   });
 
   it("is last-wins on duplicate id", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch, fragments } = useContext(Flow);
+    await withFlow(STREAMING, ({ patch, fragments }) => {
       patch("id-1", () => <span>first</span>);
       patch("id-1", () => <span>second</span>, "append");
       expect(fragments.size).toBe(1);
@@ -549,13 +552,17 @@ describe("renderToStatic", () => {
     expect(result.ids).toEqual(["fragment-1"]);
   });
 
-  it("applies adapter.transformShell to the rendered page", async () => {
+  it("applies adapter.transformShell when the page has fragments", async () => {
     const result = await renderToStatic(
       async (ctx) =>
         ctx.renderPage(() => (
           <html>
             <head></head>
-            <body />
+            <body>
+              <Deferred fallback={<span>…</span>}>
+                {() => <span>ok</span>}
+              </Deferred>
+            </body>
           </html>
         )),
       { adapter: NativeAdapter },
@@ -610,30 +617,26 @@ describe("renderToStatic", () => {
       );
       expect(written).toEqual(["/f/fragment-1.html"]);
     });
-
-    it("throws if called without a configured adapter", async () => {
-      await expect(
-        renderToStatic(async (ctx) => {
-          await ctx.emitFragments(() => {});
-        }),
-      ).rejects.toThrow(/adapter/i);
-    });
   });
 
-  it("<Deferred> usage without adapter throws a clear error", async () => {
-    await expect(
-      renderToStatic(async (ctx) => {
-        return ctx.renderPage(() => (
-          <html>
-            <body>
-              <Deferred fallback={<span>…</span>}>
-                {() => <span>real</span>}
-              </Deferred>
-            </body>
-          </html>
-        ));
-      }),
-    ).rejects.toThrow(/adapter/i);
+  it("<Deferred> without explicit adapter uses NativeAdapter by default", async () => {
+    const written: string[] = [];
+    await renderToStatic(async (ctx) => {
+      await ctx.renderPage(() => (
+        <html>
+          <body>
+            <Deferred fallback={<span>…</span>}>
+              {() => <span>real</span>}
+            </Deferred>
+          </body>
+        </html>
+      ));
+      await ctx.emitFragments((_id, _url, html) => {
+        written.push(html);
+      });
+    });
+    expect(written).toHaveLength(1);
+    expect(written[0]).toContain("<span>real</span>");
   });
 });
 
@@ -947,8 +950,7 @@ describe("Generator", () => {
   };
 
   it("registers a stream effect (headless, append by default)", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+    await withFlow(STREAMING, async (ctx) => {
       async function* g() {
         yield <li>x</li>;
       }
@@ -956,10 +958,9 @@ describe("Generator", () => {
         <Generator target="feed" source={() => g()} />,
       );
       expect(html).toBe("");
-      const { streams } = useContext(Flow);
-      expect(streams).toHaveLength(1);
-      expect(streams[0]!.target).toBe("feed");
-      expect(streams[0]!.merge).toBe("append");
+      expect(ctx.streams).toHaveLength(1);
+      expect(ctx.streams[0]!.target).toBe("feed");
+      expect(ctx.streams[0]!.merge).toBe("append");
     });
   });
 
@@ -1326,5 +1327,132 @@ describe("B6 — Edge cases", () => {
     );
     expect(html).not.toContain("turbo-stream");
     expect(html).toContain("</html>");
+  });
+});
+
+describe("context bindings", () => {
+  const Page = context<{ title: string }>("test:flow-page");
+
+  const collect = async (s: ReadableStream<string>): Promise<string> => {
+    let out = "";
+    for await (const c of s) out += c;
+    return out;
+  };
+
+  it("renderToReadableStream: bindings visible in shell, deferred factories and generator items", async () => {
+    const Title = () => <h1>{Page.get().title}</h1>;
+    function* items() {
+      yield <li>{Page.get().title}</li>;
+    }
+    const html = await collect(
+      renderToReadableStream(
+        () => (
+          <html>
+            <body>
+              <Title />
+              <Deferred fallback={<p>…</p>}>
+                {() => <span>deferred:{Page.get().title}</span>}
+              </Deferred>
+              <ul id="feed" />
+              <Generator target="feed" source={() => items()} />
+            </body>
+          </html>
+        ),
+        TurboAdapter,
+        { context: [Page.with({ title: "Bound" })] },
+      ),
+    );
+    expect(html).toContain("<h1>Bound</h1>");
+    expect(html).toContain("deferred:Bound");
+    expect(html).toContain("<li>Bound</li>");
+  });
+
+  it("renderToStatic: per-page bindings via renderPage options", async () => {
+    const htmls = await renderToStatic(async (ctx) => {
+      const pages: string[] = [];
+      for (const title of ["one", "two"]) {
+        pages.push(
+          await ctx.renderPage(
+            () => (
+              <html>
+                <body>
+                  <h1>{Page.get().title}</h1>
+                </body>
+              </html>
+            ),
+            { context: [Page.with({ title })] },
+          ),
+        );
+      }
+      return pages;
+    });
+    expect(htmls[0]).toContain("<h1>one</h1>");
+    expect(htmls[1]).toContain("<h1>two</h1>");
+  });
+
+  it("renderToStatic: build-wide bindings via options.context", async () => {
+    const html = await renderToStatic(
+      (ctx) =>
+        ctx.renderPage(() => (
+          <html>
+            <body>
+              <h1>{Page.get().title}</h1>
+            </body>
+          </html>
+        )),
+      { context: [Page.with({ title: "global" })] },
+    );
+    expect(html).toContain("<h1>global</h1>");
+  });
+
+  // Effects run under the scope active at drain time, not at registration:
+  // emitFragments after the page loop sees the build-wide bindings, and
+  // per-page data reaches a factory through its closure.
+  it("emitFragments renders fragments under the build scope, page data via closure", async () => {
+    const written = new Map<string, string>();
+    await renderToStatic(
+      async (ctx) => {
+        for (const title of ["first", "second"]) {
+          await ctx.renderPage(
+            () => (
+              <html>
+                <body>
+                  <Deferred name={`frag-${title}`} fallback={<p>…</p>}>
+                    {() => (
+                      <span>
+                        {Page.get().title}:{title}
+                      </span>
+                    )}
+                  </Deferred>
+                </body>
+              </html>
+            ),
+            { context: [Page.with({ title })] },
+          );
+        }
+        await ctx.emitFragments((id, _url, html) => {
+          written.set(id, html);
+        });
+      },
+      { adapter: TurboAdapter, context: [Page.with({ title: "build" })] },
+    );
+    expect(written.get("frag-first")).toContain("build:first");
+    expect(written.get("frag-second")).toContain("build:second");
+  });
+
+  it("flowResponse threads bindings to the rendered page", async () => {
+    const res = await flowResponse(
+      new Request("http://localhost"),
+      () => (
+        <html>
+          <body>
+            <h1>{Page.get().title}</h1>
+          </body>
+        </html>
+      ),
+      TurboAdapter,
+      { context: [Page.with({ title: "req" })] },
+    );
+    expect(await res.text()).toContain("<h1>req</h1>");
   });
 });

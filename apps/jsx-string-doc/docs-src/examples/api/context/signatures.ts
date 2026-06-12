@@ -1,26 +1,33 @@
-import {
-  context,
-  setContext,
-  useContext,
-  withScope,
-  snapshot,
-} from "@cjean-fr/jsx-string";
+import { context, withContext, snapshot } from "@cjean-fr/jsx-string";
 
-// Create a typed context key — `key` must be a non-empty namespaced string
-// (e.g. "@org/pkg:purpose"). Same key → same Symbol across module instances.
+// Create a typed context token — `key` must be a non-empty namespaced string
+// (e.g. "@org/pkg:purpose"). Same key → same token across calls.
 function context<T>(key: string): Context<T>;
 
-// Provide a value inside a withScope
-function setContext<T>(ctx: Context<T>, value: T): void;
+interface Context<T> {
+  readonly key: string;
+  // Read the value bound for the current render. Throws if unbound.
+  get(): T;
+  // Pair the token with a value — pass the binding to a render entry point.
+  with(value: T): ContextBinding;
+}
 
-// Read a value set by setContext
-function useContext<T>(ctx: Context<T>): T;
+interface RenderOptions {
+  context?: readonly ContextBinding[];
+}
 
-// Create an isolated async scope
-async function withScope<T>(
+// Render entry point: bindings require the factory form.
+function renderToString(
+  node: () => JSXNode,
+  options?: RenderOptions,
+): Promise<string>;
+
+// Plumbing for custom render entry points (jsx-flow uses both):
+// run `fn` with bindings installed, inheriting the enclosing scope…
+function withContext<T>(
+  bindings: readonly ContextBinding[],
   fn: () => T | Promise<T>,
-  options?: { seed?: Map<Context<unknown>, unknown> },
 ): Promise<T>;
 
-// Capture current scope values for passing to child scopes
-function snapshot(): Map<Context<unknown>, unknown>;
+// …and capture the active bindings as a replay function.
+function snapshot(): <T>(fn: () => T) => T;

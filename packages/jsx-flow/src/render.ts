@@ -1,51 +1,27 @@
-import { type PatchAdapter } from "./adapters.js";
-import { type FlowContext, type Config, initFlow, Flow } from "./context.js";
+import { type PatchAdapter, NativeAdapter } from "./adapters.js";
+import {
+  type FlowContext,
+  type Config,
+  createFlowContext,
+  Flow,
+} from "./context.js";
 import type { FlowEvent, FlowOptions } from "./events.js";
 import { streamFlow } from "./streamFlow.js";
 import {
   renderToString,
-  withScope,
-  useContext,
+  withContext,
+  type ContextBinding,
   type JSXNode,
 } from "@cjean-fr/jsx-string";
 
 function withFlow<T>(
   handler: (ctx: FlowContext) => T,
   config: Config,
+  bindings: readonly ContextBinding[] = [],
 ): Promise<T> {
-  return withScope(async function () {
-    initFlow(config);
-    return handler(useContext(Flow));
-  });
+  const ctx = createFlowContext(config);
+  return withContext([Flow.with(ctx), ...bindings], () => handler(ctx));
 }
-
-/**
- * Default adapter used when renderToStatic is called without an adapter.
- * Renders pure-static pages fine; any access to deferred-fragment encoding throws
- * with a clear message pointing to the missing option.
- */
-const NOOP_ADAPTER: PatchAdapter = {
-  Placeholder: () => {
-    throw new Error(
-      "jsx-flow: <Deferred> requires an adapter. Pass { adapter } to renderToStatic.",
-    );
-  },
-  Patch: () => {
-    throw new Error(
-      "jsx-flow: deferred fragments require an adapter. Pass { adapter } to renderToStatic.",
-    );
-  },
-  Frame: () => {
-    throw new Error(
-      "jsx-flow: deferred fragments require an adapter. Pass { adapter } to renderToStatic.",
-    );
-  },
-  encode: () => {
-    throw new Error(
-      "jsx-flow: encode requires an adapter. Pass { adapter } to renderToReadableStream.",
-    );
-  },
-};
 
 const DEFAULT_GENERATE_PATH = (id: string) => `/fragments/${id}.html`;
 
@@ -55,13 +31,21 @@ const DEFAULT_GENERATE_PATH = (id: string) => `/fragments/${id}.html`;
  * shell bytes for a given input.
  */
 export interface StaticContext extends FlowContext {
-  /** Render a page node, applying adapter.transformShell if present. */
-  renderPage(node: () => JSXNode): Promise<string>;
+  /**
+   * Render a page node, applying adapter.transformShell if present.
+   * `options.context` binds values for this page's render only. Fragments
+   * registered during the render execute later, under the scope active when
+   * `emitFragments` runs — page data they need belongs in their closure.
+   */
+  renderPage(
+    node: () => JSXNode,
+    options?: { context?: readonly ContextBinding[] },
+  ): Promise<string>;
   /**
    * Render every pending fragment and pass it to `cb` as raw HTML (no adapter
    * wrapper). `url` is the path produced by `generatePath(id)`. For lazy-load
    * formats that need a wrapper (Turbo frames, Native templates), wrap with
-   * `adapter.Frame` before writing. Throws if no adapter was configured.
+   * `adapter.Frame` before writing.
    */
   emitFragments(
     cb: (id: string, url: string, html: string) => void | Promise<void>,
@@ -69,10 +53,12 @@ export interface StaticContext extends FlowContext {
 }
 
 export interface StaticOptions {
-  /** Required if any page uses <Deferred> or you call ctx.emitFragments. */
+  /** Defaults to NativeAdapter. */
   adapter?: PatchAdapter;
   /** Fragment URL convention. Default: (id) => `/fragments/${id}.html`. */
   generatePath?: (id: string) => string;
+  /** Bindings shared by every page of this build (e.g. the Vite manifest). */
+  context?: readonly ContextBinding[];
 }
 
 /**
@@ -86,7 +72,11 @@ export interface StaticOptions {
 export function renderToFlowEvents(
   node: () => JSXNode,
   adapter: PatchAdapter,
-  opts: FlowOptions & { mode?: "full" | "patches-only" } = {},
+  opts: FlowOptions & {
+    mode?: "full" | "patches-only";
+    /** Bindings installed for this render (shell, fragments and streams). */
+    context?: readonly ContextBinding[];
+  } = {},
 ): ReadableStream<FlowEvent> {
   const internal = new AbortController();
   const signal = opts.signal
@@ -125,6 +115,7 @@ export function renderToFlowEvents(
           await emit({ type: "close", html: closing });
       },
       { adapter, mode: "streaming" },
+      opts.context,
     );
 
   return new ReadableStream<FlowEvent>({
@@ -160,7 +151,10 @@ export function renderToFlowEvents(
 export function renderToReadableStream(
   node: () => JSXNode,
   adapter: PatchAdapter,
-  opts?: FlowOptions & { mode?: "full" | "patches-only" },
+  opts?: FlowOptions & {
+    mode?: "full" | "patches-only";
+    context?: readonly ContextBinding[];
+  },
 ): ReadableStream<string> {
   return renderToFlowEvents(node, adapter, opts).pipeThrough(adapter.encode());
 }
@@ -177,7 +171,7 @@ export function renderToReadableStream(
  *   }
  * });
  *
- * When pages use <Deferred>, pass { adapter } and materialize fragments.
+ * When pages use <Deferred>, call `ctx.emitFragments` to materialize fragments.
  * `html` is the raw fragment — wrap it with `adapter.Frame` so the lazy-load
  * mechanism can target the placeholder:
  * @example
@@ -190,30 +184,30 @@ export function renderToReadableStream(
  *     const framed = NativeAdapter.Frame({ id, children: raw(html) });
  *     await Bun.write("./out" + url, await renderToString(framed));
  *   });
- * }, { adapter: NativeAdapter });
+ * });
  */
 export async function renderToStatic<T>(
   handler: (ctx: StaticContext) => T,
   options?: StaticOptions,
 ): Promise<T> {
-  const adapter = options?.adapter ?? NOOP_ADAPTER;
+  const adapter = options?.adapter ?? NativeAdapter;
   const generatePath = options?.generatePath ?? DEFAULT_GENERATE_PATH;
-  const hasAdapter = adapter !== NOOP_ADAPTER;
 
   return withFlow(
     async (ctx) => {
       const staticCtx: StaticContext = {
         ...ctx,
-        renderPage: async (node) => {
-          const html = await renderToString(node());
-          return adapter.transformShell ? adapter.transformShell(html) : html;
+        renderPage: async (node, pageOptions) => {
+          const fragmentsBefore = ctx.fragments.size;
+          const html = await renderToString(node, {
+            context: pageOptions?.context,
+          });
+          const hasFragments = ctx.fragments.size > fragmentsBefore;
+          return hasFragments && adapter.transformShell
+            ? adapter.transformShell(html)
+            : html;
         },
         emitFragments: async (cb) => {
-          if (!hasAdapter) {
-            throw new Error(
-              "jsx-flow: emitFragments requires an adapter. Pass { adapter } to renderToStatic.",
-            );
-          }
           await streamFlow(ctx, async (ev) => {
             if (ev.type === "patch") {
               await cb(ev.id, generatePath(ev.id), ev.html);
@@ -224,5 +218,6 @@ export async function renderToStatic<T>(
       return handler(staticCtx);
     },
     { adapter, mode: "static", generatePath },
+    options?.context,
   );
 }

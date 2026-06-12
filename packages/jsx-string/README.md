@@ -124,46 +124,43 @@ import { raw } from "@cjean-fr/jsx-string";
 
 ### 🔄 Context API (Scoped Context)
 
-Per-request context with **typed keys** — `AsyncLocalStorage`-backed, no provider components needed, designed for server-side isolation.
+Per-request context with **typed tokens** — `AsyncLocalStorage`-backed, no provider components, no scope management: bindings are installed declaratively at the render entry point, and the scope _is_ the render.
 
 ```tsx
-import {
-  context,
-  useContext,
-  setContext,
-  withScope,
-  renderToString,
-} from "@cjean-fr/jsx-string";
+import { context, renderToString } from "@cjean-fr/jsx-string";
 
-// Define context keys at module level — same key always resolves to the same
-// Symbol within a given jsx-string instance.
+// Define context tokens at module level — same key always resolves to the
+// same token within a given jsx-string instance.
 const Auth = context<{ userId: string }>("my-app:auth");
 
-const Page = () => <p>User: {useContext(Auth).userId}</p>;
+const Page = () => <p>User: {Auth.get().userId}</p>;
 
-// Each request gets isolated context — no cross-request leaks
-const html = await withScope(async () => {
-  setContext(Auth, { userId: "42" });
-  return renderToString(<Page />);
+// Each request gets isolated bindings — no cross-request leaks.
+// Factory form required: JSX evaluates eagerly, so the tree must be built
+// inside the render for the bindings to be visible.
+const html = await renderToString(() => <Page />, {
+  context: [Auth.with({ userId: "42" })],
 });
 // => <p>User: 42</p>
 ```
 
-**Nested scopes with inheritance:**
+Nested renders **inherit** the enclosing bindings — a `renderToString` call
+inside a component sees its surroundings plus its own bindings.
+
+`token.get()` **throws if no binding is active** for that token, with the
+token key in the message.
+
+**Plumbing for renderer authors** — only needed when building a custom render
+entry point (jsx-flow is built on these):
 
 ```tsx
-await withScope(async () => {
-  setContext(Auth, { userId: "42" });
+// Run fn with bindings installed, inheriting the enclosing scope
+await withContext([Auth.with({ userId: "42" })], fn);
 
-  // Child scope inherits parent data via snapshot()
-  await withScope(async () => {
-    const parentData = snapshot(); // captures current context
-    // ... use parentData to seed child scope
-  });
-});
+// Capture the active bindings; replay them later, anywhere
+const restore = snapshot();
+restore(() => Auth.get()); // sees the captured bindings
 ```
-
-`useContext` **throws if called outside a scope** or before `setContext` is called.
 
 ### 📦 Trusted HTML
 
@@ -189,13 +186,13 @@ const markdownHtml = await renderMarkdown("# Hello");
 
 Self-contained runnable scripts under [`examples/`](./examples):
 
-| File                                                    | Demonstrates                                                     |
-| ------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`hello.tsx`](./examples/hello.tsx)                     | Minimal `renderToString` of static JSX                           |
-| [`async-component.tsx`](./examples/async-component.tsx) | Async component with `await` inside render                       |
-| [`context.tsx`](./examples/context.tsx)                 | `context()` + `setContext()` + `useContext()` with `withScope()` |
-| [`concurrent.tsx`](./examples/concurrent.tsx)           | Parallel renders with isolated context scopes                    |
-| [`server.tsx`](./examples/server.tsx)                   | `Bun.serve` HTTP handler with per-request context                |
+| File                                                    | Demonstrates                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------------- |
+| [`hello.tsx`](./examples/hello.tsx)                     | Minimal `renderToString` of static JSX                        |
+| [`async-component.tsx`](./examples/async-component.tsx) | Async component with `await` inside render                    |
+| [`context.tsx`](./examples/context.tsx)                 | `context()` tokens + bindings via the `context` render option |
+| [`concurrent.tsx`](./examples/concurrent.tsx)           | Parallel renders with isolated bindings                       |
+| [`server.tsx`](./examples/server.tsx)                   | `Bun.serve` HTTP handler with per-request context             |
 
 Run standalone:
 
@@ -208,16 +205,17 @@ bun examples/server.tsx  # then: curl 'http://localhost:3000/?name=World'
 
 ## API Reference
 
-| Export                     | Type                    | Description                                                                                               |
-| -------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `renderToString(node)`     | `Promise<string>`       | Renders JSX tree to HTML string.                                                                          |
-| `raw(string)`              | `RawString`             | Marks HTML as trusted (no escape).                                                                        |
-| `Fragment`                 | `symbol`                | Standard JSX Fragment (`<>…</>`).                                                                         |
-| `context<T>(key)`          | `Context<T>`            | Creates a typed, namespaced context token. `key` is a globally-unique string (e.g. `"@org/pkg:purpose"`). |
-| `setContext(token, value)` | `void`                  | Writes to current scope.                                                                                  |
-| `useContext(token)`        | `T`                     | Reads from current scope; **throws if absent**.                                                           |
-| `withScope(fn, options?)`  | `Promise<T>`            | Runs `fn` in isolated async scope.                                                                        |
-| `snapshot()`               | `Map<Context, unknown>` | Captures current scope state for sub-scopes.                                                              |
+| Export                         | Type                    | Description                                                                                               |
+| ------------------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `renderToString(node)`         | `Promise<string>`       | Renders JSX tree to HTML string.                                                                          |
+| `renderToString(fn, options?)` | `Promise<string>`       | Factory form — `options.context` binds context for the render.                                            |
+| `raw(string)`                  | `RawString`             | Marks HTML as trusted (no escape).                                                                        |
+| `Fragment`                     | `symbol`                | Standard JSX Fragment (`<>…</>`).                                                                         |
+| `context<T>(key)`              | `Context<T>`            | Creates a typed, namespaced context token. `key` is a globally-unique string (e.g. `"@org/pkg:purpose"`). |
+| `token.get()`                  | `T`                     | Reads the value bound for the current render; **throws if unbound**.                                      |
+| `token.with(value)`            | `ContextBinding`        | Pairs the token with a value, for the `context` option.                                                   |
+| `withContext(bindings, fn)`    | `Promise<T>`            | Plumbing: runs `fn` with bindings installed, inheriting the enclosing scope.                              |
+| `snapshot()`                   | `<T>(fn: () => T) => T` | Plumbing: captures active bindings as a replay function.                                                  |
 
 ---
 

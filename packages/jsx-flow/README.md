@@ -13,7 +13,7 @@ Use `jsx-string` alone for SSG, emails, and pure SSR. Add `jsx-flow` when you ne
 | Renders JSX → HTML string | Adds deferred fragments + streaming patch delivery |
 | Server-only, zero runtime | Emits adapter-specific markup for DOM updates      |
 | `renderToString()`        | `renderToReadableStream()` / `renderToStatic()`    |
-| Context via `withScope()` | Adapters: Turbo, HTMX, Native, WebPlatform, ESI    |
+| Context via bindings      | Adapters: Turbo, HTMX, Native, WebPlatform, ESI    |
 
 ## Why deferred regions in streaming SSR
 
@@ -232,9 +232,8 @@ Bun.serve({
 
 ```ts
 import { Flow } from "@cjean-fr/jsx-flow";
-import { useContext } from "@cjean-fr/jsx-string";
 
-const { patch } = useContext(Flow);
+const { patch } = Flow.get();
 patch("cart-badge", () => <span>{count}</span>);
 patch("toast-list", () => <li>Saved</li>, "append");
 ```
@@ -256,16 +255,15 @@ patch("toast-list", () => <li>Saved</li>, "append");
 | `renderToReadableStream(node, adapter, opts?)` | Streams shell + fragments as a `ReadableStream<string>`. `opts`: `signal`, `onError`, `mode`                                                        |
 | `renderToFlowEvents(node, adapter, opts?)`     | Lower level: `ReadableStream<FlowEvent>` (semantic events, before adapter encoding) with backpressure and cancellation                              |
 | `flowResponse(req, page, adapter, opts?)`      | Full HTTP `Response` — runs `adapter.negotiate(req)`, encodes, sets protocol + Vary headers                                                         |
-| `renderToStatic(handler, options?)`            | Runs `handler` inside a static render scope. `options.adapter` + `options.generatePath` required only when using `<Deferred>` / `ctx.emitFragments` |
-| `streamFlow(ctx, emit, opts?)`                 | Low-level supervisor: drains fragments and streams to quiescence, calling `emit(FlowEvent)` for each                                                |
+| `renderToStatic(handler, options?)`            | Runs `handler` inside a static render scope. `options.adapter` defaults to `NativeAdapter`, `options.generatePath` to `/fragments/{id}.html`        |
 
 ### Context & scope
 
-| Export          | Description                                                   |
-| --------------- | ------------------------------------------------------------- |
-| `Flow`          | Context token — `useContext(Flow)` from inside a render scope |
-| `FlowContext`   | Type: `{ config, fragments, streams, nextId, patch, stream }` |
-| `StaticContext` | `FlowContext` + `renderPage(node)` + `emitFragments(cb)`      |
+| Export          | Description                                                     |
+| --------------- | --------------------------------------------------------------- |
+| `Flow`          | Context token — `Flow.get()` from inside a render               |
+| `FlowContext`   | Type: `{ config, fragments, streams, nextId, patch, stream }`   |
+| `StaticContext` | `FlowContext` + `renderPage(node, opts?)` + `emitFragments(cb)` |
 
 ### Adapters & types
 
@@ -282,7 +280,6 @@ patch("toast-list", () => <li>Saved</li>, "append");
 | `FlowEvent`          | `{ type: "shell" \| "patch" \| "close", … }` — semantic streaming event      |
 | `Negotiation`        | `{ headers?, mode?, target?, failTarget? }` — hints from `negotiate(req)`    |
 | `FragmentEffect`     | `{ factory: () => JSXNode; merge: MergeType }`                               |
-| `assertFragmentId`   | Validates a fragment id (helpful in custom plugins calling `patch` directly) |
 
 ## License
 

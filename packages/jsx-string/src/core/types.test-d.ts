@@ -22,10 +22,9 @@ export const testSvg: JSX.IntrinsicElements["svg"] = {
   viewBox: "0 0 10 10",
 };
 
-export const testCustom: JSX.IntrinsicElements["custom-tag"] = {
-  anyProp: 123,
-};
+// Custom elements are no longer accepted by default — declare them explicitly:
+// declare global { namespace JSX { interface IntrinsicElements { "custom-tag": HTMLAttributes } } }
 
 declare const element: JSX.IntrinsicElements["div"];
-element.onPaste; // Ok (React)
+element["onPaste"]; // Ok — index signature requires bracket notation (noPropertyAccessFromIndexSignature)
 element.class; // Ok (JSX-String)

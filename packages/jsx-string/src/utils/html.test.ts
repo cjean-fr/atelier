@@ -20,10 +20,9 @@ describe("html utilities", () => {
   });
 
   describe("renderAttributes", () => {
-    it("should render class and className as separate attributes (no merge)", () => {
-      // Matches the precompile transform: each attribute is rendered in isolation.
+    it("should merge class and className into a single attribute", () => {
       expect(renderAttributes({ class: "a", className: "b" })).toBe(
-        ' class="a" class="b"',
+        ' class="a b"',
       );
     });
 
@@ -34,7 +33,7 @@ describe("html utilities", () => {
     });
 
     it("should handle boolean attributes", () => {
-      expect(renderAttributes({ disabled: true, checked: false })).toBe(
+      expect(renderAttributes({ disabled: true, checked: false } as any)).toBe(
         " disabled",
       );
     });
@@ -52,15 +51,15 @@ describe("html utilities", () => {
     });
 
     it("should block unsafe URLs", () => {
-      expect(renderAttributes({ href: "javascript:alert(1)" })).toBe(
+      expect(renderAttributes({ href: "javascript:alert(1)" } as any)).toBe(
         ' href="#blocked"',
       );
     });
 
     it("should allow safe data: image URLs", () => {
-      expect(renderAttributes({ src: "data:image/png;base64,abc" })).toBe(
-        ' src="data:image/png;base64,abc"',
-      );
+      expect(
+        renderAttributes({ src: "data:image/png;base64,abc" } as any),
+      ).toBe(' src="data:image/png;base64,abc"');
     });
 
     it("should support string event handlers and block non-string values", () => {
@@ -103,15 +102,15 @@ describe("html utilities", () => {
     });
 
     it("should ignore internal props", () => {
-      expect(renderAttributes({ key: "1", ref: "r", id: "ok" })).toBe(
+      expect(renderAttributes({ key: "1", ref: "r", id: "ok" } as any)).toBe(
         ' id="ok"',
       );
     });
 
     it("should ignore null and undefined values", () => {
-      expect(renderAttributes({ id: "ok", foo: null, bar: undefined })).toBe(
-        ' id="ok"',
-      );
+      expect(
+        renderAttributes({ id: "ok", foo: null, bar: undefined } as any),
+      ).toBe(' id="ok"');
     });
 
     it("should pass through data-* and aria-* attributes verbatim", () => {
@@ -121,9 +120,9 @@ describe("html utilities", () => {
     });
 
     it("should pass through unknown attributes verbatim regardless of casing", () => {
-      expect(renderAttributes({ dataTestId: "123", ariaLabel: "test" })).toBe(
-        ' dataTestId="123" ariaLabel="test"',
-      );
+      expect(
+        renderAttributes({ dataTestId: "123", ariaLabel: "test" } as any),
+      ).toBe(' dataTestId="123" ariaLabel="test"');
     });
 
     it("should block function values on lowercase event handlers (regression)", () => {
@@ -137,7 +136,7 @@ describe("html utilities", () => {
           onfocus: (() => {}) as any,
           ONCLICK: (() => {}) as any,
           id: "btn",
-        }),
+        } as any),
       ).toBe(' id="btn"');
     });
 
@@ -160,9 +159,11 @@ describe("html utilities", () => {
       // and the validation regex doesn't reject `\p{C}` chars (ZWSP, LRM,
       // NUL, etc.). Hidden control chars would then leak into attribute names
       // verbatim instead of being stripped.
-      expect(renderAttributes({ "data​-id": "123" })).toBe(' data-id="123"');
-      expect(renderAttributes({ "cla‎ss": "x" })).toBe(' class="x"');
-      expect(renderAttributes({ "id\x00": "v" })).toBe(' id="v"');
+      expect(renderAttributes({ "data​-id": "123" } as any)).toBe(
+        ' data-id="123"',
+      );
+      expect(renderAttributes({ "cla‎ss": "x" } as any)).toBe(' class="x"');
+      expect(renderAttributes({ "id\x00": "v" } as any)).toBe(' id="v"');
     });
 
     it("should resolve a direct Promise in an attribute", async () => {
@@ -186,7 +187,7 @@ describe("html utilities", () => {
     it("should enforce URL safety on a Promise-valued URL attribute", async () => {
       const result = await renderAttributes({
         href: Promise.resolve("javascript:alert(1)") as any,
-      });
+      } as any);
       expect(result).toBe(' href="#blocked"');
     });
 

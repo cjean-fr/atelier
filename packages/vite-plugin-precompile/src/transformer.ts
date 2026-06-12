@@ -180,12 +180,21 @@ function isEligibleElement(node: JSXElement): boolean {
   const name = node.openingElement.name;
   if (name.type !== "JSXIdentifier") return false;
   if (!isLowercaseTag(name.name)) return false;
-  return !hasSpreadOrInnerHTML(
-    node.openingElement.attributes.map((a) => {
-      if (a.type === "JSXSpreadAttribute") return { kind: "spread" as const };
-      return { kind: "attribute" as const, name: attrName(a) };
-    }),
-  );
+  const briefs = node.openingElement.attributes.map((a) => {
+    if (a.type === "JSXSpreadAttribute") return { kind: "spread" as const };
+    return { kind: "attribute" as const, name: attrName(a) };
+  });
+  if (hasSpreadOrInnerHTML(briefs)) return false;
+  // `class` + `className` on one element merge into a single attribute at
+  // runtime (renderAttributes). The transform emits attributes in isolation
+  // and can't reproduce that, so leave such elements to the runtime path.
+  let hasClass = false;
+  let hasClassName = false;
+  for (const b of briefs) {
+    if (b.name === "class") hasClass = true;
+    else if (b.name === "className") hasClassName = true;
+  }
+  return !(hasClass && hasClassName);
 }
 
 function attrName(attr: JSXAttribute): string {

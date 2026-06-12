@@ -1,7 +1,29 @@
-// @jsxImportSource @cjean-fr/jsx-string
 import type { FlowEvent, MergeType, Negotiation } from "./events.js";
 import { injectIntoHead } from "./utils.js";
-import { raw, renderToString, type JSXNode } from "@cjean-fr/jsx-string";
+import {
+  raw,
+  renderToString,
+  type HTMLAttributes,
+  type JSXNode,
+} from "@cjean-fr/jsx-string";
+
+declare module "@cjean-fr/jsx-string/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "turbo-frame": HTMLAttributes & {
+        src?: string;
+        loading?: "lazy" | "eager";
+        target?: string;
+        disabled?: boolean;
+      };
+      "turbo-stream": HTMLAttributes & {
+        action?: string;
+        target?: string;
+        targets?: string;
+      };
+    }
+  }
+}
 
 /** Re-export for consumers. */
 export type { MergeType };

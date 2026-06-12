@@ -242,6 +242,16 @@ describe("precompileTransform", () => {
     ).toBeNull();
   });
 
+  it("leaves elements with both class and className to the runtime (merge)", () => {
+    expect(
+      precompileTransform(
+        `const a = <div class="a" className="b" />;`,
+        "/src/app.tsx",
+        { runtimeSource: RT },
+      ),
+    ).toBeNull();
+  });
+
   it("merges missing helpers into an existing runtime import, preserving aliases", () => {
     const code = [
       `import { jsxTemplate as tpl } from "${RT}";`,

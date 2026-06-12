@@ -1,16 +1,11 @@
 /**
- * Concurrent renders — each withScope() is isolated, so the same context key
- * can hold different values in parallel calls without interference.
+ * Concurrent renders — each render's bindings are isolated, so the same
+ * context token can hold different values in parallel calls without
+ * interference.
  *
  * Run: `bun examples/concurrent.tsx`
  */
-import {
-  context,
-  setContext,
-  useContext,
-  withScope,
-  renderToString,
-} from "@cjean-fr/jsx-string";
+import { context, renderToString } from "@cjean-fr/jsx-string";
 
 const Locale = context<"en" | "fr">("examples:locale");
 
@@ -20,7 +15,7 @@ const messages = {
 };
 
 function Page() {
-  const locale = useContext(Locale);
+  const locale = Locale.get();
   return (
     <main lang={locale}>
       <h1>{messages[locale]}</h1>
@@ -29,14 +24,8 @@ function Page() {
 }
 
 const [enHtml, frHtml] = await Promise.all([
-  withScope(async () => {
-    setContext(Locale, "en");
-    return renderToString(<Page />);
-  }),
-  withScope(async () => {
-    setContext(Locale, "fr");
-    return renderToString(<Page />);
-  }),
+  renderToString(() => <Page />, { context: [Locale.with("en")] }),
+  renderToString(() => <Page />, { context: [Locale.with("fr")] }),
 ]);
 
 console.log("EN:", enHtml);

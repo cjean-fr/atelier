@@ -1,22 +1,16 @@
 /**
  * Tiny HTTP server using Bun.serve. Renders JSX to HTML on each request,
- * with per-request context injected at the top of the scope.
+ * with per-request context bound at the render entry point.
  *
  * Run: `bun examples/server.tsx`
  * Then: `curl -i http://localhost:3000/?name=World`
  */
-import {
-  context,
-  setContext,
-  useContext,
-  withScope,
-  renderToString,
-} from "@cjean-fr/jsx-string";
+import { context, renderToString } from "@cjean-fr/jsx-string";
 
 const Request = context<{ name: string }>("examples:request");
 
 function Page() {
-  const { name } = useContext(Request);
+  const { name } = Request.get();
   return (
     <html>
       <head>
@@ -37,9 +31,8 @@ Bun.serve({
     const url = new URL(req.url);
     const name = url.searchParams.get("name") ?? "stranger";
 
-    const html = await withScope(async () => {
-      setContext(Request, { name });
-      return renderToString(<Page />);
+    const html = await renderToString(() => <Page />, {
+      context: [Request.with({ name })],
     });
 
     return new Response("<!DOCTYPE html>\n" + html, {

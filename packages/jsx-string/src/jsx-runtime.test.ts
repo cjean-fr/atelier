@@ -1,4 +1,3 @@
-// @jsxImportSource @cjean-fr/jsx-string
 import { renderToString } from "./index.js";
 import * as JSXDevRuntime from "./jsx-dev-runtime.js";
 import { jsxDEV } from "./jsx-dev-runtime.js";

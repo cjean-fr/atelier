@@ -1,13 +1,9 @@
 import type { MergeType } from "../adapters.js";
-import { Flow } from "../context.js";
+import { requireFlow } from "../context.js";
 import { assertFragmentId } from "../fragmentId.js";
-import {
-  useContext,
-  type JSXNode,
-  type HTMLAttributes,
-} from "@cjean-fr/jsx-string";
+import { type JSXNode, type HTMLAttributes } from "@cjean-fr/jsx-string";
 
-interface DeferredBase extends HTMLAttributes {
+interface DeferredBase extends Omit<HTMLAttributes, "children"> {
   name?: string;
   fallback: JSXNode;
 }
@@ -33,10 +29,24 @@ export type DeferredProps = DeferredStreamed | DeferredFetched;
  * is rendered (or fetched from `src`) and delivered to the placeholder as a DOM
  * patch via the active adapter. No client-side hydration — this is server-side
  * deferral.
+ *
+ * **Children must be a factory** (`() => JSXNode`). JSX evaluates eagerly, so
+ * `<Component />` runs at shell-render time — before streaming begins. The
+ * factory defers execution to when the fragment is actually drained.
+ *
+ * @example
+ * // ✅ factory — deferred to streaming time
+ * <Deferred fallback={<Spinner />}>{() => <SlowWidget />}</Deferred>
+ *
+ * // ❌ eager — <SlowWidget /> runs before streaming begins
+ * <Deferred fallback={<Spinner />}><SlowWidget /></Deferred>
  */
+// Returns `any` so TypeScript accepts it as a JSX component: JSX.Element =
+// RawString | Promise<RawString>, but adapter.Placeholder returns JSXNode
+// (which can be an array). The runtime handles both; the type system can't.
 export function Deferred(props: DeferredProps): any {
   const { name, fallback, children, src } = props;
-  const { config, nextId, patch } = useContext(Flow);
+  const { config, nextId, patch } = requireFlow("Deferred");
 
   const id = name ?? nextId();
   // The src branch never goes through patch(), so validate here: some adapters

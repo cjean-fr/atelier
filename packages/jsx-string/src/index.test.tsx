@@ -1,4 +1,3 @@
-// @jsxImportSource @cjean-fr/jsx-string
 import type { JSXNode } from "./core/types.js";
 import * as Main from "./index.js";
 import { renderToString } from "./index.js";
@@ -12,11 +11,12 @@ describe("Main Entry Point API Contract", () => {
   });
 
   it("should export context and isolation APIs", () => {
-    expect(typeof Main.withScope).toBe("function");
-    expect(typeof Main.snapshot).toBe("function");
     expect(typeof Main.context).toBe("function");
-    expect(typeof Main.setContext).toBe("function");
-    expect(typeof Main.useContext).toBe("function");
+    expect(typeof Main.withContext).toBe("function");
+    expect(typeof Main.snapshot).toBe("function");
+    expect((Main as any).withScope).toBeUndefined();
+    expect((Main as any).setContext).toBeUndefined();
+    expect((Main as any).useContext).toBeUndefined();
   });
 
   it("should strictly encapsulate internal implementation details", () => {
@@ -24,6 +24,66 @@ describe("Main Entry Point API Contract", () => {
     expect((Main as any).jsxs).toBeUndefined();
     expect((Main as any).RawString).toBeUndefined();
     expect((Main as any).isRawString).toBeUndefined();
+  });
+});
+
+describe("renderToString with context bindings", () => {
+  const Theme = Main.context<"light" | "dark">("test:render-theme");
+  const Who = Main.context<{ name: string }>("test:render-who");
+
+  it("makes bindings visible to sync and async components via a factory", async () => {
+    const Badge = () => <span class={Theme.get()}>{Who.get().name}</span>;
+    const AsyncBadge = async () => {
+      await Promise.resolve();
+      return <em>{Who.get().name}</em>;
+    };
+    const html = await renderToString(
+      () => (
+        <div>
+          <Badge />
+          <AsyncBadge />
+        </div>
+      ),
+      { context: [Theme.with("dark"), Who.with({ name: "Alice" })] },
+    );
+    expect(html).toBe(
+      '<div><span class="dark">Alice</span><em>Alice</em></div>',
+    );
+  });
+
+  it("accepts a factory without options", async () => {
+    expect(await renderToString(() => <p>ok</p>)).toBe("<p>ok</p>");
+  });
+
+  it("isolates concurrent renders with different bindings", async () => {
+    const Name = () => <i>{Who.get().name}</i>;
+    const [a, b] = await Promise.all([
+      renderToString(() => <Name />, { context: [Who.with({ name: "A" })] }),
+      renderToString(() => <Name />, { context: [Who.with({ name: "B" })] }),
+    ]);
+    expect(a).toBe("<i>A</i>");
+    expect(b).toBe("<i>B</i>");
+  });
+
+  it("nested renders inherit the enclosing bindings", async () => {
+    const Inner = () => <b>{Theme.get()}</b>;
+    const Outer = async () => {
+      const inner = await renderToString(() => <Inner />, {
+        context: [Who.with({ name: "unused" })],
+      });
+      return <div>{Main.raw(inner)}</div>;
+    };
+    const html = await renderToString(() => <Outer />, {
+      context: [Theme.with("light")],
+    });
+    expect(html).toBe("<div><b>light</b></div>");
+  });
+
+  it("leaves no binding active after the render", async () => {
+    await renderToString(() => <p>{Theme.get()}</p>, {
+      context: [Theme.with("dark")],
+    });
+    expect(() => Theme.get()).toThrow("is not bound");
   });
 });
 
@@ -100,18 +160,22 @@ describe("Asynchronous Rendering Pipeline", () => {
 
 describe("Attribute Processing, Hardening & Sanitization", () => {
   it("should map legacy React properties to native lowercased HTML targets", async () => {
+    // @ts-ignore — intentionally testing runtime camelCase→lowercase mapping (not valid JSX types)
     expect(await renderToString(<label htmlFor="id">Label</label>)).toBe(
       '<label for="id">Label</label>',
     );
+    // @ts-ignore
     expect(await renderToString(<div tabIndex={1} />)).toBe(
       '<div tabindex="1"></div>',
     );
+    // @ts-ignore
     expect(await renderToString(<input readOnly />)).toBe("<input readonly>");
   });
 
   it("should sanitize dangerous URL schemas while preserving case-sensitive SVG namespaces", async () => {
     const svg = (
       <svg viewBox="0 0 10 10">
+        {/* @ts-ignore — xlinkHref is a runtime-mapped alias, not a typed prop */}
         <use xlinkHref="javascript:alert(1)" />
       </svg>
     );
@@ -121,15 +185,18 @@ describe("Attribute Processing, Hardening & Sanitization", () => {
   });
 
   it("should allow verified and non-malicious data-URIs inside source descriptors", async () => {
+    // @ts-ignore — srcSet is a runtime-mapped alias for srcset, not a typed prop
     const img = <img srcSet="data:image/png;base64,abc 1x" />;
     expect(await renderToString(img)).toBe(
       '<img srcset="data:image/png;base64,abc 1x">',
     );
+    // @ts-ignore
     expect(await renderToString(<img srcSet="javascript:alert(1) 1x" />)).toBe(
       '<img srcset="#blocked">',
     );
     expect(
       await renderToString(
+        // @ts-ignore
         <img srcSet="https://example.com/img.png 1x, javascript:alert(1) 2x" />,
       ),
     ).toBe('<img srcset="#blocked">');
@@ -233,13 +300,38 @@ describe("__html Promise", () => {
 });
 
 describe("class + className together", () => {
-  it("emits both attributes, no merge", async () => {
+  it("merges both into a single class attribute, class first", async () => {
     const html = await renderToString(
       <div class="a" className="b">
         x
       </div>,
     );
-    expect(html).toBe('<div class="a" class="b">x</div>');
+    expect(html).toBe('<div class="a b">x</div>');
+  });
+
+  it("merges regardless of prop order", async () => {
+    const html = await renderToString(
+      <div className="b" class="a">
+        x
+      </div>,
+    );
+    expect(html).toBe('<div class="a b">x</div>');
+  });
+
+  it("uses the other spelling when one is nullish or false", async () => {
+    expect(await renderToString(<div class={undefined} className="b" />)).toBe(
+      '<div class="b"></div>',
+    );
+    expect(
+      await renderToString(<div class="a" className={false as any} />),
+    ).toBe('<div class="a"></div>');
+  });
+
+  it("merges async values", async () => {
+    const html = await renderToString(
+      <div class={Promise.resolve("a") as any} className="b" />,
+    );
+    expect(html).toBe('<div class="a b"></div>');
   });
 });
 

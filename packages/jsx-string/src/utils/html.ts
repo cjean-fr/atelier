@@ -45,6 +45,10 @@ const ATTRIBUTE_NAME_MAP = new Map<string, string>([
   ["noValidate", "novalidate"],
   ["dateTime", "datetime"],
   ["srcSet", "srcset"],
+  ["fetchPriority", "fetchpriority"],
+  ["charSet", "charset"],
+  ["referrerPolicy", "referrerpolicy"],
+  ["crossOrigin", "crossorigin"],
 ]);
 
 const isSafeCssValue = (value: string): boolean => {
@@ -69,6 +73,11 @@ export function renderAttributes(
 ): string | Promise<string> {
   if (!props) return "";
 
+  // Both spellings on one element merge into a single `class` attribute.
+  // Two `in` checks once per element; elements using a single spelling
+  // (the normal case) pay nothing else.
+  const mergeClass = "class" in props && "className" in props;
+
   let out = "";
   let pending: Promise<string>[] | null = null;
 
@@ -77,7 +86,12 @@ export function renderAttributes(
     // jsx() always puts `children` in props, so otherwise every element pays a
     // renderAttribute call + Promise check just to get "" back.
     if (INTERNAL_PROPS.has(key)) continue;
-    const r = renderAttribute(key, (props as any)[key]);
+    if (mergeClass && key === "className") continue; // folded into `class`
+    const value =
+      mergeClass && key === "class"
+        ? mergeClassValues((props as any).class, (props as any).className)
+        : (props as any)[key];
+    const r = renderAttribute(key, value);
     if (typeof r === "string") {
       if (r) out += ` ${r}`;
     } else {
@@ -90,6 +104,20 @@ export function renderAttributes(
     : out;
 }
 
+/** `class` + `className` on the same element: join both (skipping nullish/false/empty). */
+function mergeClassValues(a: unknown, b: unknown): unknown {
+  if (a instanceof Promise || b instanceof Promise) {
+    return Promise.all([a, b]).then(([x, y]) => joinClass(x, y));
+  }
+  return joinClass(a, b);
+}
+
+function joinClass(a: unknown, b: unknown): unknown {
+  if (a == null || a === false || a === "") return b;
+  if (b == null || b === false || b === "") return a;
+  return `${a} ${b}`;
+}
+
 /**
  * Render a single HTML attribute into its serialized form (no leading space).
  *
@@ -99,9 +127,10 @@ export function renderAttributes(
  * `javascript:` / `vbscript:` schemes are replaced with `#blocked`.
  *
  * Caller is responsible for adding any whitespace separator between attributes.
- * `className` is rewritten to `class`; multiple `class`/`className` props in the
- * same element render as separate attributes (no merge) — this matches Deno's
- * precompile transform where each attribute is rendered in isolation.
+ * `className` is rewritten to `class`. When both `class` and `className` are
+ * present on the same element, `renderAttributes` merges them into a single
+ * `class` attribute (class first, then className) — duplicate attributes are
+ * invalid HTML and browsers would drop the second one.
  */
 /**
  * Name-derived attribute metadata. Everything in attribute serialization that

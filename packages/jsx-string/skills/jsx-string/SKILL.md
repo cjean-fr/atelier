@@ -43,12 +43,12 @@ esbuild: {
 
 If the request is unclear, ask one clarifying question.
 
-| Need                                                  | Use                                                           |
-| ----------------------------------------------------- | ------------------------------------------------------------- |
-| HTML strings only                                     | `renderToString()`                                            |
-| Component itself must await data before returning JSX | async components                                              |
-| Shared state in the render tree                       | `context()` + `withScope()` + `setContext()` / `useContext()` |
-| DOM streaming, islands, or browser patching           | `@cjean-fr/jsx-flow`                                          |
+| Need                                                  | Use                                              |
+| ----------------------------------------------------- | ------------------------------------------------ |
+| HTML strings only                                     | `renderToString()`                               |
+| Component itself must await data before returning JSX | async components                                 |
+| Shared state in the render tree                       | `context()` tokens + the `context` render option |
+| DOM streaming, islands, or browser patching           | `@cjean-fr/jsx-flow`                             |
 
 If the user wants browser DOM updates, hydration, hooks, event handlers, or client-side interactivity, do not use this package for that task; explain that `jsx-string` is for HTML-string generation and server-side rendering only.
 
@@ -69,7 +69,7 @@ const html = await renderToString(
 );
 ```
 
-> **`withScope` is optional.** Only wrap renders in `withScope()` when you need `context()` / `setContext()` / `useContext()`. For pure rendering, call `renderToString()` directly. Concurrent renders (`Promise.all`) work fine without it.
+> **Context is opt-in.** For pure rendering, call `renderToString(<App />)` directly. To share data through the tree, pass a factory plus bindings: `renderToString(() => <App />, { context: [Token.with(value)] })`. Concurrent renders (`Promise.all`) are always isolated.
 
 ## Async Patterns
 
@@ -115,37 +115,23 @@ export const AuthContext = context<{ user: string; locale: string }>(
 ```tsx
 // Read it anywhere in the tree
 const Header = () => {
-  const { user, locale } = useContext(AuthContext);
+  const { user, locale } = AuthContext.get();
   return <header lang={locale}>Hello {user}</header>;
 };
 
-// Wrap your render in an isolated scope
-const html = await withScope(async () => {
-  setContext(AuthContext, { user: "Alice", locale: "fr" });
-  return renderToString(<Header />);
+// Bind the value at the render entry point. Factory form required:
+// JSX evaluates eagerly, so a pre-built node would run before the
+// bindings are installed.
+const html = await renderToString(() => <Header />, {
+  context: [AuthContext.with({ user: "Alice", locale: "fr" })],
 });
 ```
 
-`useContext` throws immediately if called outside a `withScope` or if the value was never set — no silent `undefined`.
+`token.get()` throws immediately if no binding is active for that token — no silent `undefined`. The error names the token key.
 
-### Sub-scopes with snapshot
+### Nested renders inherit
 
-```ts
-await withScope(async () => {
-  setContext(AuthContext, { user: "Alice", locale: "fr" });
-
-  // Child scope inherits parent data via snapshot()
-  await withScope(
-    async () => {
-      useContext(AuthContext).user; // ✅ "Alice"
-      setContext(AuthContext, { user: "Child", locale: "en" }); // local only
-    },
-    { seed: snapshot() },
-  );
-
-  useContext(AuthContext).user; // ✅ still "Alice"
-});
-```
+A `renderToString` call running inside another render sees the enclosing bindings plus its own — no manual propagation needed.
 
 ### Multiple context tokens
 
@@ -155,22 +141,27 @@ Each feature declares its own typed token — no shared global object to pollute
 export const AuthContext = context<{ userId: string }>("my-app:auth");
 export const ThemeContext = context<{ dark: boolean }>("my-app:theme");
 
-await withScope(async () => {
-  setContext(AuthContext, { userId: "42" });
-  setContext(ThemeContext, { dark: true });
-  return renderToString(<App />);
+const html = await renderToString(() => <App />, {
+  context: [
+    AuthContext.with({ userId: "42" }),
+    ThemeContext.with({ dark: true }),
+  ],
 });
 ```
 
+### Plumbing (renderer authors only)
+
+`withContext(bindings, fn)` runs `fn` with bindings installed; `snapshot()` captures the active bindings as a replay function. You only need these when building a custom render entry point — `@cjean-fr/jsx-flow` is built on `withContext`.
+
 ## Migration from React
 
-| React pattern                  | jsx-string equivalent                              |
-| ------------------------------ | -------------------------------------------------- |
-| `useState`, `useEffect`        | Fetch data before render, pass as props            |
-| `createContext` / `<Provider>` | `context<T>(key)` + `withScope()` + `setContext()` |
-| Event handler functions        | String values only (`onClick="alert(1)"`)          |
-| `ref`                          | Not supported                                      |
-| `className`                    | Both `class` and `className` accepted              |
+| React pattern                  | jsx-string equivalent                           |
+| ------------------------------ | ----------------------------------------------- |
+| `useState`, `useEffect`        | Fetch data before render, pass as props         |
+| `createContext` / `<Provider>` | `context<T>(key)` + the `context` render option |
+| Event handler functions        | String values only (`onClick="alert(1)"`)       |
+| `ref`                          | Not supported                                   |
+| `className`                    | Both `class` and `className` accepted           |
 
 ```tsx
 // React: hooks + useEffect
@@ -246,13 +237,7 @@ Rules included: `no-react-hooks`, `no-react-imports`, `no-context` (React contex
 ```typescript
 // @jsxImportSource @cjean-fr/jsx-string
 import { describe, it, expect } from "bun:test";
-import {
-  renderToString,
-  withScope,
-  context,
-  setContext,
-  useContext,
-} from "@cjean-fr/jsx-string";
+import { renderToString, context } from "@cjean-fr/jsx-string";
 
 describe("Component", () => {
   it("renders correctly", async () => {
@@ -267,11 +252,10 @@ describe("Component", () => {
 
   it("renders with context", async () => {
     const Ctx = context<{ user: string }>("test:user");
-    const Greeting = () => <span>{useContext(Ctx).user}</span>;
+    const Greeting = () => <span>{Ctx.get().user}</span>;
 
-    const html = await withScope(async () => {
-      setContext(Ctx, { user: "Alice" });
-      return renderToString(<Greeting />);
+    const html = await renderToString(() => <Greeting />, {
+      context: [Ctx.with({ user: "Alice" })],
     });
     expect(html).toBe("<span>Alice</span>");
   });
@@ -284,7 +268,7 @@ describe("Component", () => {
 | ----------------------------- | ------------------------------------------------------------------------- |
 | TypeScript errors on JSX      | Check `tsconfig.json` has `"jsxImportSource": "@cjean-fr/jsx-string"`     |
 | `[object Promise]` in output  | Missing `await` on `renderToString()`                                     |
-| `useContext` throws           | Call it inside a `withScope()` after `setContext()`                       |
+| `token.get()` throws          | Add `Token.with(value)` to the render's `context` option (factory form)   |
 | Style not applied             | Use camelCase: `borderTopColor`, not `border-top-color`                   |
 | `class` not working           | Both `class` and `className` are accepted                                 |
 | JSX in test file not resolved | Add `// @jsxImportSource @cjean-fr/jsx-string` at top of `.tsx` test file |
