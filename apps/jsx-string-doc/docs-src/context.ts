@@ -1,11 +1,6 @@
-import type { ResolvedDocsConfig, PageMeta, ResolvedSidebar } from "./types.js";
 import type { NavLink } from "./lib/sidebar.js";
-import {
-  context,
-  setContext,
-  useContext,
-  type Context,
-} from "@cjean-fr/jsx-string";
+import type { ResolvedDocsConfig, PageMeta, ResolvedSidebar } from "./types.js";
+import { context, type Context } from "@cjean-fr/jsx-string";
 
 export interface DocsRenderContext {
   config: ResolvedDocsConfig;
@@ -18,14 +13,10 @@ export interface DocsRenderContext {
   next: NavLink | null;
 }
 
-const DocsContext: Context<DocsRenderContext> = context<DocsRenderContext>(
+/**
+ * Per-page render context. Bound by build.tsx via `Docs.with(...)` on each
+ * `renderPage` call; read by components with `Docs.get()`.
+ */
+export const Docs: Context<DocsRenderContext> = context<DocsRenderContext>(
   "jsx-string-doc:render",
 );
-
-export function setDocs(value: DocsRenderContext): void {
-  setContext(DocsContext, value);
-}
-
-export function useDocs(): DocsRenderContext {
-  return useContext(DocsContext);
-}

@@ -1,12 +1,16 @@
 import type { MergeType } from "../adapters.js";
-import { Flow } from "../context.js";
-import { useContext, type JSXNode } from "@cjean-fr/jsx-string";
+import { requireFlow } from "../context.js";
+import { type JSXNode } from "@cjean-fr/jsx-string";
 
 export interface PatchProps {
   /** Id of the existing DOM element to target. */
   target: string;
   merge?: MergeType;
-  // Factory, not a node — JSX evaluates eagerly; the thunk defers rendering to streaming time.
+  /**
+   * Factory returning the content to push. Must be a function (`() => JSXNode`),
+   * not a JSX expression — JSX evaluates eagerly and the factory defers
+   * execution to streaming time.
+   */
   children: () => JSXNode;
 }
 
@@ -15,8 +19,8 @@ export function Patch({
   target,
   merge = "replace",
   children,
-}: PatchProps): any {
-  const { patch } = useContext(Flow);
+}: PatchProps): null {
+  const { patch } = requireFlow("Patch");
   patch(target, children, merge);
   return null;
 }

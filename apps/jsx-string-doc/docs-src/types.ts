@@ -51,7 +51,11 @@ export interface ResolvedSidebarLink {
 
 export interface PageHandler {
   name: string;
-  load(file: string, pagesDir: string, config: ResolvedDocsConfig): Promise<Page>;
+  load(
+    file: string,
+    pagesDir: string,
+    config: ResolvedDocsConfig,
+  ): Promise<Page>;
 }
 
 export interface HandlerEntry {
@@ -75,7 +79,9 @@ export interface DocsConfig {
   sitemap?: boolean;
   handlers?: Record<string, HandlerEntry>;
   /** Override the default page shell (Layout). Receives children already wrapped by the handler's prose wrapper. */
-  layout?: (props: { children: import("@cjean-fr/jsx-string").JSXNode }) => import("@cjean-fr/jsx-string").JSXNode;
+  layout?: (props: {
+    children: import("@cjean-fr/jsx-string").JSXNode;
+  }) => import("@cjean-fr/jsx-string").JSXNode;
 }
 
 export interface ResolvedDocsConfig {
@@ -93,7 +99,9 @@ export interface ResolvedDocsConfig {
   site: string | null;
   sitemap: boolean;
   handlers: Record<string, HandlerEntry>;
-  layout: (props: { children: import("@cjean-fr/jsx-string").JSXNode }) => import("@cjean-fr/jsx-string").JSXNode;
+  layout: (props: {
+    children: import("@cjean-fr/jsx-string").JSXNode;
+  }) => import("@cjean-fr/jsx-string").JSXNode;
 }
 
 export interface Page {
@@ -102,5 +110,5 @@ export interface Page {
   outPath: string;
   handler: string;
   meta: PageMeta;
-  Component: (props: object) => unknown;
+  Component: (props: object) => import("@cjean-fr/jsx-string").JSXNode;
 }

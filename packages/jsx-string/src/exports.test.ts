@@ -16,15 +16,20 @@ describe("package exports", () => {
       expect(Main.Fragment).toBeDefined();
     });
 
-    it("should export scope API", () => {
-      expect(typeof Main.withScope).toBe("function");
+    it("should export the context API (token + plumbing)", () => {
+      expect(typeof Main.context).toBe("function");
+      expect(typeof Main.withContext).toBe("function");
       expect(typeof Main.snapshot).toBe("function");
+      const token = Main.context<string>("test:exports");
+      expect(typeof token.get).toBe("function");
+      expect(typeof token.with).toBe("function");
+      expect(token.key).toBe("test:exports");
     });
 
-    it("should export context API", () => {
-      expect(typeof Main.context).toBe("function");
-      expect(typeof Main.setContext).toBe("function");
-      expect(typeof Main.useContext).toBe("function");
+    it("should NOT export the removed scope API", () => {
+      expect((Main as any).withScope).toBeUndefined();
+      expect((Main as any).setContext).toBeUndefined();
+      expect((Main as any).useContext).toBeUndefined();
     });
 
     it("should NOT export internal details", () => {

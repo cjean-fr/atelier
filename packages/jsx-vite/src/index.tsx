@@ -21,9 +21,8 @@
  */
 import {
   context,
-  setContext,
-  useContext,
   type Context,
+  type ContextBinding,
   type JSXNode,
 } from "@cjean-fr/jsx-string";
 import { readFile, access } from "node:fs/promises";
@@ -76,14 +75,20 @@ export async function loadViteManifest(
 }
 
 /**
- * Configure Vite asset resolution for the current render scope. Call once
- * before rendering, with the loaded manifest (production) or `null` (dev).
+ * Bind Vite asset resolution for a render: pass the result to the `context`
+ * option of your render entry point, with the loaded manifest (production)
+ * or `null` (dev).
+ *
+ * @example
+ * const html = await renderToString(() => <App />, {
+ *   context: [viteAssets(manifest, { base: "/app/" })],
+ * });
  */
-export function setVite(
+export function viteAssets(
   manifest: ViteManifest | null,
   options?: { base?: string },
-): void {
-  setContext(ViteContext, {
+): ContextBinding {
+  return ViteContext.with({
     manifest,
     base: options?.base ?? "/",
   });
@@ -108,7 +113,7 @@ export function setVite(
  * the necessary co-bundled CSS and `modulepreload` links.
  */
 export function assetUrl(entry: string): string {
-  return resolveUrl(useContext(ViteContext), entry);
+  return resolveUrl(ViteContext.get(), entry);
 }
 
 function resolveUrl(scope: ViteScope, entry: string): string {
@@ -124,7 +129,7 @@ function resolveUrl(scope: ViteScope, entry: string): string {
 
 /**
  * Resolve a Vite entry to the appropriate HTML tags. Reads the manifest from
- * the active render scope (set via `setVite`).
+ * the active render scope (bound via `viteAssets`).
  *
  * Dev mode (`manifest === null`):
  * - `entry="path/to/file.css"` → `<link rel="stylesheet" href="{base}{entry}">`
@@ -147,7 +152,7 @@ function resolveUrl(scope: ViteScope, entry: string): string {
  * inside a tag you build yourself.
  */
 export function Asset({ entry }: { entry: string }): any {
-  const scope = useContext(ViteContext);
+  const scope = ViteContext.get();
   return scope.manifest === null
     ? resolveDev(scope, entry)
     : resolveProd(scope, entry);

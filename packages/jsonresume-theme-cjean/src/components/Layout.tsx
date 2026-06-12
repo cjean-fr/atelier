@@ -80,7 +80,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
                 rel="preload"
                 as="image"
                 href={basics.image}
-                fetchPriority="high"
+                fetchpriority="high"
               />
             </>
           )}
@@ -133,7 +133,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
                         alt={t("portrait_alt", { name: basics.name })}
                         width="200"
                         height="200"
-                        fetchPriority="high"
+                        fetchpriority="high"
                         className="relative aspect-square min-w-30 rounded-full object-cover"
                       />
                     </div>
@@ -147,7 +147,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
               )}
 
               <WorkExperience works={works} showLogos={ui.showLogos} />
-              <Projects projects={projects} showLogos={ui.showLogos} />
+              <Projects projects={projects} />
               <Education education={education} certificates={certificates} />
               <Skills skills={skills} />
             </article>

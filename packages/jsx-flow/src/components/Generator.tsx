@@ -1,6 +1,6 @@
 import type { MergeType } from "../adapters.js";
-import { Flow } from "../context.js";
-import { useContext, type JSXNode } from "@cjean-fr/jsx-string";
+import { requireFlow } from "../context.js";
+import { type JSXNode } from "@cjean-fr/jsx-string";
 
 export interface GeneratorProps {
   /** Id of the existing DOM element each item is patched into. */
@@ -36,7 +36,7 @@ export function Generator({
   map,
   merge = "append",
 }: GeneratorProps): null {
-  const { stream } = useContext(Flow);
+  const { stream } = requireFlow("Generator");
   stream({ target, source, map, merge });
   return null;
 }

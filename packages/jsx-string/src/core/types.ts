@@ -1,16 +1,3 @@
-// Augment React's types when @types/react is installed,
-// so jsx-string attributes (class, string event handlers) are accepted there too.
-declare module "react" {
-  interface HTMLAttributes<T> {
-    class?: string;
-    [key: `on${string}`]: any;
-  }
-  interface SVGAttributes<T> {
-    class?: string;
-    [key: `on${string}`]: any;
-  }
-}
-
 /**
  * Trusted, already-escaped HTML.
  */
@@ -65,109 +52,66 @@ interface JSXElement {
 }
 
 /**
- * CSS Properties that allow any property name, including CSS variables.
- * When @types/react is installed, style autocompletion comes from React.CSSProperties
- * via the normal tsconfig jsxImportSource chain — no extra setup needed.
+ * CSS Properties — any valid CSS property, including CSS variables.
  */
 export interface CSSProperties {
   [key: string]: string | number | undefined;
 }
 
 /**
- * Event handlers expressed as static strings instead of functions.
- * Common handlers are listed explicitly for dot-notation access;
- * all others are covered by the [key: string]: any index signature on HTMLAttributes.
+ * Renderable JSX node value.
  */
-export type StringEventHandlers = {
-  onClick?: string;
-  onChange?: string;
-  onInput?: string;
-  onSubmit?: string;
-  onFocus?: string;
-  onBlur?: string;
-  onKeyDown?: string;
-  onKeyUp?: string;
-  onKeyPress?: string;
-  onMouseEnter?: string;
-  onMouseLeave?: string;
-  onMouseOver?: string;
-  onMouseOut?: string;
-  onMouseMove?: string;
-  onMouseDown?: string;
-  onMouseUp?: string;
-  onTouchStart?: string;
-  onTouchEnd?: string;
-  onTouchMove?: string;
-  onPaste?: string;
-  onCopy?: string;
-  onCut?: string;
-  onScroll?: string;
-  onLoad?: string;
-  onError?: string;
-  onSelect?: string;
-  onDrag?: string;
-  onDrop?: string;
-  onDragOver?: string;
-  onDragStart?: string;
-  onDragEnd?: string;
-  onContextMenu?: string;
-  onDoubleClick?: string;
-  onWheel?: string;
-  onResize?: string;
-  onAbort?: string;
-  onCanPlay?: string;
-  onPlay?: string;
-  onPause?: string;
-  onEnded?: string;
-};
-
-/**
- * Strip event handlers and layout props from T, then reattach them as static-friendly versions.
- * Works standalone — does not require @types/react.
- */
-export type ToStatic<T = {}> = {
-  [K in keyof T as K extends
-    | `on${string}`
-    | "children"
-    | "style"
-    | "class"
-    | "className"
-    ? never
-    : K]: T[K];
-} & {
-  class?: string;
-  className?: string;
-  style?: string | CSSProperties | Promise<string | CSSProperties>;
-  children?: JSXNode;
-  dangerouslySetInnerHTML?: {
-    __html: string | null | undefined | Promise<string | null | undefined>;
-  };
-} & StringEventHandlers;
+export type JSXNode =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | JSXElement
+  | Promise<JSXNode>
+  | JSXNode[]
+  | Iterable<JSXNode>
+  | AsyncIterable<JSXNode>;
 
 /**
  * Base attributes shared by all HTML elements.
- * Permissive by default: [key: string]: any allows any valid HTML attribute.
- * When @types/react is installed, ToStatic<React.HTMLAttributes<any>> gives richer autocomplete.
+ *
+ * Standard HTML attrs and camelCase aliases are accepted via `[key: string]: unknown`.
+ * Declare custom elements via JSX namespace augmentation:
+ * ```ts
+ * declare module "@cjean-fr/jsx-string/jsx-runtime" {
+ *   namespace JSX {
+ *     interface IntrinsicElements {
+ *       "my-element": HTMLAttributes & { "my-prop"?: string };
+ *     }
+ *   }
+ * }
+ * ```
  */
-export interface HTMLAttributes extends ToStatic {
+export interface HTMLAttributes {
   id?: string;
   class?: string;
   className?: string;
+  lang?: string;
+  dir?: "ltr" | "rtl" | "auto";
+  title?: string;
+  hidden?: boolean | string;
+  tabindex?: number | string;
+  role?: string;
+  slot?: string;
+  contenteditable?: boolean | "plaintext-only" | "inherit";
+  spellcheck?: boolean | "true" | "false";
+  translate?: "yes" | "no";
+  draggable?: boolean | "true" | "false" | "auto";
   style?: string | CSSProperties | Promise<string | CSSProperties>;
   children?: JSXNode;
   dangerouslySetInnerHTML?: {
     __html: string | null | undefined | Promise<string | null | undefined>;
   };
-  lang?: string;
-  dir?: "ltr" | "rtl" | "auto";
-  role?: string;
-  tabIndex?: number;
-  tabindex?: number;
-  title?: string;
-  hidden?: boolean | string;
-  slot?: string;
-  /** Catch-all for any other HTML or data attribute */
-  [key: string]: any;
+  [key: `aria-${string}`]: string | undefined;
+  [key: `data-${string}`]: string | undefined;
+  [key: `on${string}`]: string | undefined;
+  [key: string]: unknown;
 }
 
 /**
@@ -189,39 +133,394 @@ export interface SVGAttributes extends HTMLAttributes {
   y?: string | number;
 }
 
-/**
- * Types of children that can be passed to a JSX element.
- */
-export type JSXNode =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | JSXElement
-  | Promise<JSXNode>
-  | JSXNode[]
-  | Iterable<JSXNode>
-  | AsyncIterable<JSXNode>;
+// ─── Element-specific attribute extensions ────────────────────────────────────
 
-export type Component<P = {}> = (
-  props: P & HTMLAttributes & { children?: JSXNode },
-) => JSXNode;
+type ElementOverrides = {
+  a: {
+    href?: string;
+    target?: string;
+    rel?: string;
+    download?: boolean | string;
+    hreflang?: string;
+  };
+  area: {
+    href?: string;
+    target?: string;
+    rel?: string;
+    shape?: string;
+    coords?: string;
+    alt?: string;
+  };
+  audio: {
+    src?: string;
+    controls?: boolean;
+    autoplay?: boolean;
+    loop?: boolean;
+    muted?: boolean;
+    preload?: "none" | "metadata" | "auto";
+    crossorigin?: string;
+  };
+  base: { href?: string; target?: string };
+  blockquote: { cite?: string };
+  button: {
+    type?: "button" | "submit" | "reset";
+    disabled?: boolean;
+    name?: string;
+    value?: string;
+    form?: string;
+  };
+  canvas: { width?: number | string; height?: number | string };
+  col: { span?: number };
+  colgroup: { span?: number };
+  data: { value?: string };
+  details: { open?: boolean };
+  dialog: { open?: boolean };
+  embed: {
+    src?: string;
+    type?: string;
+    width?: number | string;
+    height?: number | string;
+  };
+  fieldset: { disabled?: boolean; form?: string; name?: string };
+  form: {
+    action?: string;
+    method?: "get" | "post" | "dialog";
+    enctype?: string;
+    novalidate?: boolean;
+    target?: string;
+    autocomplete?: "on" | "off";
+  };
+  iframe: {
+    src?: string;
+    srcdoc?: string;
+    sandbox?: string;
+    allow?: string;
+    allowfullscreen?: boolean;
+    loading?: "lazy" | "eager";
+    width?: number | string;
+    height?: number | string;
+    name?: string;
+    referrerpolicy?: string;
+  };
+  img: {
+    src?: string;
+    alt?: string;
+    width?: number | string;
+    height?: number | string;
+    loading?: "lazy" | "eager";
+    decoding?: "async" | "auto" | "sync";
+    srcset?: string;
+    sizes?: string;
+    crossorigin?: string;
+    fetchpriority?: "high" | "low" | "auto";
+  };
+  input: {
+    type?: string;
+    name?: string;
+    value?: string | number;
+    placeholder?: string;
+    disabled?: boolean;
+    checked?: boolean;
+    required?: boolean;
+    readonly?: boolean;
+    min?: number | string;
+    max?: number | string;
+    maxlength?: number;
+    step?: number | string;
+    pattern?: string;
+    autocomplete?: string;
+    multiple?: boolean;
+    accept?: string;
+    list?: string;
+    form?: string;
+  };
+  ins: { cite?: string; datetime?: string };
+  del: { cite?: string; datetime?: string };
+  label: { for?: string; form?: string };
+  li: { value?: number };
+  link: {
+    href?: string;
+    rel?: string;
+    type?: string;
+    as?: string;
+    crossorigin?: string;
+    integrity?: string;
+    media?: string;
+    hreflang?: string;
+    fetchpriority?: "high" | "low" | "auto";
+  };
+  map: { name?: string };
+  meta: {
+    name?: string;
+    content?: string;
+    charset?: string;
+    "http-equiv"?: string;
+    property?: string;
+  };
+  meter: {
+    value?: number;
+    min?: number;
+    max?: number;
+    low?: number;
+    high?: number;
+    optimum?: number;
+    form?: string;
+  };
+  object: {
+    data?: string;
+    type?: string;
+    width?: number | string;
+    height?: number | string;
+    name?: string;
+    form?: string;
+  };
+  ol: {
+    reversed?: boolean;
+    start?: number;
+    type?: "1" | "a" | "A" | "i" | "I";
+  };
+  optgroup: { label?: string; disabled?: boolean };
+  option: {
+    value?: string;
+    selected?: boolean;
+    disabled?: boolean;
+    label?: string;
+  };
+  output: { for?: string; form?: string; name?: string };
+  progress: { value?: number; max?: number };
+  q: { cite?: string };
+  script: {
+    src?: string;
+    type?: string;
+    async?: boolean;
+    defer?: boolean;
+    integrity?: string;
+    crossorigin?: string;
+    nonce?: string;
+    nomodule?: boolean;
+  };
+  select: {
+    name?: string;
+    disabled?: boolean;
+    multiple?: boolean;
+    required?: boolean;
+    size?: number;
+    form?: string;
+    autocomplete?: string;
+  };
+  source: {
+    src?: string;
+    type?: string;
+    media?: string;
+    srcset?: string;
+    sizes?: string;
+    width?: number | string;
+    height?: number | string;
+  };
+  style: { media?: string; nonce?: string };
+  table: { summary?: string };
+  td: { colspan?: number; rowspan?: number; headers?: string };
+  template: { shadowrootmode?: "open" | "closed"; htmlFor?: string };
+  textarea: {
+    name?: string;
+    rows?: number;
+    cols?: number;
+    placeholder?: string;
+    disabled?: boolean;
+    required?: boolean;
+    readonly?: boolean;
+    maxlength?: number;
+    form?: string;
+    wrap?: "hard" | "soft" | "off";
+    autocomplete?: string;
+  };
+  th: {
+    colspan?: number;
+    rowspan?: number;
+    scope?: "row" | "col" | "rowgroup" | "colgroup";
+    abbr?: string;
+    headers?: string;
+  };
+  time: { datetime?: string };
+  track: {
+    src?: string;
+    kind?: "subtitles" | "captions" | "descriptions" | "chapters" | "metadata";
+    label?: string;
+    srclang?: string;
+    default?: boolean;
+  };
+  video: {
+    src?: string;
+    controls?: boolean;
+    autoplay?: boolean;
+    loop?: boolean;
+    muted?: boolean;
+    preload?: "none" | "metadata" | "auto";
+    width?: number | string;
+    height?: number | string;
+    poster?: string;
+    crossorigin?: string;
+    playsinline?: boolean;
+  };
+};
 
-/**
- * JSX Namespace for the internal factory.
- * IntrinsicElements is permissive ([tag: string]: HTMLAttributes).
- * Per-element attribute checking (img → src, a → href, …) is available
- * automatically when @types/react is installed, via the jsxImportSource chain.
- */
+// ─── Inline SVG shape elements ─────────────────────────────────────────────────
+
+interface SVGShapeAttrs extends HTMLAttributes {
+  fill?: string;
+  stroke?: string;
+  "stroke-width"?: string | number;
+  "stroke-linecap"?: "butt" | "round" | "square";
+  "stroke-linejoin"?: "miter" | "round" | "bevel";
+  opacity?: number | string;
+  transform?: string;
+}
+
+interface SvgIntrinsicElements {
+  svg: HTMLAttributes & {
+    viewBox?: string;
+    xmlns?: string;
+    width?: number | string;
+    height?: number | string;
+    fill?: string;
+    stroke?: string;
+    "stroke-width"?: string | number;
+  };
+  path: SVGShapeAttrs & { d?: string };
+  circle: SVGShapeAttrs & {
+    cx?: number | string;
+    cy?: number | string;
+    r?: number | string;
+  };
+  rect: SVGShapeAttrs & {
+    x?: number | string;
+    y?: number | string;
+    width?: number | string;
+    height?: number | string;
+    rx?: number | string;
+    ry?: number | string;
+  };
+  line: SVGShapeAttrs & {
+    x1?: number | string;
+    y1?: number | string;
+    x2?: number | string;
+    y2?: number | string;
+  };
+  polyline: SVGShapeAttrs & { points?: string };
+  polygon: SVGShapeAttrs & { points?: string };
+  ellipse: SVGShapeAttrs & {
+    cx?: number | string;
+    cy?: number | string;
+    rx?: number | string;
+    ry?: number | string;
+  };
+  g: SVGShapeAttrs;
+  text: SVGShapeAttrs & {
+    x?: number | string;
+    y?: number | string;
+    "font-size"?: string | number;
+    "text-anchor"?: string;
+    "dominant-baseline"?: string;
+  };
+  tspan: SVGShapeAttrs & {
+    x?: number | string;
+    y?: number | string;
+    dx?: number | string;
+    dy?: number | string;
+  };
+  defs: HTMLAttributes;
+  use: HTMLAttributes & {
+    href?: string;
+    x?: number | string;
+    y?: number | string;
+    width?: number | string;
+    height?: number | string;
+  };
+  symbol: HTMLAttributes & {
+    viewBox?: string;
+    width?: number | string;
+    height?: number | string;
+  };
+  clipPath: HTMLAttributes & { clipPathUnits?: string };
+  mask: SVGShapeAttrs & { maskUnits?: string };
+  linearGradient: HTMLAttributes & {
+    x1?: string;
+    y1?: string;
+    x2?: string;
+    y2?: string;
+    gradientUnits?: string;
+    gradientTransform?: string;
+    spreadMethod?: string;
+  };
+  radialGradient: HTMLAttributes & {
+    cx?: string;
+    cy?: string;
+    r?: string;
+    fx?: string;
+    fy?: string;
+    gradientUnits?: string;
+    spreadMethod?: string;
+  };
+  stop: HTMLAttributes & {
+    offset?: string;
+    "stop-color"?: string;
+    "stop-opacity"?: number | string;
+  };
+  pattern: HTMLAttributes & {
+    x?: number | string;
+    y?: number | string;
+    width?: number | string;
+    height?: number | string;
+    patternUnits?: string;
+    patternTransform?: string;
+  };
+  filter: HTMLAttributes & {
+    x?: string;
+    y?: string;
+    width?: string;
+    height?: string;
+    filterUnits?: string;
+  };
+  feGaussianBlur: HTMLAttributes & {
+    in?: string;
+    stdDeviation?: number | string;
+    result?: string;
+  };
+  feMerge: HTMLAttributes;
+  feMergeNode: HTMLAttributes & { in?: string };
+  animate: HTMLAttributes & {
+    attributeName?: string;
+    values?: string;
+    dur?: string;
+    repeatCount?: string | number;
+    from?: string;
+    to?: string;
+    begin?: string;
+    end?: string;
+    fill?: "freeze" | "remove";
+  };
+}
+
+// ─── Full element map ─────────────────────────────────────────────────────────
+
+type HtmlIntrinsicElements = {
+  [K in keyof ElementOverrides & keyof HTMLElementTagNameMap]: HTMLAttributes &
+    ElementOverrides[K];
+} & {
+  [K in Exclude<
+    keyof HTMLElementTagNameMap,
+    keyof ElementOverrides
+  >]: HTMLAttributes;
+};
+
+// ─── JSX namespace ────────────────────────────────────────────────────────────
+
 export namespace JSX {
   export type Element = RawString | Promise<RawString>;
-  export interface IntrinsicElements {
-    [tag: string]: HTMLAttributes;
-  }
+  export interface IntrinsicElements
+    extends HtmlIntrinsicElements, SvgIntrinsicElements {}
   export interface IntrinsicAttributes {
     key?: string | number | null | undefined;
-    [key: string]: any;
   }
   export interface ElementAttributesProperty {
     props: {};
@@ -233,13 +532,13 @@ export namespace JSX {
 
 declare global {
   namespace JSX {
-    interface Element extends RawString {}
-    interface IntrinsicElements {
-      [tag: string]: HTMLAttributes;
-    }
+    type Element = RawString | Promise<RawString>;
+    interface IntrinsicElements
+      extends HtmlIntrinsicElements, SvgIntrinsicElements {}
     interface IntrinsicAttributes {
       key?: string | number | null | undefined;
-      [key: string]: any;
     }
   }
 }
+
+export type Component<P = {}> = (props: P & HTMLAttributes) => JSXNode;

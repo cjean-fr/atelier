@@ -1,4 +1,5 @@
 import { noContext } from "./rules/no-context.js";
+import { noDuplicateClass } from "./rules/no-duplicate-class.js";
 import { noJavascriptUrls } from "./rules/no-javascript-urls.js";
 import { noReactHooks } from "./rules/no-react-hooks.js";
 import { noReactImports } from "./rules/no-react-imports.js";
@@ -12,6 +13,7 @@ const rules = {
   "no-javascript-urls": noJavascriptUrls,
   "no-context": noContext,
   "no-refs": noRefs,
+  "no-duplicate-class": noDuplicateClass,
 };
 
 const plugin: any = {
@@ -30,6 +32,7 @@ const configs = {
       "@cjean-fr/jsx-string/no-javascript-urls": "error",
       "@cjean-fr/jsx-string/no-context": "error",
       "@cjean-fr/jsx-string/no-refs": "error",
+      "@cjean-fr/jsx-string/no-duplicate-class": "error",
     },
   },
 };

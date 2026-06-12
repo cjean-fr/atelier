@@ -1,4 +1,3 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
 import { raw } from "@cjean-fr/jsx-string";
 
 export interface CodeBlockProps {

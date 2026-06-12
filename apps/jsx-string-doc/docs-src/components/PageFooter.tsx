@@ -1,8 +1,7 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
-import { useDocs } from "../context.js";
+import { Docs } from "../context.js";
 
 export function PageFooter() {
-  const { editUrl, lastUpdated, prev, next } = useDocs();
+  const { editUrl, lastUpdated, prev, next } = Docs.get();
   const hasNav = prev !== null || next !== null;
   const hasFooter = editUrl !== null || lastUpdated !== null;
 
@@ -15,7 +14,7 @@ export function PageFooter() {
           {prev ? (
             <a
               href={prev.href}
-              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
               ← {prev.label}
             </a>
@@ -25,7 +24,7 @@ export function PageFooter() {
           {next ? (
             <a
               href={next.href}
-              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
               {next.label} →
             </a>

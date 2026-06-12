@@ -30,8 +30,8 @@ resolved tree before returning.
 
 ## Concurrent renders
 
-Multiple concurrent calls to `renderToString` are safe even when components use
-`context()` and `setContext()` inside a `withScope()`.
+Multiple concurrent calls to `renderToString` are safe even when both trees
+read context — each render's bindings are isolated.
 
 <CodeExample src="api/renderToString/concurrent.tsx" />
 

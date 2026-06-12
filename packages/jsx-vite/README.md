@@ -49,26 +49,29 @@ export function Layout({ children }) {
 
 The `entry` is the **source path** as Vite sees it. The same string works in both modes.
 
-### 2. Configure the scope before rendering
+### 2. Bind the manifest at the render entry point
 
-Once per render, call `setVite()`:
+Build a binding with `viteAssets()` and pass it to the `context` option of
+your render entry point (`renderToString`, `renderToStatic`'s `renderPage`,
+`flowResponse`, …):
 
 ```ts
-import { setVite, loadViteManifest } from "@cjean-fr/jsx-vite";
+import { viteAssets, loadViteManifest } from "@cjean-fr/jsx-vite";
+import { renderToString } from "@cjean-fr/jsx-string";
 
 // Production build: load the manifest produced by `vite build`
 const manifest = await loadViteManifest("dist/.vite/manifest.json");
-setVite(manifest, { base: "/" });
 
-// Dev mode: pass null
-setVite(null);
+const html = await renderToString(() => <App />, {
+  context: [viteAssets(manifest, { base: "/" })],
+});
 ```
 
 `loadViteManifest` returns `null` if the file is absent — same behavior dev setups rely on, so you can write:
 
 ```ts
 const manifest = await loadViteManifest("dist/.vite/manifest.json");
-setVite(manifest); // null in dev, real manifest in prod
+viteAssets(manifest); // null in dev, real manifest in prod
 ```
 
 ### 3. Reference arbitrary assets with `assetUrl()`
@@ -147,18 +150,18 @@ The manifest will be written to `<outDir>/.vite/manifest.json`.
 
 ## API
 
-| Export                         | Description                                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `Asset`                        | Component that resolves an entry to `<link>` / `<script>` / `<link rel="modulepreload">` tags (CSS / JS only) |
-| `assetUrl(entry)`              | Function that resolves an entry to a URL string — use inside arbitrary tags (images, fonts, favicons, …)      |
-| `setVite(manifest, { base? })` | Configure the render scope. Call once per render.                                                             |
-| `loadViteManifest(path)`       | Load a Vite manifest from disk. Returns `null` if the file does not exist.                                    |
-| `ViteManifest`                 | Type mirroring Vite's `manifest.json` shape                                                                   |
-| `ViteManifestChunk`            | Type for a single manifest entry                                                                              |
+| Export                            | Description                                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `Asset`                           | Component that resolves an entry to `<link>` / `<script>` / `<link rel="modulepreload">` tags (CSS / JS only) |
+| `assetUrl(entry)`                 | Function that resolves an entry to a URL string — use inside arbitrary tags (images, fonts, favicons, …)      |
+| `viteAssets(manifest, { base? })` | Build the context binding — pass it to a render entry point's `context` option.                               |
+| `loadViteManifest(path)`          | Load a Vite manifest from disk. Returns `null` if the file does not exist.                                    |
+| `ViteManifest`                    | Type mirroring Vite's `manifest.json` shape                                                                   |
+| `ViteManifestChunk`               | Type for a single manifest entry                                                                              |
 
 ## Notes
 
-- `setVite()` uses `setContext()` from jsx-string — it must be called inside a `withScope()` (renderToString, renderToStatic, renderToReadableStream all establish one).
+- `Asset` / `assetUrl` read the binding installed by `viteAssets()` — they throw a clear error if no binding is active for the current render.
 - `loadViteManifest()` uses `node:fs/promises` — works in Node ≥ 20, Bun, and Deno.
 - The package has no dependency on `vite` itself — only on `@cjean-fr/jsx-string`.
 

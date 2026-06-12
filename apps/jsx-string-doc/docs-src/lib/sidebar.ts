@@ -1,4 +1,10 @@
-import type { PageMeta, SidebarConfig, ResolvedSidebar, ResolvedSidebarItem, ResolvedSidebarPage } from "../types.js";
+import type {
+  PageMeta,
+  SidebarConfig,
+  ResolvedSidebar,
+  ResolvedSidebarItem,
+  ResolvedSidebarPage,
+} from "../types.js";
 import type { Page } from "../types.js";
 
 export interface NavLink {
@@ -17,9 +23,11 @@ export function resolveNavigation(
     const idx = pages.findIndex((p) => p.href === currentUrl);
     if (idx === -1) continue;
 
+    const prev = pages[idx - 1];
+    const next = pages[idx + 1];
     return {
-      prev: idx > 0 ? { label: pages[idx - 1].label, href: pages[idx - 1].href } : null,
-      next: idx < pages.length - 1 ? { label: pages[idx + 1].label, href: pages[idx + 1].href } : null,
+      prev: prev ? { label: prev.label, href: prev.href } : null,
+      next: next ? { label: next.label, href: next.href } : null,
     };
   }
 

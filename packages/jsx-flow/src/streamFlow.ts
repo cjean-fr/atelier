@@ -18,7 +18,10 @@ import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
  * pending, the loop waits for the live streams and re-checks before exiting.
  */
 export async function streamFlow(
-  ctx: { fragments: Map<string, FragmentEffect>; streams: StreamEffect[] },
+  ctx: {
+    fragments: ReadonlyMap<string, FragmentEffect>;
+    streams: readonly StreamEffect[];
+  },
   emit: (ev: FlowEvent) => Promise<void>,
   opts: FlowOptions = {},
 ): Promise<void> {

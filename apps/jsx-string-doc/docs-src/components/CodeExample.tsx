@@ -1,8 +1,7 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
+import { Docs } from "../context.js";
+import { CodeBlock } from "./CodeBlock.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { useDocs } from "../context.js";
-import { CodeBlock } from "./CodeBlock.js";
 
 export interface CodeExampleProps {
   src: string;
@@ -10,7 +9,7 @@ export interface CodeExampleProps {
 }
 
 export async function CodeExample({ src, language }: CodeExampleProps) {
-  const { config } = useDocs();
+  const { config } = Docs.get();
   const file = path.resolve(config.examples, src);
   const code = await readFile(file, "utf-8");
   return (

@@ -1,17 +1,16 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
-import { useDocs } from "../context.js";
+import { Docs } from "../context.js";
 import { SearchDialog } from "./SearchDialog.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
 export function Nav() {
-  const { config, sidebar } = useDocs();
+  const { config, sidebar } = Docs.get();
 
   return (
     <nav
       id="docs-nav"
-      class="docs-nav fixed inset-0 z-40 hidden w-full max-w-xs overflow-y-auto border-r border-gray-200 bg-white px-6 py-8 data-[open]:block md:sticky md:top-0 md:h-screen md:overflow-y-auto md:block md:w-56 md:max-w-none md:shrink-0 md:px-0 md:pr-6 dark:border-gray-800 dark:bg-gray-950"
+      class="docs-nav fixed inset-0 z-40 hidden w-full max-w-xs overflow-y-auto border-r border-gray-200 bg-white px-6 py-8 data-[open]:block md:sticky md:top-0 md:block md:h-screen md:w-56 md:max-w-none md:shrink-0 md:overflow-y-auto md:px-0 md:pr-6 dark:border-gray-800 dark:bg-gray-950"
       aria-label="Primary navigation"
-      tabindex="-1"
+      tabindex={-1}
     >
       <div class="docs-nav-header mb-4 flex items-start justify-between gap-2">
         <a href="/" class="docs-nav-brand block">

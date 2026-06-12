@@ -1,6 +1,6 @@
-import { Flow } from "../context.js";
+import { requireFlow } from "../context.js";
 import { assertFragmentId } from "../fragmentId.js";
-import { useContext, type JSXNode } from "@cjean-fr/jsx-string";
+import { type JSXNode } from "@cjean-fr/jsx-string";
 
 export interface SlotProps {
   /** DOM id for this slot — targeted by <Patch target={name}>. */
@@ -21,9 +21,11 @@ export interface SlotProps {
  * // Elsewhere in the same render (or in a separate streaming pass)
  * <Patch target="sidebar-widget">{() => <Widget />}</Patch>
  */
+// Returns `any` — same reason as Deferred: adapter.Placeholder returns JSXNode,
+// not the narrower JSX.Element TypeScript requires for JSX components.
 export function Slot({ name, fallback = null }: SlotProps): any {
   assertFragmentId(name, "Slot");
-  const { config } = useContext(Flow);
+  const { config } = requireFlow("Slot");
   return config.adapter.Placeholder({
     id: name,
     src: null,

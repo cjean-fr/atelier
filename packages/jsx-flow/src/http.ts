@@ -1,7 +1,7 @@
 import { NativeAdapter, type PatchAdapter } from "./adapters.js";
 import type { FlowOptions, Negotiation } from "./events.js";
 import { renderToFlowEvents } from "./render.js";
-import { type JSXNode } from "@cjean-fr/jsx-string";
+import { type ContextBinding, type JSXNode } from "@cjean-fr/jsx-string";
 
 export type { Negotiation };
 
@@ -13,7 +13,9 @@ export type { Negotiation };
  * ```ts
  * Bun.serve({
  *   async fetch(req) {
- *     return flowResponse(req, () => <App />, TurboAdapter);
+ *     return flowResponse(req, () => <App />, TurboAdapter, {
+ *       context: [Session.with(await getSession(req))],
+ *     });
  *   },
  * });
  * ```
@@ -22,7 +24,7 @@ export async function flowResponse(
   req: Request,
   page: (n: Negotiation) => JSXNode,
   adapter: PatchAdapter,
-  opts?: FlowOptions & ResponseInit,
+  opts?: FlowOptions & ResponseInit & { context?: readonly ContextBinding[] },
 ): Promise<Response> {
   const n = adapter.negotiate?.(req) ?? {};
   const body = renderToFlowEvents(() => page(n), adapter, {

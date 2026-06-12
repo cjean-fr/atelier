@@ -1,15 +1,13 @@
 import type { PatchAdapter } from "./adapters.js";
 import type { MergeType } from "./events.js";
 import { assertFragmentId } from "./fragmentId.js";
-import {
-  context,
-  setContext,
-  type Context,
-  type JSXNode,
-} from "@cjean-fr/jsx-string";
+import { context, type Context, type JSXNode } from "@cjean-fr/jsx-string";
 
 /** A deferred fragment: encoded by the adapter, applied as a DOM patch. */
-export type FragmentEffect = { factory: () => JSXNode; merge: MergeType };
+export type FragmentEffect = {
+  factory: () => JSXNode;
+  merge: MergeType;
+};
 
 /**
  * A streamed sequence: every item produced by `source` (a sync or async
@@ -40,9 +38,9 @@ export type Config =
 export interface FlowContext {
   config: Config;
   /** Pending fragments, in registration order. Exposed for inspection and streamFlow. */
-  fragments: Map<string, FragmentEffect>;
+  readonly fragments: ReadonlyMap<string, FragmentEffect>;
   /** Pending streamed sequences, in registration order. */
-  streams: StreamEffect[];
+  readonly streams: readonly StreamEffect[];
   nextId: () => string;
   /** Register a deferred fragment targeting the DOM element with id `id`. */
   patch(id: string, factory: () => JSXNode, merge?: MergeType): void;
@@ -54,11 +52,34 @@ export const Flow: Context<FlowContext> = context<FlowContext>(
   "@cjean-fr/jsx-flow:flow",
 );
 
-export function initFlow(config: Config): void {
+/**
+ * Read the current FlowContext, throwing a clear error if called outside a
+ * flow render. Use this instead of `Flow.get()` inside components.
+ */
+export function requireFlow(componentName: string): FlowContext {
+  try {
+    return Flow.get();
+  } catch {
+    throw new Error(
+      `<${componentName}> must render inside renderToFlowEvents() or renderToStatic().`,
+    );
+  }
+}
+
+/**
+ * Build a fresh FlowContext for one render. The render entry points bind it
+ * via `Flow.with(...)`; components and helpers read it back with `Flow.get()`.
+ *
+ * Effects execute under the scope active when they are drained (streamFlow,
+ * emitFragments) — not the one active at registration. Per-page or per-item
+ * data belongs in the factory's closure; ambient context is for bindings
+ * shared by the whole render.
+ */
+export function createFlowContext(config: Config): FlowContext {
   let counter = 0;
   const fragments = new Map<string, FragmentEffect>();
   const streams: StreamEffect[] = [];
-  setContext(Flow, {
+  return {
     config,
     fragments,
     streams,
@@ -71,5 +92,5 @@ export function initFlow(config: Config): void {
       assertFragmentId(effect.target, "stream");
       streams.push(effect);
     },
-  });
+  };
 }
