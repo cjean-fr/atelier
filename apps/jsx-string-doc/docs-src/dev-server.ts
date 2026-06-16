@@ -1,10 +1,10 @@
 import { serve } from "bun";
-import { watch } from "node:fs";
-import { join, extname, relative, resolve } from "node:path";
-import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { spawn } from "node:child_process";
 import type { ServerWebSocket } from "bun";
+import { spawn } from "node:child_process";
+import { watch } from "node:fs";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { join, extname, relative, resolve } from "node:path";
 
 const PORT = 3000;
 const APP_ROOT = resolve(import.meta.dirname!, "..");
@@ -28,14 +28,21 @@ async function rebuild(): Promise<boolean> {
 
 function run(cmd: string, args: string[]): Promise<boolean> {
   return new Promise((resolve) => {
-    const proc = spawn(cmd, args, { cwd: APP_ROOT, stdio: ["ignore", "inherit", "inherit"] });
+    const proc = spawn(cmd, args, {
+      cwd: APP_ROOT,
+      stdio: ["ignore", "inherit", "inherit"],
+    });
     proc.on("exit", (code) => resolve(code === 0));
   });
 }
 
 function notifyClients(): void {
   for (const ws of clients) {
-    try { ws.send("reload"); } catch { clients.delete(ws); }
+    try {
+      ws.send("reload");
+    } catch {
+      clients.delete(ws);
+    }
   }
 }
 
@@ -75,7 +82,7 @@ async function main(): Promise<void> {
   console.log(`[dev] Serving http://localhost:${PORT}`);
 
   // Watch source files
-  watch(APP_ROOT, { recursive: true }, (event, filename) => {
+  watch(APP_ROOT, { recursive: true }, (_event, filename) => {
     if (filename) onSourceChange(resolve(APP_ROOT, filename));
   });
 
@@ -98,7 +105,10 @@ async function main(): Promise<void> {
         return;
       }
 
-      let filePath = join(DIST, url.pathname === "/" ? "index.html" : url.pathname);
+      let filePath = join(
+        DIST,
+        url.pathname === "/" ? "index.html" : url.pathname,
+      );
       if (!existsSync(filePath)) {
         const alt = join(DIST, url.pathname + ".html");
         if (existsSync(alt)) filePath = alt;
@@ -110,10 +120,14 @@ async function main(): Promise<void> {
         const mime = mimeTypes[ext] || "application/octet-stream";
         let body: string | Uint8Array = content;
         if (ext === ".html") body = injectLiveReload(content.toString("utf-8"));
-        return new Response(body as BodyInit, { headers: { "Content-Type": mime } });
+        return new Response(body as BodyInit, {
+          headers: { "Content-Type": mime },
+        });
       });
     },
-    error(err) { console.error("[dev]", err); },
+    error(err) {
+      console.error("[dev]", err);
+    },
   });
 }
 

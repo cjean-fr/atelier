@@ -1,7 +1,7 @@
 /** @jsxImportSource @cjean-fr/jsx-string */
-import { JSXNode } from "@cjean-fr/jsx-string";
 import { CodeBlock } from "./components/CodeBlock.js";
 import { CodeExample } from "./components/CodeExample.js";
+import type { JSXNode } from "@cjean-fr/jsx-string";
 
 export interface Tab {
   label: string;
@@ -19,7 +19,7 @@ function Tabs({ tabs, syncKey }: { tabs: Tab[]; syncKey?: string }) {
             data-docs-tab-target={String(i)}
             data-docs-tab-label={tab.label}
             aria-selected={i === 0 ? "true" : "false"}
-            class={`px-4 py-2 text-sm font-medium ${i === 0 ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400 border-b-2 border-transparent"}`}
+            class={`px-4 py-2 text-sm font-medium ${i === 0 ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "border-b-2 border-transparent text-gray-600 dark:text-gray-400"}`}
           >
             {tab.label}
           </button>

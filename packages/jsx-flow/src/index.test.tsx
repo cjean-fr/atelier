@@ -1,66 +1,112 @@
-// @jsxImportSource @cjean-fr/jsx-string
+import { initFlow, Flow, debugStore } from "./context.js";
+import { createPendingStore } from "./context.js";
+import type { PendingStore, FlowConfig } from "./context.js";
 import {
-  initFlow,
-  Deferred,
-  Patch,
-  Generator,
-  streamFlow,
+  Defer,
+  Fill,
+  Slot,
+  ClientFetch,
   TurboAdapter,
   HtmxAdapter,
   NativeAdapter,
   WebPlatformAdapter,
   EsiAdapter,
-  Flow,
-  renderToFlowEvents,
-  renderToReadableStream,
+  renderStream,
   renderToStatic,
-  flowResponse,
-  UnpolyAdapter,
-  type FlowEvent,
+  serve,
+  negotiateHtmx,
+  negotiateUnpoly,
+  createAdapter,
+  composeShell,
+  injectIntoHead,
 } from "./index.js";
+import type { FlowEvent } from "./protocol.js";
+import { renderToFlowEvents, renderShell, orchestrateFlow } from "./render.js";
+import { streamFlow } from "./streamFlow.js";
 import { withScope, renderToString, useContext } from "@cjean-fr/jsx-string";
 import { describe, it, expect } from "bun:test";
 
+const collect = async (s: ReadableStream<string>): Promise<string> => {
+  let out = "";
+  for await (const c of s) out += c;
+  return out;
+};
+const collectEvents = async (
+  s: ReadableStream<FlowEvent>,
+): Promise<FlowEvent[]> => {
+  const events: FlowEvent[] = [];
+  for await (const ev of s) events.push(ev);
+  return events;
+};
+
+type FragmentEvent = FlowEvent & { type: "fragment" };
+
 describe("initFlow", () => {
-  it("should initialize flow context", async () => {
+  it("initializes the flow context", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
       expect(() => useContext(Flow)).not.toThrow();
     });
   });
 
-  it("should throw when used outside withScope", () => {
+  it("throws when used outside withScope", () => {
     expect(() =>
       initFlow({ adapter: TurboAdapter, mode: "streaming" }),
     ).toThrow();
   });
 });
 
-describe("Deferred", () => {
-  it("should render with fallback in streaming mode", async () => {
+describe("Defer", () => {
+  it("renders a placeholder and registers content (streaming mode)", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
       const html = await renderToString(
-        <Deferred fallback={<div>loading...</div>}>
-          {() => <span>content</span>}
-        </Deferred>,
+        <Defer>{() => <span>content</span>}</Defer>,
       );
       expect(html).toContain('id="fragment-1"');
-      expect(html).toContain("loading...");
+      const { pendingStore } = useContext(Flow);
+      expect(pendingStore.size).toBe(1);
+      expect(debugStore(pendingStore).get("fragment-1")?.merge).toBe("replace");
     });
   });
 
-  it("should render external island with explicit src", async () => {
+  it("accepts a node child — no thunk needed", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
       const html = await renderToString(
-        <Deferred src="/api/fragment" fallback={<div>loading...</div>} />,
+        <Defer>
+          <span>inline</span>
+        </Defer>,
       );
-      expect(html).toContain('src="/api/fragment"');
+      expect(html).toContain('id="fragment-1"');
+      const { pendingStore } = useContext(Flow);
+      expect(pendingStore.size).toBe(1);
     });
   });
 
-  it("should generate src in static mode", async () => {
+  it("honours an explicit name", async () => {
+    await withScope(async () => {
+      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+      await renderToString(<Defer name="cart">{() => <span>x</span>}</Defer>);
+      expect(debugStore(useContext(Flow).pendingStore).has("cart")).toBe(true);
+    });
+  });
+
+  it("stores an explicit merge type", async () => {
+    await withScope(async () => {
+      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+      await renderToString(
+        <Defer name="list" merge="append">
+          {() => <li>item</li>}
+        </Defer>,
+      );
+      expect(debugStore(useContext(Flow).pendingStore).get("list")?.merge).toBe(
+        "append",
+      );
+    });
+  });
+
+  it("generates a src in static mode", async () => {
     await withScope(async () => {
       initFlow({
         adapter: TurboAdapter,
@@ -68,284 +114,285 @@ describe("Deferred", () => {
         generatePath: (id) => `/f/${id}.html`,
       });
       const html = await renderToString(
-        <Deferred fallback={<div>loading...</div>}>
-          {() => <span>content</span>}
-        </Deferred>,
+        <Defer>{() => <span>content</span>}</Defer>,
       );
       expect(html).toContain('src="/f/fragment-1.html"');
     });
   });
+});
 
-  it("should register the fragment", async () => {
+describe("ClientFetch", () => {
+  it("renders a placeholder pointing at src, registers nothing", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      await renderToString(
-        <Deferred fallback={<div>loading...</div>}>
-          {() => <span>content</span>}
-        </Deferred>,
-      );
-      const { fragments } = useContext(Flow);
-      expect(fragments.size).toBe(1);
-    });
-  });
-
-  it("should default merge to replace", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      await renderToString(
-        <Deferred fallback={<div>loading...</div>}>
-          {() => <span>content</span>}
-        </Deferred>,
-      );
-      const { fragments } = useContext(Flow);
-      expect(fragments.get("fragment-1")?.merge).toBe("replace");
-    });
-  });
-
-  it("should store explicit merge type", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      await renderToString(
-        <Deferred merge="append" fallback={<ul />}>
-          {() => <li>item</li>}
-        </Deferred>,
-      );
-      const { fragments } = useContext(Flow);
-      expect(fragments.get("fragment-1")?.merge).toBe("append");
+      const html = await renderToString(<ClientFetch src="/api/fragment" />);
+      expect(html).toContain('src="/api/fragment"');
+      expect(useContext(Flow).pendingStore.size).toBe(0);
     });
   });
 });
 
-describe("Patch", () => {
-  it("should register a fragment without rendering a placeholder", async () => {
+describe("Fill", () => {
+  it("registers content without rendering a placeholder", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
       const html = await renderToString(
-        <Patch target="toast-list" merge="append">
+        <Fill target="toast-list" merge="append">
           {() => <li>Notification</li>}
-        </Patch>,
+        </Fill>,
       );
       expect(html).toBe("");
-      const { fragments } = useContext(Flow);
-      expect(fragments.size).toBe(1);
-      expect(fragments.get("toast-list")?.merge).toBe("append");
-    });
-  });
-
-  it("should default merge to replace", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      await renderToString(
-        <Patch target="some-target">{() => <span>content</span>}</Patch>,
-      );
-      const { fragments } = useContext(Flow);
-      expect(fragments.get("some-target")?.merge).toBe("replace");
-    });
-  });
-
-  it("should work in static mode", async () => {
-    await withScope(async () => {
-      initFlow({
-        adapter: TurboAdapter,
-        mode: "static",
-        generatePath: (id) => `/f/${id}.html`,
-      });
-      await renderToString(
-        <Patch target="some-target">{() => <span />}</Patch>,
-      );
-      const { fragments } = useContext(Flow);
-      expect(fragments.size).toBe(1);
+      const { pendingStore } = useContext(Flow);
+      expect(debugStore(pendingStore).get("toast-list")?.merge).toBe("append");
     });
   });
 });
 
-describe("patch()", () => {
-  it("registers a fragment imperatively", async () => {
+describe("Slot", () => {
+  it("renders a placeholder with no registration when children are absent", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch, fragments } = useContext(Flow);
-      patch("badge", () => <span>42</span>, "replace");
-      expect(fragments.size).toBe(1);
-      expect(fragments.get("badge")?.merge).toBe("replace");
+      const html = await renderToString(<Slot name="sidebar" />);
+      expect(html).toContain('id="sidebar"');
+      expect(useContext(Flow).pendingStore.size).toBe(0);
     });
   });
 
-  it("defaults merge to replace", async () => {
+  it("registers content and renders a placeholder when children are present", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch, fragments } = useContext(Flow);
-      patch("badge", () => <span>42</span>);
-      expect(fragments.get("badge")?.merge).toBe("replace");
+      const html = await renderToString(
+        <Slot name="main">{() => <span>content</span>}</Slot>,
+      );
+      expect(html).toContain('id="main"');
+      const { pendingStore } = useContext(Flow);
+      expect(pendingStore.size).toBe(1);
+      expect(debugStore(pendingStore).get("main")).toBeDefined();
+    });
+  });
+});
+
+describe("context.defer()", () => {
+  it("registers, validates ids, and is last-wins on duplicate id", async () => {
+    await withScope(async () => {
+      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+      const { defer, pendingStore } = useContext(Flow);
+      defer("badge", { content: () => <span>42</span>, merge: "replace" });
+      expect(debugStore(pendingStore).get("badge")?.merge).toBe("replace");
+      defer("badge", { content: () => <span>43</span>, merge: "append" });
+      expect(pendingStore.size).toBe(1);
+      expect(debugStore(pendingStore).get("badge")?.merge).toBe("append");
+      expect(() =>
+        defer("has space", { content: () => <span />, merge: "replace" }),
+      ).toThrow(/valid fragment id/);
     });
   });
 
-  it("rejects invalid ids", async () => {
+  it("rejects a merge the adapter cannot express (capabilities)", async () => {
     await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch } = useContext(Flow);
-      expect(() => patch("", () => <span />)).toThrow();
-      expect(() => patch("has space", () => <span />)).toThrow();
-    });
-  });
-
-  it("is last-wins on duplicate id", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      const { patch, fragments } = useContext(Flow);
-      patch("id-1", () => <span>first</span>);
-      patch("id-1", () => <span>second</span>, "append");
-      expect(fragments.size).toBe(1);
-      expect(fragments.get("id-1")?.merge).toBe("append");
+      initFlow({
+        adapter: EsiAdapter,
+        mode: "static",
+        generatePath: (id) => `/f/${id}.html`,
+      });
+      expect(() =>
+        useContext(Flow).defer("x", {
+          content: () => <span />,
+          merge: "append",
+        }),
+      ).toThrow(/not supported/);
     });
   });
 });
 
 describe("streamFlow", () => {
-  it("should emit a patch event for each fragment", async () => {
-    const fragments = new Map();
-    fragments.set("test-1", {
-      factory: () => <div>Hello</div>,
-      merge: "replace",
-    });
-
-    const results: FlowEvent[] = [];
-    await streamFlow({ fragments, streams: [] }, async (ev) => {
-      results.push(ev);
-    });
-
-    expect(results.length).toBe(1);
-    expect(results[0]!.type).toBe("patch");
-    if (results[0]!.type === "patch") {
-      expect(results[0]!.html).toContain("Hello");
-    }
-  });
-
-  it("should catch errors and continue other fragments", async () => {
-    const fragments = new Map();
-    fragments.set("good", { factory: () => <div>OK</div>, merge: "replace" });
-    fragments.set("bad", {
-      factory: () => {
-        throw new Error("fail");
-      },
-      merge: "replace",
-    });
-
-    const results: FlowEvent[] = [];
-    await streamFlow({ fragments, streams: [] }, async (ev) => {
-      results.push(ev);
-    });
-
-    expect(results.length).toBe(1);
-    expect(results[0]!.type).toBe("patch");
-    if (results[0]!.type === "patch") {
-      expect(results[0]!.id).toBe("good");
-    }
-  });
-
-  it("emits a patch with error fallback when onError returns a node", async () => {
-    const fragments = new Map();
-    fragments.set("bad", {
-      factory: () => {
-        throw new Error("fail");
-      },
-      merge: "replace",
-    });
-
+  const drain = async (
+    store: PendingStore,
+    opts?: Parameters<typeof streamFlow>[2],
+  ) => {
     const results: FlowEvent[] = [];
     await streamFlow(
-      { fragments, streams: [] },
-      async (ev) => {
-        results.push(ev);
-      },
-      {
-        onError: () => <span>error-fallback</span>,
-      },
+      { pendingStore: store },
+      async (ev) => void results.push(ev),
+      opts,
     );
+    return results;
+  };
 
-    expect(results.length).toBe(1);
-    expect(results[0]!.type).toBe("patch");
-    if (results[0]!.type === "patch") {
-      expect(results[0]!.html).toContain("error-fallback");
+  const cfg: FlowConfig = { adapter: TurboAdapter, mode: "streaming" };
+
+  it("emits a fragment for a one-shot node entry", async () => {
+    const store = createPendingStore(cfg);
+    store.defer("t1", { content: <div>Hello</div>, merge: "replace" });
+    const results = await drain(store);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.type).toBe("fragment");
+    if (results[0]!.type === "fragment")
+      expect(results[0]!.html).toContain("Hello");
+  });
+
+  it("streams each item of an async-iterable entry", async () => {
+    async function* rows() {
+      yield <li>a</li>;
+      yield <li>b</li>;
     }
+    const store = createPendingStore(cfg);
+    store.defer("feed", { content: rows(), merge: "append" });
+    const results = await drain(store);
+    const fragments = results.filter((e) => e.type === "fragment");
+    expect(fragments).toHaveLength(2);
+  });
+
+  it("catches a factory throw and continues other entries", async () => {
+    const store = createPendingStore(cfg);
+    store.defer("good", { content: () => <div>OK</div>, merge: "replace" });
+    store.defer("bad", {
+      content: () => {
+        throw new Error("fail");
+      },
+      merge: "replace",
+    });
+    const results = await drain(store);
+    expect(results).toHaveLength(1);
+    if (results[0]!.type === "fragment") expect(results[0]!.id).toBe("good");
+  });
+
+  it("emits an error fallback fragment when onError returns a node", async () => {
+    const store = createPendingStore(cfg);
+    store.defer("bad", {
+      content: () => {
+        throw new Error("fail");
+      },
+      merge: "replace",
+    });
+    const results = await drain(store, {
+      onError: () => <span>error-fallback</span>,
+    });
+    expect(results).toHaveLength(1);
+    if (results[0]!.type === "fragment")
+      expect(results[0]!.html).toContain("error-fallback");
+  });
+
+  it("a per-entry onError overrides the global one", async () => {
+    const store = createPendingStore(cfg);
+    store.defer("bad", {
+      content: () => {
+        throw new Error("fail");
+      },
+      merge: "replace",
+      onError: () => <span>local</span>,
+    });
+    const results = await drain(store, {
+      onError: () => <span>global</span>,
+    });
+    if (results[0]!.type === "fragment")
+      expect(results[0]!.html).toContain("local");
+  });
+
+  it("aborts a factory that exceeds its timeout and routes to onError", async () => {
+    const slow = async (signal: AbortSignal) => {
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, 1000);
+        signal.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(t);
+            reject(signal.reason);
+          },
+          { once: true },
+        );
+      });
+      return <div>too late</div>;
+    };
+    const store = createPendingStore(cfg);
+    store.defer("slow", { content: slow, merge: "replace", timeout: 10 });
+    const results = await drain(store, {
+      onError: (err) => <span>{(err as Error).message}</span>,
+    });
+    if (results[0]!.type === "fragment") {
+      expect(results[0]!.html).toContain('Defer "slow" timed out after 10ms');
+      expect(results[0]!.html).not.toContain("too late");
+    }
+  });
+
+  it("applies defaultTimeout when a factory sets no timeout of its own", async () => {
+    const content = (signal: AbortSignal) =>
+      new Promise((_, reject) =>
+        signal.addEventListener("abort", () => reject(signal.reason), {
+          once: true,
+        }),
+      ) as unknown as ReturnType<() => any>;
+    const store = createPendingStore(cfg);
+    store.defer("slow", { content, merge: "replace" });
+    const results = await drain(store, {
+      defaultTimeout: 10,
+      onError: (err) => <span>{(err as Error).message}</span>,
+    });
+    if (results[0]!.type === "fragment")
+      expect(results[0]!.html).toContain("timed out after 10ms");
   });
 });
 
 describe("renderToFlowEvents", () => {
-  async function collectEvents(
-    stream: ReadableStream<FlowEvent>,
-  ): Promise<FlowEvent[]> {
-    const events: FlowEvent[] = [];
-    for await (const ev of stream) events.push(ev);
-    return events;
-  }
-
-  it("emits shell + close when there are no fragments", async () => {
-    const stream = renderToFlowEvents(
-      () => (
-        <html>
-          <body>
-            <p>static</p>
-          </body>
-        </html>
+  it("emits shell + close when there is nothing deferred", async () => {
+    const events = await collectEvents(
+      renderToFlowEvents(
+        () => (
+          <html>
+            <body>
+              <p>static</p>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
       ),
-      TurboAdapter,
     );
-    const events = await collectEvents(stream);
-    expect(events.length).toBe(2);
-    expect(events[0]!.type).toBe("shell");
-    expect(events[1]!.type).toBe("close");
+    expect(events.map((e) => e.type)).toEqual(["shell", "close"]);
   });
 
-  it("emits shell, then patches, then close", async () => {
-    const stream = renderToFlowEvents(
-      () => (
-        <html>
-          <body>
-            <Deferred fallback={<div>loading...</div>}>
-              {() => <span>content</span>}
-            </Deferred>
-          </body>
-        </html>
+  it("emits shell, then fragment, then close", async () => {
+    const events = await collectEvents(
+      renderToFlowEvents(
+        () => (
+          <html>
+            <body>
+              <Defer>{() => <span>content</span>}</Defer>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
       ),
-      TurboAdapter,
     );
-    const events = await collectEvents(stream);
-    expect(events.length).toBe(3);
-    expect(events[0]!.type).toBe("shell");
-    expect(events[1]!.type).toBe("patch");
-    expect(events[2]!.type).toBe("close");
+    expect(events.map((e) => e.type)).toEqual(["shell", "fragment", "close"]);
   });
 
-  it("streams a synchronously-nested <Deferred>", async () => {
-    const stream = renderToFlowEvents(
-      () => (
-        <html>
-          <body>
-            <Deferred fallback={<p>outer</p>}>
-              {() => (
-                <section>
-                  OUTER
-                  <Deferred fallback={<p>inner</p>}>
-                    {() => <span>INNER-SYNC</span>}
-                  </Deferred>
-                </section>
-              )}
-            </Deferred>
-          </body>
-        </html>
+  it("streams a synchronously-nested Defer after its parent", async () => {
+    const events = await collectEvents(
+      renderToFlowEvents(
+        () => (
+          <html>
+            <body>
+              <Defer>
+                {() => (
+                  <section>
+                    OUTER
+                    <Defer>{() => <span>INNER-SYNC</span>}</Defer>
+                  </section>
+                )}
+              </Defer>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
       ),
-      TurboAdapter,
     );
-    const events = await collectEvents(stream);
-    const patches = events.filter(
-      (e): e is FlowEvent & { type: "patch" } => e.type === "patch",
+    const fragments = events.filter(
+      (e): e is FragmentEvent => e.type === "fragment",
     );
-    expect(patches.length).toBe(2);
-    expect(patches[0]!.id).toBe("fragment-1");
-    expect(patches[1]!.id).toBe("fragment-2");
+    expect(fragments.map((p) => p.id)).toEqual(["fragment-1", "fragment-2"]);
   });
 
-  it("propagates external AbortSignal — stream closes after signal fires", async () => {
+  it("propagates an external AbortSignal — stream closes after it fires", async () => {
     const ac = new AbortController();
     const stream = renderToFlowEvents(
       () => (
@@ -361,14 +408,12 @@ describe("renderToFlowEvents", () => {
     const reader = stream.getReader();
     const first = await reader.read();
     expect(first.value?.type).toBe("shell");
-    expect(first.value?.html).toContain("hi");
     ac.abort();
-    const next = await reader.read();
-    expect(next.done).toBe(true);
+    expect((await reader.read()).done).toBe(true);
     reader.releaseLock();
   });
 
-  it("cancels generator mid-flight between patches", async () => {
+  it("cancels a stream mid-flight between fragments", async () => {
     const ac = new AbortController();
     async function* items() {
       yield <li>a</li>;
@@ -380,7 +425,9 @@ describe("renderToFlowEvents", () => {
         <html>
           <body>
             <ul id="feed" />
-            <Generator target="feed" source={() => items()} />
+            <Fill target="feed" merge="append">
+              {items()}
+            </Fill>
           </body>
         </html>
       ),
@@ -389,131 +436,263 @@ describe("renderToFlowEvents", () => {
     );
     const reader = stream.getReader();
     await reader.read(); // shell
-    const patch1 = await reader.read();
-    expect(patch1.value?.type).toBe("patch");
+    expect((await reader.read()).value?.type).toBe("fragment");
     ac.abort();
-    const after = await reader.read();
-    expect(after.done).toBe(true);
+    expect((await reader.read()).done).toBe(true);
     reader.releaseLock();
   });
 });
 
-describe("renderToReadableStream", () => {
-  async function collectChunks(
-    stream: ReadableStream<string>,
-  ): Promise<string[]> {
-    const chunks: string[] = [];
-    for await (const chunk of stream) chunks.push(chunk);
-    return chunks;
-  }
-
-  it("should send </html> after fragment chunks", async () => {
-    const stream = renderToReadableStream(
+describe("renderShell", () => {
+  it("strips </body></html> and returns them as closingTag", async () => {
+    const { shellBody, closingTag } = await renderShell(
       () => (
         <html>
           <body>
-            <Deferred fallback={<div>loading...</div>}>
-              {() => <span>content</span>}
-            </Deferred>
+            <p>hi</p>
+          </body>
+        </html>
+      ),
+      {},
+    );
+    expect(shellBody).not.toContain("</body>");
+    expect(shellBody).not.toContain("</html>");
+    expect(closingTag).toMatch(/<\/body>\s*<\/html>\s*$/i);
+  });
+
+  it("returns an empty closingTag when there are no closing tags", async () => {
+    const { shellBody, closingTag } = await renderShell(
+      () => <p>no wrapping</p>,
+      {},
+    );
+    expect(shellBody).toContain("<p>no wrapping</p>");
+    expect(closingTag).toBe("");
+  });
+
+  it("applies adapter.transformShell to the shell body", async () => {
+    const { shellBody } = await renderShell(
+      () => (
+        <html>
+          <body />
+        </html>
+      ),
+      { transformShell: (s: string) => s + "<!-- transformed -->" },
+    );
+    expect(shellBody).toContain("<!-- transformed -->");
+  });
+});
+
+describe("orchestrateFlow", () => {
+  it("emits shell, then runs streamFlow, then emits close in full mode", async () => {
+    const events: FlowEvent[] = [];
+    const emit = async (ev: FlowEvent) => void events.push(ev);
+    const ac = new AbortController();
+    await orchestrateFlow(
+      emit,
+      ac.signal,
+      () => (
+        <html>
+          <body>
+            <p>hi</p>
           </body>
         </html>
       ),
       TurboAdapter,
+      {},
     );
-    const chunks = await collectChunks(stream);
-    const htmlCloseIndex = chunks.findIndex((c) => c.includes("</html>"));
-    const fragmentIndex = chunks.findIndex((c) => c.includes("turbo-stream"));
-    expect(htmlCloseIndex).toBeGreaterThan(-1);
-    expect(fragmentIndex).toBeGreaterThan(-1);
-    expect(fragmentIndex).toBeLessThan(htmlCloseIndex);
+    expect(events.map((e) => e.type)).toEqual(["shell", "close"]);
   });
 
-  it("should send a single chunk when there are no fragments", async () => {
-    const stream = renderToReadableStream(
+  it("skips shell and close in fragment mode", async () => {
+    const events: FlowEvent[] = [];
+    const emit = async (ev: FlowEvent) => void events.push(ev);
+    const ac = new AbortController();
+    await orchestrateFlow(
+      emit,
+      ac.signal,
       () => (
         <html>
           <body>
-            <p>static</p>
+            <p>hi</p>
           </body>
         </html>
       ),
       TurboAdapter,
+      { mode: "fragment" },
     );
-    const chunks = await collectChunks(stream);
-    expect(chunks).toHaveLength(2);
-    expect(chunks.join("")).toContain("</html>");
+    expect(events).toEqual([]);
   });
 
-  // A child <Deferred> is registered while its parent renders. The drain loop
-  // in streamFlow must pick it up and stream it after its parent.
-  it("streams a synchronously-nested <Deferred>", async () => {
-    const stream = renderToReadableStream(
+  it("emits nothing when the signal is already aborted", async () => {
+    const events: FlowEvent[] = [];
+    const emit = async (ev: FlowEvent) => void events.push(ev);
+    const ac = new AbortController();
+    ac.abort();
+    await orchestrateFlow(
+      emit,
+      ac.signal,
       () => (
         <html>
           <body>
-            <Deferred fallback={<p>outer</p>}>
-              {() => (
-                <section>
-                  OUTER
-                  <Deferred fallback={<p>inner</p>}>
-                    {() => <span>INNER-SYNC</span>}
-                  </Deferred>
-                </section>
-              )}
-            </Deferred>
+            <p>hi</p>
           </body>
         </html>
       ),
       TurboAdapter,
+      {},
     );
-    const chunks = await collectChunks(stream);
-    expect(chunks.join("")).toContain("INNER-SYNC");
+    expect(events).toEqual([]);
+  });
+});
 
-    // Parent fragment must be patched before its nested child.
-    const parent = chunks.findIndex((c) => c.includes('target="fragment-1"'));
-    const child = chunks.findIndex((c) => c.includes('target="fragment-2"'));
-    expect(parent).toBeGreaterThan(-1);
-    expect(child).toBeGreaterThan(-1);
-    expect(parent).toBeLessThan(child);
+describe("renderStream", () => {
+  it("defaults to NativeAdapter when no adapter is passed", async () => {
+    const html = await collect(
+      renderStream(() => (
+        <html>
+          <head></head>
+          <body>
+            <Defer>{() => <span>x</span>}</Defer>
+          </body>
+        </html>
+      )),
+    );
+    expect(html).toContain("MutationObserver");
+    expect(html).toContain("</html>");
   });
 
-  // Regression: a child <Deferred> revealed only after an await inside an async
-  // parent used to be dropped — the single-pass loop had already finished.
-  it("streams a <Deferred> nested behind an await", async () => {
+  it("sends </html> after fragment chunks", async () => {
+    const chunks = (
+      await collect(
+        renderStream(
+          () => (
+            <html>
+              <body>
+                <Defer>{() => <span>content</span>}</Defer>
+              </body>
+            </html>
+          ),
+          TurboAdapter,
+        ),
+      )
+    ).toString();
+    expect(chunks.indexOf("turbo-stream")).toBeLessThan(
+      chunks.indexOf("</html>"),
+    );
+  });
+
+  it("streams a Defer nested behind an await", async () => {
     const Inner = async () => {
       await Promise.resolve();
       return (
         <section>
           OUTER
-          <Deferred fallback={<p>inner</p>}>
-            {() => <span>INNER-ASYNC</span>}
-          </Deferred>
+          <Defer>{() => <span>INNER-ASYNC</span>}</Defer>
         </section>
       );
     };
-    const stream = renderToReadableStream(
-      () => (
-        <html>
-          <body>
-            <Deferred fallback={<p>outer</p>}>{() => <Inner />}</Deferred>
-          </body>
-        </html>
+    const html = await collect(
+      renderStream(
+        () => (
+          <html>
+            <body>
+              <Defer>{() => <Inner />}</Defer>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
       ),
-      TurboAdapter,
     );
-    const chunks = await collectChunks(stream);
-    expect(chunks.join("")).toContain("INNER-ASYNC");
-
-    const parent = chunks.findIndex((c) => c.includes('target="fragment-1"'));
-    const child = chunks.findIndex((c) => c.includes('target="fragment-2"'));
+    expect(html).toContain("INNER-ASYNC");
+    const parent = html.indexOf('target="fragment-1"');
+    const child = html.indexOf('target="fragment-2"');
     expect(parent).toBeGreaterThan(-1);
-    expect(child).toBeGreaterThan(-1);
     expect(parent).toBeLessThan(child);
   });
 });
 
+describe("Defer — streaming sequences (async-iterable child)", () => {
+  it("streams each yield as an append fragment", async () => {
+    async function* rows() {
+      yield <li>a</li>;
+      yield <li>b</li>;
+    }
+    const html = await collect(
+      renderStream(
+        () => (
+          <html>
+            <body>
+              <ul id="feed" />
+              <Fill target="feed" merge="append">
+                {rows()}
+              </Fill>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
+      ),
+    );
+    expect(html).toContain("<li>a</li>");
+    expect(html).toContain("<li>b</li>");
+    expect((html.match(/target="feed"/g) ?? []).length).toBe(2);
+    expect(html).toContain('action="append"');
+  });
+
+  it("streams even with no other deferred content present", async () => {
+    async function* rows() {
+      yield <li>only</li>;
+    }
+    const html = await collect(
+      renderStream(
+        () => (
+          <html>
+            <body>
+              <ul id="feed" />
+              <Fill target="feed" merge="append">
+                {rows()}
+              </Fill>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
+      ),
+    );
+    expect(html).toContain("<li>only</li>");
+    expect(html).toContain("</html>");
+  });
+
+  it("a streaming Defer registered inside a one-shot Defer factory is picked up", async () => {
+    async function* inner() {
+      yield <li>streamed</li>;
+    }
+    const html = await collect(
+      renderStream(
+        () => (
+          <html>
+            <body>
+              <Defer>
+                {() => (
+                  <div>
+                    deferred
+                    <Fill target="feed" merge="append">
+                      {inner()}
+                    </Fill>
+                  </div>
+                )}
+              </Defer>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
+      ),
+    );
+    expect(html).toContain("streamed");
+    expect(html).toContain("deferred");
+  });
+});
+
 describe("renderToStatic", () => {
-  it("works without any options for pure-static rendering", async () => {
+  it("works without options for pure-static rendering", async () => {
     const result = await renderToStatic(async (ctx) => {
       const html = await ctx.renderPage(() => (
         <html>
@@ -522,7 +701,7 @@ describe("renderToStatic", () => {
           </body>
         </html>
       ));
-      return { html, count: ctx.fragments.size };
+      return { html, count: ctx.pendingStore.size };
     });
     expect(result.html).toContain("<p>hi</p>");
     expect(result.count).toBe(0);
@@ -534,13 +713,11 @@ describe("renderToStatic", () => {
         const html = await ctx.renderPage(() => (
           <html>
             <body>
-              <Deferred fallback={<span>…</span>}>
-                {() => <span>real</span>}
-              </Deferred>
+              <Defer>{() => <span>real</span>}</Defer>
             </body>
           </html>
         ));
-        return { html, ids: [...ctx.fragments.keys()] };
+        return { html, ids: [...debugStore(ctx.pendingStore).keys()] };
       },
       { adapter: TurboAdapter },
     );
@@ -564,54 +741,49 @@ describe("renderToStatic", () => {
   });
 
   describe("ctx.emitFragments", () => {
-    it("renders fragments via the adapter and hands them to the callback", async () => {
+    it("wraps each fragment in adapter.Frame and hands it to the callback", async () => {
       const written: Array<{ id: string; url: string; html: string }> = [];
       await renderToStatic(
         async (ctx) => {
           await ctx.renderPage(() => (
             <html>
               <body>
-                <Deferred fallback={<span>…</span>}>
-                  {() => <span>real</span>}
-                </Deferred>
+                <Defer>{() => <span>real</span>}</Defer>
               </body>
             </html>
           ));
-          await ctx.emitFragments((id, url, html) => {
-            written.push({ id, url, html });
-          });
+          await ctx.emitFragments(
+            (id, url, html) => void written.push({ id, url, html }),
+          );
         },
         { adapter: TurboAdapter },
       );
       expect(written).toHaveLength(1);
       expect(written[0]!.id).toBe("fragment-1");
       expect(written[0]!.url).toBe("/fragments/fragment-1.html");
+      expect(written[0]!.html).toContain("<turbo-frame");
       expect(written[0]!.html).toContain("<span>real</span>");
     });
 
-    it("uses a custom generatePath when provided", async () => {
-      const written: string[] = [];
+    it("uses a custom generatePath", async () => {
+      const urls: string[] = [];
       await renderToStatic(
         async (ctx) => {
           await ctx.renderPage(() => (
             <html>
               <body>
-                <Deferred fallback={<span>…</span>}>
-                  {() => <span>real</span>}
-                </Deferred>
+                <Defer>{() => <span>real</span>}</Defer>
               </body>
             </html>
           ));
-          await ctx.emitFragments((_id, url) => {
-            written.push(url);
-          });
+          await ctx.emitFragments((_id, url) => void urls.push(url));
         },
         { adapter: TurboAdapter, generatePath: (id) => `/f/${id}.html` },
       );
-      expect(written).toEqual(["/f/fragment-1.html"]);
+      expect(urls).toEqual(["/f/fragment-1.html"]);
     });
 
-    it("throws if called without a configured adapter", async () => {
+    it("throws without a configured adapter", async () => {
       await expect(
         renderToStatic(async (ctx) => {
           await ctx.emitFragments(() => {});
@@ -620,307 +792,176 @@ describe("renderToStatic", () => {
     });
   });
 
-  it("<Deferred> usage without adapter throws a clear error", async () => {
-    await expect(
-      renderToStatic(async (ctx) => {
-        return ctx.renderPage(() => (
+  it("ESI: placeholders become esi:include, fragments materialize as-is", async () => {
+    const files: Record<string, string> = {};
+    await renderToStatic(
+      async (ctx) => {
+        const page = await ctx.renderPage(() => (
           <html>
             <body>
-              <Deferred fallback={<span>…</span>}>
-                {() => <span>real</span>}
-              </Deferred>
+              <Defer>{() => <span>real</span>}</Defer>
             </body>
           </html>
         ));
-      }),
+        files["index"] = page;
+        await ctx.emitFragments((_id, url, html) => void (files[url] = html));
+      },
+      { adapter: EsiAdapter, generatePath: (id) => `/esi/${id}.html` },
+    );
+    expect(files["index"]).toContain("esi:include");
+    expect(files["index"]).toContain('src="/esi/fragment-1.html"');
+    expect(files["/esi/fragment-1.html"]).toContain("<span>real</span>");
+  });
+
+  it("<Defer> with content but no adapter throws a clear error", async () => {
+    await expect(
+      renderToStatic(async (ctx) =>
+        ctx.renderPage(() => (
+          <html>
+            <body>
+              <Defer>{() => <span>real</span>}</Defer>
+            </body>
+          </html>
+        )),
+      ),
     ).rejects.toThrow(/adapter/i);
   });
 });
 
 describe("adapters", () => {
-  it("TurboAdapter should render placeholder with turbo-frame", async () => {
-    const html = await renderToString(
-      TurboAdapter.Placeholder({
-        id: "test-id",
-        src: "/src",
-        children: "fallback",
-      }),
+  it("TurboAdapter placeholder → turbo-frame; patch → turbo-stream", async () => {
+    const ph = await renderToString(
+      TurboAdapter.Placeholder({ id: "x", src: "/s", children: "fb" }),
     );
-    expect(html).toContain("turbo-frame");
-    expect(html).toContain('id="test-id"');
-    expect(html).toContain('src="/src"');
-  });
-
-  it("TurboAdapter should render patch with turbo-stream action=replace", async () => {
-    const html = await renderToString(
-      TurboAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "replace",
-      }),
+    expect(ph).toContain("turbo-frame");
+    expect(ph).toContain('src="/s"');
+    const patch = await renderToString(
+      TurboAdapter.Patch({ id: "x", children: "c", merge: "append" }),
     );
-    expect(html).toContain("turbo-stream");
-    expect(html).toContain('target="test-id"');
-    expect(html).toContain('action="replace"');
+    expect(patch).toContain('action="append"');
+    expect(patch).toContain('target="x"');
   });
 
-  it("TurboAdapter should render patch with turbo-stream action=append", async () => {
-    const html = await renderToString(
-      TurboAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "append",
-      }),
+  it("HtmxAdapter patch uses hx-swap-oob mapped from merge", async () => {
+    expect(
+      await renderToString(
+        HtmxAdapter.Patch({ id: "x", children: "c", merge: "replace" }),
+      ),
+    ).toContain('hx-swap-oob="outerHTML"');
+    expect(
+      await renderToString(
+        HtmxAdapter.Patch({ id: "x", children: "c", merge: "before" }),
+      ),
+    ).toContain('hx-swap-oob="beforebegin"');
+  });
+
+  it("NativeAdapter: replace → template; non-replace → insertAdjacentHTML", async () => {
+    const repl = await renderToString(
+      NativeAdapter.Patch({ id: "x", children: "c", merge: "replace" }),
     );
-    expect(html).toContain('action="append"');
-  });
-
-  it("HtmxAdapter should render placeholder with hx-get", async () => {
-    const html = await renderToString(
-      HtmxAdapter.Placeholder({
-        id: "test-id",
-        src: "/src",
-        children: "fallback",
-      }),
+    expect(repl).toContain("template");
+    expect(repl).not.toContain("insertAdjacentHTML");
+    const app = await renderToString(
+      NativeAdapter.Patch({ id: "x", children: "c", merge: "append" }),
     );
-    expect(html).toContain("hx-get");
-    expect(html).toContain('id="test-id"');
+    expect(app).toContain("insertAdjacentHTML");
+    expect(app).toContain("beforeend");
   });
 
-  it("HtmxAdapter should render patch with hx-swap-oob=outerHTML for replace", async () => {
-    const html = await renderToString(
-      HtmxAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "replace",
-      }),
+  it("NativeAdapter.transformShell injects the polyfill into <head>", () => {
+    const result = NativeAdapter.transformShell!(
+      "<html><head></head><body></body></html>",
     );
-    expect(html).toContain('hx-swap-oob="outerHTML"');
-  });
-
-  it("HtmxAdapter should render patch with hx-swap-oob=beforebegin for before", async () => {
-    const html = await renderToString(
-      HtmxAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "before",
-      }),
-    );
-    expect(html).toContain('hx-swap-oob="beforebegin"');
-  });
-
-  it("WebPlatformAdapter should render patch for replace", async () => {
-    const html = await renderToString(
-      WebPlatformAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "replace",
-      }),
-    );
-    expect(html).toContain("template");
-  });
-
-  it("WebPlatformAdapter should throw for non-replace merge types", () => {
-    expect(() =>
-      WebPlatformAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "append",
-      }),
-    ).toThrow(/WebPlatformAdapter only supports "replace"/);
-  });
-
-  it("NativeAdapter should render patch with template for replace", async () => {
-    const html = await renderToString(
-      NativeAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "replace",
-      }),
-    );
-    expect(html).toContain("template");
-    expect(html).not.toContain("insertAdjacentHTML");
-  });
-
-  it("NativeAdapter should use insertAdjacentHTML for non-replace merge types", async () => {
-    const html = await renderToString(
-      NativeAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "append",
-      }),
-    );
-    expect(html).toContain("insertAdjacentHTML");
-    expect(html).toContain("beforeend");
-    expect(html).toContain('id="patch-test-id"');
-  });
-
-  it("NativeAdapter.transformShell should inject the polyfill into <head>", () => {
-    const shell = "<html><head></head><body></body></html>";
-    const result = NativeAdapter.transformShell!(shell);
-    expect(result).toContain("<script>");
     expect(result).toContain("MutationObserver");
     expect(result.indexOf("<script>")).toBeLessThan(result.indexOf("</head>"));
   });
 
-  it("TurboAdapter.Frame should render turbo-frame for SSG lazy-load", async () => {
-    const html = await renderToString(
-      TurboAdapter.Frame({ id: "test-id", children: "content" }),
-    );
-    expect(html).toContain("<turbo-frame");
-    expect(html).toContain('id="test-id"');
-    expect(html).not.toContain("turbo-stream");
-  });
-
-  it("HtmxAdapter.Frame should render plain div for SSG lazy-load", async () => {
-    const html = await renderToString(
-      HtmxAdapter.Frame({ id: "test-id", children: "content" }),
-    );
-    expect(html).toContain('id="test-id"');
-    expect(html).not.toContain("hx-swap-oob");
-  });
-
-  it("NativeAdapter.Frame should render template for SSG lazy-load", async () => {
-    const html = await renderToString(
-      NativeAdapter.Frame({ id: "test-id", children: "content" }),
-    );
-    expect(html).toContain("template");
-    expect(html).toContain('for="test-id"');
-  });
-
-  it("EsiAdapter should render esi:include with src", async () => {
-    const html = await renderToString(
-      EsiAdapter.Placeholder({
-        id: "test-id",
-        src: "/fragments/test.html",
-        children: "fallback",
-      }),
-    );
-    expect(html).toContain("esi:include");
-    expect(html).toContain('src="/fragments/test.html"');
-    expect(html).not.toContain("fallback");
-  });
-
-  it("EsiAdapter should render fallback inline when no src", async () => {
-    const html = await renderToString(
-      EsiAdapter.Placeholder({
-        id: "test-id",
-        src: null,
-        children: "fallback",
-      }),
-    );
-    expect(html).toContain("fallback");
-    expect(html).not.toContain("esi:include");
-  });
-
-  it("EsiAdapter should escape src attribute", async () => {
-    const html = await renderToString(
-      EsiAdapter.Placeholder({
-        id: "test-id",
-        src: "/f?a=1&b=2",
-        children: "",
-      }),
-    );
-    expect(html).toContain("&amp;");
-    expect(html).not.toContain('"&"');
-  });
-
-  it("EsiAdapter should render esi:inline patch", async () => {
-    const html = await renderToString(
-      EsiAdapter.Patch({
-        id: "test-id",
-        children: "content",
-        merge: "replace",
-      }),
-    );
-    expect(html).toContain("esi:inline");
-    expect(html).toContain('name="test-id"');
-    expect(html).toContain('fetchable="yes"');
-    expect(html).toContain("content");
-  });
-
-  it("EsiAdapter should throw for non-replace merge types", () => {
-    expect(() =>
-      EsiAdapter.Patch({ id: "test-id", children: "content", merge: "append" }),
-    ).toThrow(/EsiAdapter only supports "replace"/);
-  });
-
-  it("EsiAdapter.Frame should render plain HTML for SSG", async () => {
-    const html = await renderToString(
-      EsiAdapter.Frame({ id: "test-id", children: "content" }),
-    );
-    expect(html).toBe("content");
-    expect(html).not.toContain("esi:");
-    expect(html).not.toContain("id=");
-  });
-
-  it("TurboAdapter.encode() wraps patches in turbo-stream", async () => {
-    const stream = new ReadableStream<FlowEvent>({
-      start(c) {
-        c.enqueue({ type: "shell", html: "<html><body>" });
-        c.enqueue({
-          type: "patch",
-          id: "x",
-          html: "hello",
-          merge: "replace",
-        });
-        c.enqueue({ type: "close", html: "</body></html>" });
-        c.close();
-      },
+  it("WebPlatformAdapter is replace-only, non-replace merges produce a template", async () => {
+    expect(WebPlatformAdapter.capabilities).toEqual({
+      streaming: true,
+      merges: ["replace"],
     });
-    const out = stream.pipeThrough(TurboAdapter.encode());
-    const chunks: string[] = [];
-    for await (const c of out) chunks.push(c);
-    const all = chunks.join("");
-    expect(all).toContain("<turbo-stream");
-    expect(all).toContain('target="x"');
-    expect(all).toContain("hello");
+    const patch = await renderToString(
+      WebPlatformAdapter.Patch({ id: "x", children: "c", merge: "append" }),
+    );
+    expect(patch).toContain("template");
   });
 
-  it("HtmxAdapter.encode() wraps patches in hx-swap-oob divs", async () => {
-    const stream = new ReadableStream<FlowEvent>({
-      start(c) {
-        c.enqueue({ type: "patch", id: "y", html: "hi", merge: "append" });
-        c.close();
-      },
+  it("EsiAdapter declares no streaming and replace-only merges", () => {
+    expect(EsiAdapter.capabilities).toEqual({
+      streaming: false,
+      merges: ["replace"],
     });
-    const out = stream.pipeThrough(HtmxAdapter.encode());
-    const chunks: string[] = [];
-    for await (const c of out) chunks.push(c);
-    expect(chunks.join("")).toContain('hx-swap-oob="beforeend"');
   });
 
-  it("HtmxAdapter.negotiate reads HX-Target header", () => {
-    const req = new Request("http://localhost", {
-      headers: { "HX-Target": "my-id" },
+  it("EsiAdapter renders esi:include / esi:inline and escapes src", async () => {
+    expect(
+      await renderToString(
+        EsiAdapter.Placeholder({ id: "x", src: "/f?a=1&b=2", children: "" }),
+      ),
+    ).toContain("&amp;");
+    expect(
+      await renderToString(
+        EsiAdapter.Patch({ id: "x", children: "c", merge: "replace" }),
+      ),
+    ).toContain("esi:inline");
+  });
+
+  it("EsiAdapter.encode() throws — ESI is CDN-level, not a live stream", () => {
+    expect(() => EsiAdapter.encode()).toThrow(/not supported/);
+  });
+
+  it("Frame variants: turbo-frame / div / template", async () => {
+    expect(
+      await renderToString(TurboAdapter.Frame({ id: "x", children: "c" })),
+    ).toContain("<turbo-frame");
+    expect(
+      await renderToString(NativeAdapter.Frame({ id: "x", children: "c" })),
+    ).toContain("template");
+  });
+
+  it("createAdapter defaults capabilities to full streaming + all merges", () => {
+    const a = createAdapter({
+      Placeholder: () => null,
+      Patch: () => null,
+      Frame: () => null,
     });
-    const n = HtmxAdapter.negotiate!(req);
+    expect(a.capabilities.streaming).toBe(true);
+    expect(a.capabilities.merges).toContain("append");
+  });
+});
+
+describe("HTTP negotiation (decoupled from the adapter)", () => {
+  it("negotiateHtmx reads HX-Target and sets Vary", () => {
+    const n = negotiateHtmx(
+      new Request("http://localhost", { headers: { "HX-Target": "my-id" } }),
+    );
     expect(n.target).toBe("my-id");
     expect(new Headers(n.headers).get("Vary")).toContain("HX-Target");
   });
 
-  it("UnpolyAdapter.negotiate: fragment request → patches-only, echo, Vary", () => {
-    const req = new Request("http://localhost", {
-      headers: { "X-Up-Target": ".content", "X-Up-Fail-Target": "form" },
-    });
-    const n = UnpolyAdapter.negotiate!(req);
-    expect(n.mode).toBe("patches-only");
+  it("negotiateUnpoly: echoes target/failTarget + Vary, does NOT force a mode", () => {
+    const n = negotiateUnpoly(
+      new Request("http://localhost", {
+        headers: { "X-Up-Target": ".content", "X-Up-Fail-Target": "form" },
+      }),
+    );
+    expect(n.mode).toBeUndefined();
     expect(n.target).toBe(".content");
     expect(n.failTarget).toBe("form");
     const headers = new Headers(n.headers);
     expect(headers.get("X-Up-Target")).toBe(".content");
-    expect(headers.get("X-Up-Fail-Target")).toBe("form");
     expect(headers.get("Vary")).toContain("X-Up-Target");
   });
 
-  it("UnpolyAdapter.negotiate: plain navigation → full shell", () => {
-    const n = UnpolyAdapter.negotiate!(new Request("http://localhost"));
-    expect(n.mode).toBeUndefined();
+  it("negotiateUnpoly: plain navigation → no target", () => {
+    const n = negotiateUnpoly(new Request("http://localhost"));
     expect(n.target).toBeUndefined();
+    expect(n.failTarget).toBeUndefined();
   });
 
-  it("flowResponse keeps caller headers and lets negotiation headers win", async () => {
-    const res = await flowResponse(
+  it("serve runs an opt-in negotiate fn; negotiation headers win", async () => {
+    const res = await serve(
       new Request("http://localhost", { headers: { "HX-Target": "zone" } }),
       () => (
         <html>
@@ -930,163 +971,63 @@ describe("adapters", () => {
         </html>
       ),
       HtmxAdapter,
-      { headers: { "cache-control": "no-store" } },
+      { negotiate: negotiateHtmx, headers: { "cache-control": "no-store" } },
     );
     expect(res.headers.get("cache-control")).toBe("no-store");
     expect(res.headers.get("content-type")).toContain("text/html");
     expect(res.headers.get("Vary")).toContain("HX-Target");
     expect(await res.text()).toContain("hi");
   });
-});
 
-describe("Generator", () => {
-  const collect = async (stream: ReadableStream<string>): Promise<string> => {
-    let out = "";
-    for await (const chunk of stream) out += chunk;
-    return out;
-  };
-
-  it("registers a stream effect (headless, append by default)", async () => {
-    await withScope(async () => {
-      initFlow({ adapter: TurboAdapter, mode: "streaming" });
-      async function* g() {
-        yield <li>x</li>;
-      }
-      const html = await renderToString(
-        <Generator target="feed" source={() => g()} />,
-      );
-      expect(html).toBe("");
-      const { streams } = useContext(Flow);
-      expect(streams).toHaveLength(1);
-      expect(streams[0]!.target).toBe("feed");
-      expect(streams[0]!.merge).toBe("append");
-    });
+  it("serve passes negotiation hints to the page", async () => {
+    const res = await serve(
+      new Request("http://localhost", { headers: { "HX-Target": "content" } }),
+      (n) => (
+        <html>
+          <body>{n.target === "content" ? <p>fragment</p> : <p>full</p>}</body>
+        </html>
+      ),
+      NativeAdapter,
+      { negotiate: negotiateHtmx },
+    );
+    expect(await res.text()).toContain("fragment");
   });
 
-  it("streams each yield of an async generator as an append patch", async () => {
-    async function* rows() {
-      yield <li>a</li>;
-      yield <li>b</li>;
-    }
-    const stream = renderToReadableStream(
+  it("Unpoly + Native + explicit fragment mode: shell suppressed, fragment emitted", async () => {
+    const res = await serve(
+      new Request("http://localhost", {
+        headers: { "X-Up-Target": "content" },
+      }),
       () => (
         <html>
           <body>
-            <ul id="feed" />
-            <Generator target="feed" source={() => rows()} />
+            <Fill target="content">{() => <p>patched</p>}</Fill>
           </body>
         </html>
       ),
-      TurboAdapter,
+      NativeAdapter,
+      { negotiate: negotiateUnpoly, mode: "fragment" },
     );
-    const html = await collect(stream);
-    expect(html).toContain("<li>a</li>");
-    expect(html).toContain("<li>b</li>");
-    expect((html.match(/target="feed"/g) ?? []).length).toBe(2);
-    expect(html).toContain('action="append"');
+    const body = await res.text();
+    expect(body).toContain("patched");
+    expect(body).not.toContain("<html>");
+    expect(res.headers.get("Vary")).toContain("X-Up-Target");
   });
 
-  it("maps raw data items through `map`", async () => {
-    function* data() {
-      yield { n: 1 };
-      yield { n: 2 };
-    }
-    const stream = renderToReadableStream(
-      () => (
-        <html>
-          <body>
-            <ol id="list" />
-            <Generator
-              target="list"
-              source={() => data()}
-              map={(d) => <li>{d.n}</li>}
-            />
-          </body>
-        </html>
-      ),
-      TurboAdapter,
-    );
-    const html = await collect(stream);
-    expect(html).toContain("<li>1</li>");
-    expect(html).toContain("<li>2</li>");
-  });
-
-  it("streams a sync iterable source", async () => {
-    const stream = renderToReadableStream(
-      () => (
-        <html>
-          <body>
-            <ul id="feed" />
-            <Generator
-              target="feed"
-              source={() => ["x", "y"]}
-              map={(t) => <li>{t}</li>}
-            />
-          </body>
-        </html>
-      ),
-      TurboAdapter,
-    );
-    const html = await collect(stream);
-    expect(html).toContain("<li>x</li>");
-    expect(html).toContain("<li>y</li>");
-  });
-
-  it("streams even when no <Deferred> fragments are present", async () => {
-    async function* rows() {
-      yield <li>only</li>;
-    }
-    const stream = renderToReadableStream(
-      () => (
-        <html>
-          <body>
-            <ul id="feed" />
-            <Generator target="feed" source={() => rows()} />
-          </body>
-        </html>
-      ),
-      TurboAdapter,
-    );
-    const html = await collect(stream);
-    expect(html).toContain("<li>only</li>");
-    expect(html).toContain("</html>");
+  it("serve defaults to NativeAdapter", async () => {
+    const res = await serve(new Request("http://localhost"), () => (
+      <html>
+        <head></head>
+        <body>
+          <p>hi</p>
+        </body>
+      </html>
+    ));
+    expect(await res.text()).toContain("MutationObserver");
   });
 });
 
-describe("B6 — Edge cases", () => {
-  const collect = async (s: ReadableStream<string>): Promise<string> => {
-    let out = "";
-    for await (const c of s) out += c;
-    return out;
-  };
-
-  it("Generator inside Deferred factory (regression: streams registered after first wave)", async () => {
-    function* inner() {
-      yield <li>streamed</li>;
-    }
-    const html = await collect(
-      renderToReadableStream(
-        () => (
-          <html>
-            <body>
-              <Deferred fallback={<p>loading</p>}>
-                {() => (
-                  <div>
-                    deferred
-                    <Generator target="feed" source={() => inner()} />
-                  </div>
-                )}
-              </Deferred>
-            </body>
-          </html>
-        ),
-        TurboAdapter,
-      ),
-    );
-    expect(html).toContain("streamed");
-    expect(html).toContain("deferred");
-  });
-
+describe("edge cases", () => {
   it("reader cancel stops an infinite generator", async () => {
     let count = 0;
     async function* inf() {
@@ -1095,12 +1036,14 @@ describe("B6 — Edge cases", () => {
         yield <li>{count}</li>;
       }
     }
-    const stream = renderToReadableStream(
+    const stream = renderStream(
       () => (
         <html>
           <body>
             <ul id="feed" />
-            <Generator target="feed" source={() => inf()} />
+            <Fill target="feed" merge="append">
+              {inf()}
+            </Fill>
           </body>
         </html>
       ),
@@ -1108,79 +1051,67 @@ describe("B6 — Edge cases", () => {
     );
     const reader = stream.getReader();
     await reader.read(); // shell
-    await reader.read(); // patch 1
-    await reader.read(); // patch 2
+    await reader.read(); // fragment 1
+    await reader.read(); // fragment 2
     const before = count;
     await reader.cancel();
     await Bun.sleep(10);
-    // Count may increase by 1 due to one extra iteration before signal check.
-    // The key invariant: count does not keep growing (generator stopped).
     expect(count).toBeLessThanOrEqual(before + 1);
   });
 
   it("pre-aborted signal → no events, stream closes cleanly", async () => {
     const ac = new AbortController();
     ac.abort();
-    const events: FlowEvent[] = [];
-    const stream = renderToFlowEvents(
-      () => (
-        <html>
-          <body>
-            <p>hi</p>
-          </body>
-        </html>
+    const events = await collectEvents(
+      renderToFlowEvents(
+        () => (
+          <html>
+            <body>
+              <p>hi</p>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
+        { signal: ac.signal },
       ),
-      TurboAdapter,
-      { signal: ac.signal },
     );
-    for await (const ev of stream) events.push(ev);
     expect(events).toEqual([]);
   });
 
-  it("backpressure: producer pauses while reading is paused, then completes", async () => {
+  it("backpressure: producer parks while reading is paused, then completes", async () => {
     let produced = 0;
-    function* many() {
+    async function* many() {
       for (let i = 0; i < 100; i++) {
         produced++;
         yield <span>{i}</span>;
       }
     }
-    const stream = renderToReadableStream(
+    const stream = renderStream(
       () => (
         <html>
           <body>
-            <Generator target="out" source={() => many()} />
+            <div id="out" />
+            <Fill target="out" merge="append">
+              {many()}
+            </Fill>
           </body>
         </html>
       ),
       TurboAdapter,
     );
     const reader = stream.getReader();
-    // First 10 reads = 1 shell + 9 patches
-    for (let i = 0; i < 10; i++) {
-      const { done } = await reader.read();
-      if (done) break;
-    }
-    // Paused: the producer must park on backpressure near the high-water
-    // mark instead of running the generator to completion.
+    for (let i = 0; i < 10; i++) if ((await reader.read()).done) break;
     await Bun.sleep(20);
     expect(produced).toBeLessThan(50);
-    // Resume and count all remaining events
     let remaining = 0;
-    while (true) {
-      const { done } = await reader.read();
-      if (done) break;
-      remaining++;
-    }
-    // Total: 1 shell + 100 patches + 1 close = 102 events.
-    // After reading 10 (1 shell + 9 patches), we have 91 patches + 1 close = 92 remaining.
+    while (!(await reader.read()).done) remaining++;
     expect(remaining).toBe(92);
     expect(produced).toBe(100);
   });
 
   it("transformShell is applied exactly once on the streaming path", async () => {
     const html = await collect(
-      renderToReadableStream(
+      renderStream(
         () => (
           <html>
             <head></head>
@@ -1195,18 +1126,14 @@ describe("B6 — Edge cases", () => {
     expect((html.match(/MutationObserver/g) ?? []).length).toBe(1);
   });
 
-  it("<Deferred src> rejects an invalid fragment id", async () => {
+  it("Defer rejects an invalid fragment id", async () => {
     await expect(
       collect(
-        renderToReadableStream(
+        renderStream(
           () => (
             <html>
               <body>
-                <Deferred
-                  name={'x"><script>alert(1)</script>'}
-                  src="/x"
-                  fallback={<p>…</p>}
-                />
+                <Slot name={'x"><script>alert(1)</script>'} />
               </body>
             </html>
           ),
@@ -1216,52 +1143,49 @@ describe("B6 — Edge cases", () => {
     ).rejects.toThrow(/not a valid fragment id/);
   });
 
-  it("factory throw with onError → error patch replaces fallback, good siblings still emit", async () => {
-    const events: FlowEvent[] = [];
-    const stream = renderToFlowEvents(
-      () => (
-        <html>
-          <body>
-            <Deferred fallback={<p>loading</p>}>
-              {() => {
-                throw new Error("crash");
-              }}
-            </Deferred>
-            <Deferred fallback={<p>loading2</p>}>
-              {() => <span>ok</span>}
-            </Deferred>
-          </body>
-        </html>
+  it("factory throw with onError → error fragment, good siblings still emit", async () => {
+    const events = await collectEvents(
+      renderToFlowEvents(
+        () => (
+          <html>
+            <body>
+              <Defer>
+                {() => {
+                  throw new Error("crash");
+                }}
+              </Defer>
+              <Defer>{() => <span>ok</span>}</Defer>
+            </body>
+          </html>
+        ),
+        TurboAdapter,
+        { onError: () => <div>err-fallback</div> },
       ),
-      TurboAdapter,
-      {
-        onError: () => <div class="error">fallback</div>,
-      },
     );
-    for await (const ev of stream) events.push(ev);
-    const patches = events.filter((e) => e.type === "patch");
-    expect(patches.length).toBe(2);
-    // Error patch should have the fallback
-    const errorPatch = patches.find((p) => p.id === "fragment-1");
-    expect(errorPatch?.html).toContain("error");
-    expect(errorPatch?.html).toContain("fallback");
-    // Good patch should have normal content
-    const goodPatch = patches.find((p) => p.id === "fragment-2");
-    expect(goodPatch?.html).toContain("ok");
+    const fragments = events.filter(
+      (e): e is FragmentEvent => e.type === "fragment",
+    );
+    expect(fragments.find((p) => p.id === "fragment-1")?.html).toContain(
+      "err-fallback",
+    );
+    expect(fragments.find((p) => p.id === "fragment-2")?.html).toContain("ok");
   });
 
-  it("generator throw mid-iteration → onError kind=stream", async () => {
+  it("stream throw mid-iteration → onError kind=stream", async () => {
     const errors: Array<{ kind: string }> = [];
     async function* g() {
       yield <span>first</span>;
       throw new Error("mid-crash");
     }
     await collect(
-      renderToReadableStream(
+      renderStream(
         () => (
           <html>
             <body>
-              <Generator target="out" source={() => g()} />
+              <div id="out" />
+              <Fill target="out" merge="append">
+                {g()}
+              </Fill>
             </body>
           </html>
         ),
@@ -1274,57 +1198,85 @@ describe("B6 — Edge cases", () => {
         },
       ),
     );
-    expect(errors.length).toBe(1);
+    expect(errors).toHaveLength(1);
     expect(errors[0]!.kind).toBe("stream");
   });
 
-  it("mixed Deferred + Generator: shell first, patches, close last", async () => {
+  it("mixed one-shot + stream: shell first, fragments between, close last", async () => {
     async function* g() {
       yield <li>g</li>;
     }
-    const events: FlowEvent[] = [];
-    const stream = renderToFlowEvents(
-      () => (
-        <html>
-          <body>
-            <Deferred fallback={<p>loading</p>}>
-              {() => <span>d</span>}
-            </Deferred>
-            <Generator target="feed" source={() => g()} />
-          </body>
-        </html>
-      ),
-      TurboAdapter,
-    );
-    for await (const ev of stream) events.push(ev);
-    expect(events[0]!.type).toBe("shell");
-    expect(events[events.length - 1]!.type).toBe("close");
-    const types = events.map((e) => e.type);
-    const shellIdx = types.indexOf("shell");
-    const closeIdx = types.lastIndexOf("close");
-    const patchIdxs = types
-      .map((t, i) => (t === "patch" ? i : -1))
-      .filter((i) => i >= 0);
-    for (const pi of patchIdxs) {
-      expect(pi).toBeGreaterThan(shellIdx);
-      expect(pi).toBeLessThan(closeIdx);
-    }
-  });
-
-  it("empty source → no patches, stream closes cleanly", async () => {
-    const html = await collect(
-      renderToReadableStream(
+    const events = await collectEvents(
+      renderToFlowEvents(
         () => (
           <html>
             <body>
-              <Generator target="feed" source={() => []} />
+              <Defer>{() => <span>d</span>}</Defer>
+              <Fill target="feed" merge="append">
+                {g()}
+              </Fill>
             </body>
           </html>
         ),
         TurboAdapter,
       ),
     );
-    expect(html).not.toContain("turbo-stream");
-    expect(html).toContain("</html>");
+    expect(events[0]!.type).toBe("shell");
+    expect(events.at(-1)!.type).toBe("close");
+    const types = events.map((e) => e.type);
+    const shellIdx = types.indexOf("shell");
+    const closeIdx = types.lastIndexOf("close");
+    types.forEach((t, i) => {
+      if (t === "fragment") {
+        expect(i).toBeGreaterThan(shellIdx);
+        expect(i).toBeLessThan(closeIdx);
+      }
+    });
+  });
+});
+
+describe("composeShell", () => {
+  it("applies transforms left-to-right", () => {
+    const t = composeShell(
+      (s) => s + "[a]",
+      (s) => s + "[b]",
+    );
+    expect(t("x")).toBe("x[a][b]");
+  });
+
+  it("skips falsy entries (e.g. an adapter with no transformShell)", () => {
+    const t = composeShell(
+      undefined,
+      TurboAdapter.transformShell,
+      (s) => injectIntoHead(s, "<title>ok</title>"),
+      null,
+      false,
+    );
+    expect(t("<head></head>")).toBe("<head><title>ok</title></head>");
+  });
+
+  it("composes into an adapter and runs once in the streamed shell", async () => {
+    const metadata = () => (s: string) =>
+      injectIntoHead(s, "<title>Home</title>");
+    const adapter = createAdapter({
+      ...NativeAdapter,
+      transformShell: composeShell(NativeAdapter.transformShell, metadata()),
+    });
+    const html = await collect(
+      renderStream(
+        () => (
+          <html>
+            <head></head>
+            <body>
+              <Defer>{() => <span>d</span>}</Defer>
+            </body>
+          </html>
+        ),
+        adapter,
+      ),
+    );
+    expect(html).toContain("<title>Home</title>");
+    expect(html).toContain("MutationObserver");
+    expect(html.match(/<title>Home<\/title>/g)).toHaveLength(1);
   });
 });

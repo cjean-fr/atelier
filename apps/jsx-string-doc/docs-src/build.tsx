@@ -1,11 +1,10 @@
 import config from "../docs.config.js";
 import { setDocs } from "./context.js";
+import { discoverPages } from "./lib/pages.js";
+import { renderDocument } from "./lib/render-document.js";
 import { resolveSidebar, resolveNavigation } from "./lib/sidebar.js";
 import { injectToc, renderTocHtml } from "./lib/toc.js";
-import { discoverPages } from "./lib/pages.js";
 import { buildMinimatchIndex } from "./search/minimatch-build.js";
-import type { ResolvedDocsConfig } from "./types.js";
-import { renderToStatic } from "@cjean-fr/jsx-flow";
 import { loadViteManifest, setVite } from "@cjean-fr/jsx-vite";
 import { existsSync } from "node:fs";
 import { writeFile, mkdir } from "node:fs/promises";
@@ -22,43 +21,47 @@ if (!manifest) {
 const allPages = await discoverPages(config);
 const pageData: { url: string; title: string; html: string }[] = [];
 
-await renderToStatic(async (ctx) => {
-  setVite(manifest, { base: config.base });
+for (const page of allPages) {
+  const meta = page.meta;
+  const sidebar = resolveSidebar(
+    allPages as typeof allPages & { meta: typeof meta }[],
+    config.sidebar,
+    page.url,
+  );
 
-  for (const page of allPages) {
-    const meta = page.meta;
-    const sidebar = resolveSidebar(
-      allPages as typeof allPages & { meta: typeof meta }[],
-      config.sidebar,
-      page.url,
-    );
+  const { prev, next } = resolveNavigation(sidebar, page.url);
 
-    const { prev, next } = resolveNavigation(sidebar, page.url);
+  const ext = path.extname(page.file);
+  const prose = config.handlers[ext]?.prose ?? false;
 
-    setDocs({
-      config,
-      currentPage: page.url,
-      meta,
-      sidebar,
-      lastUpdated: null,
-      editUrl: null,
-      prev,
-      next,
-    });
+  // Each page is an isolated document: open a render scope, set per-page
+  // context, render, then run post-render transforms (TOC needs rendered ids).
+  const html = await renderDocument(
+    () => {
+      setVite(manifest, { base: config.base });
+      setDocs({
+        config,
+        currentPage: page.url,
+        meta,
+        sidebar,
+        lastUpdated: null,
+        editUrl: null,
+        prev,
+        next,
+      });
+      const rawInner = page.Component({});
+      const inner = prose ? <div class="docs-prose">{rawInner}</div> : rawInner;
+      return config.layout({ children: inner });
+    },
+    { transforms: [(h) => injectToc(h, renderTocHtml)] },
+  );
 
-    const ext = path.extname(page.file);
-    const prose = config.handlers[ext]?.prose ?? false;
-    const rawInner = page.Component({});
-    const inner = prose ? <div class="docs-prose">{rawInner}</div> : rawInner;
-    const rendered = await ctx.renderPage(() => config.layout({ children: inner }));
-    const html = injectToc(rendered, renderTocHtml);
-    const fullHtml = "<!DOCTYPE html>\n" + html;
+  const fullHtml = "<!DOCTYPE html>\n" + html;
 
-    await mkdir(path.dirname(page.outPath), { recursive: true });
-    await writeFile(page.outPath, fullHtml, "utf-8");
-    pageData.push({ url: page.url, title: meta.title ?? page.url, html });
-  }
-});
+  await mkdir(path.dirname(page.outPath), { recursive: true });
+  await writeFile(page.outPath, fullHtml, "utf-8");
+  pageData.push({ url: page.url, title: meta.title ?? page.url, html });
+}
 
 console.log(`Built ${allPages.length} pages.`);
 

@@ -12,18 +12,18 @@ Use `jsx-string` alone for SSG, emails, and pure SSR. Add `jsx-flow` when you ne
 | ------------------------- | -------------------------------------------------- |
 | Renders JSX → HTML string | Adds deferred fragments + streaming patch delivery |
 | Server-only, zero runtime | Emits adapter-specific markup for DOM updates      |
-| `renderToString()`        | `renderToReadableStream()` / `renderToStatic()`    |
-| Context via `withScope()` | Adapters: Turbo, HTMX, Native, WebPlatform, ESI    |
+| `renderToString()`        | `renderStream()` / `renderToStatic()`              |
+| —                         | Adapters: Turbo, HTMX, Native, WebPlatform, ESI    |
 
 ## Why deferred regions in streaming SSR
 
 A standard `renderToString` call is a serial pipeline: the server computes the full page before sending the first byte. With streaming, the shell (layout, navigation, above-the-fold content) goes to the browser immediately while heavy components are still rendering.
 
-Each `<Deferred>` renders **concurrently** and independently — the slowest component does not block the others. The browser receives the shell, paints it, then receives patches as they arrive and applies them in-place.
+Each deferred region renders **concurrently** and independently — the slowest component does not block the others. The browser receives the shell, paints it, then receives patches as they arrive and applies them in-place.
 
 - **TTFB / FCP** — users see content in one round-trip, not after all async work settles
 - **No virtual DOM, no hydration** — patches are applied as plain HTML by the adapter's client mechanism (Turbo, HTMX) or a minimal polyfill
-- **Fault isolation** — a failed fragment logs and is silently skipped; the rest of the page is unaffected
+- **Fault isolation** — a failed fragment routes to `onError` (or logs) and is skipped; the rest of the page is unaffected
 - **Memory** — fragments are streamed out as they render, not accumulated before flushing
 
 ## Why deferred regions in SSG
@@ -43,52 +43,121 @@ The shell (stable layout, navigation) is one file. Each fragment is a separate f
 bun add @cjean-fr/jsx-flow
 ```
 
-## Concepts
+## Components
 
-### `<Deferred>` — deferred render with placeholder
+jsx-flow provides four declarative primitives for deferred content. Each works with any adapter, in both streaming and static generation.
 
-Renders a placeholder immediately in the shell. After the shell is sent, the real content renders concurrently and is delivered as a DOM patch.
+### `<Slot>` — a hole with optional default content
 
-```tsx
-import { Deferred } from "@cjean-fr/jsx-flow";
-
-// Streaming: server pushes the fragment in the same response
-<Deferred fallback={<Spinner />}>
-  {() => <HeavyDashboard />}
-</Deferred>
-
-// Static: client fetches the fragment from src
-<Deferred src="/fragments/heavy.html" fallback={<Spinner />} />
-
-// Append into a container rather than replacing the placeholder
-<Deferred merge="append" fallback={<ul id="feed" />}>
-  {() => <li>Latest post</li>}
-</Deferred>
-```
-
-`children` must be a **factory** `() => JSXNode`, not a plain node. JSX evaluates eagerly — the thunk defers rendering to streaming time.
-
-### `<Patch>` — headless fragment push
-
-Registers a fragment without rendering anything in the shell. Use it to push content to a DOM element that already exists.
+Declares a named insertion point in the shell. Its children are the default content, rendered immediately. An empty slot tells the adapter to render an empty placeholder.
 
 ```tsx
-import { Patch } from "@cjean-fr/jsx-flow";
+import { Slot, Fill } from "@cjean-fr/jsx-flow";
 
-// Appends a notification to an existing list
-<Patch target="toast-list" merge="append">
-  {() => <li>File uploaded</li>}
-</Patch>
+function Layout() {
+  return (
+    <html>
+      <body>
+        <nav>...</nav>
+        <main>
+          <Slot name="page">
+            <p>Loading…</p>
+          </Slot>
+        </main>
+      </body>
+    </html>
+  );
+}
 
-// Updates a badge counter in-place
-<Patch target="cart-badge">
-  {() => <span>{count}</span>}
-</Patch>
+// Elsewhere in the tree (or a different component):
+function PageContent() {
+  return (
+    <Fill target="page">
+      <h1>Hello</h1>
+    </Fill>
+  );
+}
 ```
+
+`Slot` registers nothing in the pending store when called without children — it's just a passive hole. When called with children, it registers them as the default and renders a placeholder.
+
+### `<Fill>` — push content into a slot
+
+Pushes content into an existing slot by name. Renders nothing itself (returns `null`). Accepts children as a node, a `Promise<node>`, an `AsyncIterable<node>` (streams one patch per item), or a `(signal) => …` factory.
+
+```tsx
+import { Fill } from "@cjean-fr/jsx-flow";
+
+// One-shot: replaces the target
+<Fill target="page"><h1>Hello</h1></Fill>
+
+// Async: resolves and patches in
+<Fill target="comments"><Comments /></Fill>
+
+// Stream: each yield is a separate patch
+<Fill target="feed" merge="append">
+  {liveRows()}
+</Fill>
+
+// Cancellable factory with timeout
+<Fill target="dashboard" timeout={2000}>
+  {(signal) => <Dashboard signal={signal} />}
+</Fill>
+```
+
+### `<Defer>` — deferred content (streaming or SSG)
+
+Same shape as `Fill`, but renders a placeholder in the shell instead of returning `null`. Use `<Defer>` when the content should have a visible placeholder in the initial HTML. The placeholder is rendered by the active adapter (e.g. `<turbo-frame id="…">`, `<div id="…">`, `<?start name="…">`).
+
+```tsx
+import { Defer, Fill } from "@cjean-fr/jsx-flow";
+
+// Default content is shown in the shell; <Comments /> replaces it
+<Defer name="comments">
+  <Comments />
+</Defer>
+
+// Same pattern with Slot for the placeholder + Fill for the content:
+<Slot name="comments"><p>Loading…</p></Slot>
+<Fill target="comments"><Comments /></Fill>
+```
+
+### `<ClientFetch>` — client-side fetch only
+
+Renders a placeholder with a `src` attribute — the browser fetches the fragment after the shell lands. No server-push, works with any static host. Renders no deferred work on the server.
+
+```tsx
+import { ClientFetch } from "@cjean-fr/jsx-flow";
+
+<ClientFetch src="/fragments/comments.html" />;
+```
+
+### Content forms
+
+All three content-bearing primitives (`Defer`, `Fill`, `Slot` with children) accept:
+
+| Child                        | Behaviour                                                        |
+| ---------------------------- | ---------------------------------------------------------------- |
+| a node / `Promise<node>`     | one-shot patch — write JSX as usual, it streams when it resolves |
+| an `AsyncIterable<node>`     | a **stream** — one patch per item, as each arrives               |
+| `(signal: AbortSignal) => …` | the **cancellable** form — aborts on request cancel or `timeout` |
+
+The node form starts its work eagerly and is not cancellable; reach for the `(signal) => …` factory only when you need cancellation or a `timeout`. Detection of a stream is by `Symbol.asyncIterator` — synchronous iterables are treated as ordinary nodes.
+
+### Common props
+
+| Prop      | Applies to      | Meaning                                                             |
+| --------- | --------------- | ------------------------------------------------------------------- |
+| `name`    | `Slot`, `Defer` | id of the rendered placeholder (auto-generated if omitted)          |
+| `target`  | `Fill`          | target slot id to push content into                                 |
+| `merge`   | `Defer`, `Fill` | how content applies to its target (default `"replace"`) — see below |
+| `timeout` | `Defer`, `Fill` | per-fragment render timeout in ms (factory content only)            |
+| `onError` | `Defer`, `Fill` | per-fragment error handler, overriding the renderer's `onError`     |
+| `src`     | `ClientFetch`   | URL the browser fetches for the fragment content                    |
 
 ### Merge types
 
-Both `<Deferred>` and `<Patch>` accept a `merge` prop describing how the content is applied **relative to the target DOM element identified by `id`**. The content rendered by the factory has no id requirement.
+`merge` describes how content is applied **relative to the target DOM element identified by `id`**.
 
 | `merge`     | Effect                                          |
 | ----------- | ----------------------------------------------- |
@@ -98,74 +167,77 @@ Both `<Deferred>` and `<Patch>` accept a `merge` prop describing how the content
 | `"before"`  | Content inserted as previous sibling of target  |
 | `"after"`   | Content inserted as next sibling of target      |
 
-> `WebPlatformAdapter` only supports `"replace"` (WICG spec limitation). `EsiAdapter` only supports `"replace"` (ESI has no native insert/append semantics).
+An adapter that cannot express a merge **rejects it at registration** with a clear error (see capabilities). `WebPlatformAdapter` and `EsiAdapter` support `"replace"` only.
 
-### Patch adapters
+## Adapters
 
-Each adapter implements `Placeholder`/`Patch`/`Frame` (JSX), `encode()` (streaming wire format, delegated to `Patch`), plus optional `transformShell` and `negotiate(req)` for HTTP hints.
+Each adapter implements `Placeholder`/`Patch`/`Frame` (JSX), `encode()` (streaming wire format, delegated to `Patch`), optional `transformShell`, and a `capabilities` descriptor. Adapters are **pure wire formats** — HTTP negotiation is a separate concern (see below).
 
 | Adapter              | `Placeholder`          | `Patch` (streaming inline)                  | `Frame` (SSG lazy-load) |
 | -------------------- | ---------------------- | ------------------------------------------- | ----------------------- |
 | `TurboAdapter`       | `<turbo-frame>`        | `<turbo-stream action="…">`                 | `<turbo-frame id="…">`  |
 | `HtmxAdapter`        | `<div hx-get>`         | `<div hx-swap-oob="…">`                     | `<div id="…">`          |
-| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)       | `<template for="…">`    |
 | `NativeAdapter`      | `<?start name>…<?end>` | `<template for>` + `insertAdjacentHTML`     | `<template for="…">`    |
-| `UnpolyAdapter`      | same as Native         | same as Native                              | same as Native          |
+| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)       | `<template for="…">`    |
 | `EsiAdapter`         | `<esi:include src>`    | `<esi:inline name fetchable>` (static only) | raw HTML                |
 
 - **`Patch`** — fragment delivered inline in the same HTTP response as the shell.
 - **`Frame`** — fragment served as a standalone file fetched by the client (SSG).
-- `EsiAdapter` has no streaming path: `encode()` throws — ESI composition happens at the CDN, use `renderToStatic` + `emitFragments`.
+- `NativeAdapter` is the **default** — pass nothing to `renderStream` / `serve` to use it.
 
-#### `NativeAdapter` (recommended default)
+### Capabilities
+
+Every adapter declares what its wire format can express:
+
+```ts
+type AdapterCapabilities = {
+  streaming: boolean; // can carry a live FlowEvent stream
+  merges: readonly MergeType[]; // which merges it supports
+};
+```
+
+This is surfaced in the type system. `renderStream` / `serve` require a streaming adapter, so **`EsiAdapter` is rejected at compile time** there — ESI composition happens at the CDN, via `renderToStatic` + `emitFragments`. An unsupported `merge` fails fast at registration.
+
+#### `NativeAdapter` (default)
 
 Uses the [Declarative Partial Updates](https://developer.chrome.com/blog/declarative-partial-updates) API plus a minimal inline polyfill injected via `transformShell`. All merge types, no external client library, works in modern browsers.
 
 #### `WebPlatformAdapter`
 
-Pure WICG spec — no JS at all. Requires `chrome://flags/#enable-experimental-web-platform-features` until the spec ships. Only supports `"replace"`.
+Pure WICG spec — no JS at all. Requires `chrome://flags/#enable-experimental-web-platform-features` until the spec ships. `"replace"` only.
 
 #### `EsiAdapter` — CDN-level composition
 
-Designed for **SSG with a CDN ESI processor** (Varnish, Fastly, nginx ESI module). The shell contains `<esi:include src="…">` tags; the CDN fetches each fragment independently, applies separate TTLs, and assembles the final response before it reaches the browser.
+For **SSG with a CDN ESI processor** (Varnish, Fastly, nginx ESI module). The shell contains `<esi:include src="…">` tags; the CDN fetches each fragment independently, applies separate TTLs, and assembles the final response before it reaches the browser. `"replace"` only; no client-side JS.
 
 ```tsx
-// Each Deferred needs an explicit src pointing to the fragment URL
-<Deferred src="/fragments/nav.html" fallback={<nav>…</nav>} />
-<Deferred src="/fragments/feed.html" fallback={<p>Loading…</p>} />
+// Defer with explicit src pointing to the fragment URL
+<Defer name="nav" />
+<Defer name="feed" />
 ```
-
-Only `"replace"` is supported; ESI has no insert/append semantics. No client-side JS — composition is entirely at the CDN.
 
 ## Usage
 
 ### Streaming (server pushes fragments)
 
 ```tsx
-import {
-  renderToReadableStream,
-  NativeAdapter,
-  Deferred,
-} from "@cjean-fr/jsx-flow";
+import { renderStream, Defer } from "@cjean-fr/jsx-flow";
 
-const stream = renderToReadableStream(
-  () => (
-    <html>
-      <body>
-        <header>Fast</header>
-        <Deferred fallback={<p>Loading…</p>}>
-          {() => <HeavyDashboard />}
-        </Deferred>
-      </body>
-    </html>
-  ),
-  NativeAdapter,
-);
-
-// stream is a ReadableStream<string> — pipe it to the HTTP response
+const stream = renderStream(() => (
+  <html>
+    <body>
+      <header>Fast</header>
+      <Defer name="dashboard">
+        {(signal) => <HeavyDashboard signal={signal} />}
+      </Defer>
+    </body>
+  </html>
+));
+// → ReadableStream<string> (NativeAdapter by default). Pipe it to the HTTP response.
+// Pass a second arg (TurboAdapter, HtmxAdapter, …) to switch wire format.
 ```
 
-### Static generation, pure-static (no `<Deferred>`)
+### Static generation, pure-static (no deferred content)
 
 ```tsx
 import { renderToStatic } from "@cjean-fr/jsx-flow";
@@ -186,7 +258,6 @@ No adapter required — jsx-flow stays invisible for pure-static rendering.
 
 ```tsx
 import { renderToStatic, NativeAdapter } from "@cjean-fr/jsx-flow";
-import { raw, renderToString } from "@cjean-fr/jsx-string";
 
 await renderToStatic(
   async (ctx) => {
@@ -197,13 +268,9 @@ await renderToStatic(
       await Bun.write(page.outPath, "<!DOCTYPE html>\n" + html);
     }
 
-    // Materialize each pending fragment as a standalone file.
-    // `html` is the raw fragment — wrap it with adapter.Frame so the
-    // client lazy-load mechanism can target the placeholder.
-    await ctx.emitFragments(async (id, url, html) => {
-      const framed = NativeAdapter.Frame({ id, children: raw(html) });
-      await Bun.write("./out" + url, await renderToString(framed));
-    });
+    // Each fragment is already wrapped in adapter.Frame and rendered —
+    // `html` is ready to write, no raw()/renderToString needed.
+    await ctx.emitFragments((id, url, html) => Bun.write("./out" + url, html));
   },
   {
     adapter: NativeAdapter,
@@ -212,19 +279,43 @@ await renderToStatic(
 );
 ```
 
-`emitFragments` renders every registered fragment and hands the resulting `(id, url, html)` to your callback — you decide how to wrap it and where to write.
-
 ### HTTP responses with negotiation
 
+Negotiation is **opt-in and decoupled from the adapter**: pass a `negotiate` function (`negotiateHtmx`, `negotiateUnpoly`, or your own) to extract per-request hints and headers. Without it, the full page is rendered and the client library extracts its own target.
+
 ```tsx
-import { flowResponse, UnpolyAdapter } from "@cjean-fr/jsx-flow";
+import { serve, NativeAdapter, negotiateUnpoly } from "@cjean-fr/jsx-flow";
 
 Bun.serve({
   fetch(req) {
-    // negotiate() reads the adapter's protocol headers (X-Up-Target, HX-Target…),
-    // picks full vs patches-only encoding, and sets the matching Vary header.
-    return flowResponse(req, (n) => <App target={n.target} />, UnpolyAdapter);
+    // Unpoly's wire format IS the Native one — pair NativeAdapter with negotiateUnpoly.
+    return serve(req, (n) => <App target={n.target} />, NativeAdapter, {
+      negotiate: negotiateUnpoly,
+      // `mode: "fragment"` (shell suppressed) is an explicit opt-in and only
+      // produces output when the targeted content is expressed as deferred fragments.
+    });
   },
+});
+```
+
+### Composing shell transforms
+
+`composeShell` chains several `transformShell` functions (e.g. to inject `<title>`, asset links) into one — falsy entries are skipped, so an adapter's own transform splices in cleanly:
+
+```tsx
+import {
+  createAdapter,
+  NativeAdapter,
+  composeShell,
+  injectIntoHead,
+} from "@cjean-fr/jsx-flow";
+
+const metadata = () => (html: string) =>
+  injectIntoHead(html, "<title>Home</title>");
+
+const MyAdapter = createAdapter({
+  ...NativeAdapter,
+  transformShell: composeShell(NativeAdapter.transformShell, metadata()),
 });
 ```
 
@@ -234,55 +325,66 @@ Bun.serve({
 import { Flow } from "@cjean-fr/jsx-flow";
 import { useContext } from "@cjean-fr/jsx-string";
 
-const { patch } = useContext(Flow);
-patch("cart-badge", () => <span>{count}</span>);
-patch("toast-list", () => <li>Saved</li>, "append");
+const { defer } = useContext(Flow);
+defer("cart-badge", { content: () => <span>{count}</span>, merge: "replace" });
+defer("toast-list", { content: () => <li>Saved</li>, merge: "append" });
 ```
 
 ## API
 
 ### Components
 
-| Export      | Description                                                             |
-| ----------- | ----------------------------------------------------------------------- |
-| `Deferred`  | Renders a placeholder; delivers real content as a patch after the shell |
-| `Patch`     | Renders nothing; pushes a fragment to an existing DOM target            |
-| `Generator` | Renders nothing; patches each item of an (async) iterable as it arrives |
+| Export        | Description                                                       |
+| ------------- | ----------------------------------------------------------------- |
+| `Slot`        | Passive hole with optional default content; renders a placeholder |
+| `Fill`        | Push content into a slot by target id; renders nothing            |
+| `Defer`       | Deferred content with a placeholder; fills when resolved          |
+| `ClientFetch` | Client-side fetch placeholder — no server deferral                |
 
 ### Renderers
 
-| Export                                         | Description                                                                                                                                         |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `renderToReadableStream(node, adapter, opts?)` | Streams shell + fragments as a `ReadableStream<string>`. `opts`: `signal`, `onError`, `mode`                                                        |
-| `renderToFlowEvents(node, adapter, opts?)`     | Lower level: `ReadableStream<FlowEvent>` (semantic events, before adapter encoding) with backpressure and cancellation                              |
-| `flowResponse(req, page, adapter, opts?)`      | Full HTTP `Response` — runs `adapter.negotiate(req)`, encodes, sets protocol + Vary headers                                                         |
-| `renderToStatic(handler, options?)`            | Runs `handler` inside a static render scope. `options.adapter` + `options.generatePath` required only when using `<Deferred>` / `ctx.emitFragments` |
-| `streamFlow(ctx, emit, opts?)`                 | Low-level supervisor: drains fragments and streams to quiescence, calling `emit(FlowEvent)` for each                                                |
+| Export                                      | Description                                                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `renderStream(node, adapter?, opts?)`       | Streams shell + fragments as a `ReadableStream<string>`. Defaults to `NativeAdapter`. `opts`: `signal`, `onError`, `defaultTimeout`, `mode` |
+| `renderToFlowEvents(node, adapter?, opts?)` | Lower level: `ReadableStream<FlowEvent>` (semantic events, before adapter encoding) with backpressure and cancellation                      |
+| `serve(req, page, adapter?, opts?)`         | Full HTTP `Response`. Runs the opt-in `opts.negotiate(req)`, encodes, merges protocol + Vary headers                                        |
+| `renderToStatic(handler, options?)`         | Runs `handler` in a static render scope. `options.adapter` + `options.generatePath` needed only for deferred content / `ctx.emitFragments`  |
 
-### Context & scope
+### Negotiation (decoupled)
+
+| Export            | Description                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `negotiateHtmx`   | `(req) => Negotiation` — reads `HX-Target`, sets `Vary`                                                          |
+| `negotiateUnpoly` | `(req) => Negotiation` — reads `X-Up-Target` / `X-Up-Fail-Target`, echoes + `Vary` (does not force `"fragment"`) |
+| `Negotiate`       | Type: `(req: Request) => Negotiation`                                                                            |
+
+### Context
 
 | Export          | Description                                                   |
 | --------------- | ------------------------------------------------------------- |
 | `Flow`          | Context token — `useContext(Flow)` from inside a render scope |
-| `FlowContext`   | Type: `{ config, fragments, streams, nextId, patch, stream }` |
+| `FlowContext`   | Type: `{ config, pendingStore, nextId, defer }`               |
 | `StaticContext` | `FlowContext` + `renderPage(node)` + `emitFragments(cb)`      |
 
 ### Adapters & types
 
-| Export               | Description                                                                  |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `TurboAdapter`       | Hotwire Turbo Streams — all merge types                                      |
-| `HtmxAdapter`        | HTMX OOB swaps — all merge types                                             |
-| `NativeAdapter`      | Declarative Partial Updates + bundled polyfill — all merge types             |
-| `WebPlatformAdapter` | Pure WICG spec, zero JS — `replace` only                                     |
-| `UnpolyAdapter`      | Native wire format + Unpoly X-Up-\* negotiation                              |
-| `EsiAdapter`         | CDN-level ESI composition — `replace` only, static only                      |
-| `PatchAdapter`       | `{ Placeholder, Patch, Frame, encode, transformShell?, negotiate? }`         |
-| `MergeType`          | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                  |
-| `FlowEvent`          | `{ type: "shell" \| "patch" \| "close", … }` — semantic streaming event      |
-| `Negotiation`        | `{ headers?, mode?, target?, failTarget? }` — hints from `negotiate(req)`    |
-| `FragmentEffect`     | `{ factory: () => JSXNode; merge: MergeType }`                               |
-| `assertFragmentId`   | Validates a fragment id (helpful in custom plugins calling `patch` directly) |
+| Export                | Description                                                                   |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `createAdapter`       | Build an adapter; defaults `encode` (delegates to `Patch`) and `capabilities` |
+| `TurboAdapter`        | Hotwire Turbo Streams — all merge types                                       |
+| `HtmxAdapter`         | HTMX OOB swaps — all merge types                                              |
+| `NativeAdapter`       | Declarative Partial Updates + bundled polyfill — all merge types (default)    |
+| `WebPlatformAdapter`  | Pure WICG spec, zero JS — `replace` only                                      |
+| `EsiAdapter`          | CDN-level ESI composition — `replace` only, static only                       |
+| `Adapter`             | `{ Placeholder, Patch, Frame, capabilities, encode, transformShell? }`        |
+| `StreamingAdapter`    | An `Adapter` with `capabilities.streaming: true`                              |
+| `AdapterCapabilities` | `{ streaming: boolean; merges: readonly MergeType[] }`                        |
+| `MergeType`           | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                   |
+| `DeferContent`        | `JSXNode \| ((signal: AbortSignal) => JSXNode)`                               |
+| `FlowEvent`           | `{ type: "shell" \| "fragment" \| "close", … }` — semantic streaming event    |
+| `Negotiation`         | `{ headers?, mode?, target?, failTarget? }`                                   |
+| `composeShell`        | Compose several `transformShell` (string→string) into one                     |
+| `injectIntoHead`      | Insert markup before `</head>` (building block for shell transforms)          |
 
 ## License
 

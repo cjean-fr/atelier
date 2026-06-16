@@ -10,33 +10,71 @@ sidebar:
 Send the HTML shell immediately and stream deferred fragments inline in the
 same HTTP response.
 
-## renderToReadableStream
+## renderStream
 
 Returns a `ReadableStream<string>`. The shell chunk is emitted first; fragment
-chunks follow as they resolve.
+chunks follow as they resolve. The adapter is optional — it defaults to
+`NativeAdapter` (zero-JS polyfill).
 
 <CodeExample src="jsx-flow/deferred-stream.tsx" />
 
-## `<Deferred>` — server push
+## Declaring slots and content
 
-Pass a **factory function** as children — JSX evaluates eagerly, so the thunk
-defers rendering to streaming time. The `fallback` prop is rendered in the
-shell while the fragment resolves.
+Three primitives split the concern between declaring a placeholder and pushing
+content:
 
-## `<Deferred src>` — client fetch
+- **`<Slot name="…">`** — a named hole in the shell. Its children are the
+  default/fallback content rendered immediately. Registering nothing if no
+  children are passed — just an empty placeholder.
+- **`<Fill target="…">`** — pushes content into a slot. Renders nothing itself.
+  Use for one-shot patches, async content, or streaming iterables.
+- **`<Defer name="…">`** — deferred content with a visible placeholder. Same
+  as `Fill` but the adapter renders a placeholder in the shell.
 
-Provide a `src` URL instead of children. The adapter injects a fetch or
-`hx-get` — the browser loads the fragment after the shell lands. No server-push
-required.
+### `<Slot>` — passive hole
+
+```tsx
+<Slot name="comments">
+  <p>Loading comments…</p>
+</Slot>
+```
+
+### `<Fill>` — push content
+
+A plain node (or async component) starts eagerly and streams in when it
+resolves. Use a `(signal) => …` factory only when you want cancellation or a
+`timeout`.
+
+```tsx
+<Fill target="comments">
+  <Comments />
+</Fill>
+```
+
+### `<Defer>` — deferred with placeholder
+
+```tsx
+<Defer name="dashboard">
+  {(signal) => <HeavyDashboard signal={signal} />}
+</Defer>
+```
+
+## `<ClientFetch>` — client-side fetch
+
+The browser fetches the fragment from a URL after the shell lands. No
+server-push required — works with any static file server.
 
 <CodeExample src="jsx-flow/deferred-src.tsx" />
 
-## `<Patch>`
+## Async iterables — streaming sequences
 
-Target an existing DOM element by id — renders nothing in the shell. Useful for
-updating counters, banners, or any element that already exists on the page.
-Supports the same `merge` types as `<Deferred>`: `"replace"` (default),
-`"append"`, `"prepend"`, `"before"`, `"after"`.
+An `AsyncIterable` child streams one patch per item:
 
-<CodeExample src="jsx-flow/patch.tsx" />
+```tsx
+<Fill target="feed" merge="append">
+  {liveRows()}
+</Fill>
+```
 
+Each `yield` produces one patch with the configured `merge` type. Supports:
+`"replace"` (default), `"append"`, `"prepend"`, `"before"`, `"after"`.

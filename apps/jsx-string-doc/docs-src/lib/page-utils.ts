@@ -1,5 +1,5 @@
-import path from "node:path";
 import type { Page, PageMeta, ResolvedDocsConfig } from "../types.js";
+import path from "node:path";
 
 export function createPage(
   file: string,
@@ -7,7 +7,7 @@ export function createPage(
   config: ResolvedDocsConfig,
   handlerName: string,
   rawMeta: unknown,
-  Component: (props: object) => unknown,
+  Component: Page["Component"],
 ): Page {
   const rel = getRelativeRoute(file, pagesDir);
   const ext = path.extname(file);
@@ -36,8 +36,10 @@ export function urlToOutPath(url: string): string {
 }
 
 export function normalizeMeta(raw: unknown, file: string): PageMeta {
-  if (raw == null) throw new Error(`[jsx-string-doc] ${file} is missing meta/frontmatter.`);
-  if (typeof raw !== "object") throw new Error(`[jsx-string-doc] ${file}: meta must be an object.`);
+  if (raw == null)
+    throw new Error(`[jsx-string-doc] ${file} is missing meta/frontmatter.`);
+  if (typeof raw !== "object")
+    throw new Error(`[jsx-string-doc] ${file}: meta must be an object.`);
   const meta = raw as PageMeta;
   if (typeof meta.title !== "string" || meta.title.length === 0) {
     throw new Error(`[jsx-string-doc] ${file}: title is required.`);

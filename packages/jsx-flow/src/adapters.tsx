@@ -1,12 +1,10 @@
 // @jsxImportSource @cjean-fr/jsx-string
-import type { FlowEvent, MergeType, Negotiation } from "./events.js";
+import type { FlowEvent, MergeType } from "./protocol.js";
+import type { AdapterCapabilities } from "./protocol.js";
 import { injectIntoHead } from "./utils.js";
 import { raw, renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 
-/** Re-export for consumers. */
-export type { MergeType };
-
-export type PatchAdapter = {
+export type Adapter = {
   /** Renders the placeholder in the shell (both streaming and SSG). */
   Placeholder(props: {
     id: string;
@@ -17,36 +15,33 @@ export type PatchAdapter = {
   Patch(props: { id: string; children: JSXNode; merge: MergeType }): JSXNode;
   /** Renders a fragment as a standalone file response for SSG lazy-loading. */
   Frame(props: { id: string; children: JSXNode }): JSXNode;
+  /** What this wire format can express — gates streaming and validates merges. */
+  capabilities: AdapterCapabilities;
   /**
    * Optional shell transformation applied before streaming fragments.
    * Use it to inject adapter-specific scripts or markup into the rendered shell HTML.
-   * Applied exactly once, by `renderToFlowEvents` (streaming) or `renderPage` (static).
+   * Applied exactly once, by the streaming or static renderer.
    */
   transformShell?(shell: string): string;
   /**
    * Encode semantic `FlowEvent` values into the wire format of this adapter.
-   * Called by `renderToReadableStream` to produce the final string stream.
+   * Called by `renderStream` to produce the final string stream.
    * `shell`/`close` events pass through as-is (transformShell already applied).
    */
   encode(): TransformStream<FlowEvent, string>;
-  /**
-   * Optional HTTP negotiation: extract hints from an incoming Request to
-   * decide encoding mode, headers, and target element.
-   */
-  negotiate?(req: Request): Negotiation;
 };
 
 /**
- * Encode `FlowEvent`s by delegating the patch wire format to the adapter's own
+ * Encode `FlowEvent`s by delegating the fragment wire format to the adapter's own
  * `Patch` component — a single source of truth shared by streaming and JSX.
  * `ev.html` is already-rendered (escaped) HTML, hence `raw()`.
  */
 function encodeWith(
-  adapter: Pick<PatchAdapter, "Patch">,
+  adapter: Pick<Adapter, "Patch">,
 ): TransformStream<FlowEvent, string> {
   return new TransformStream<FlowEvent, string>({
     async transform(ev, c) {
-      if (ev.type === "patch") {
+      if (ev.type === "fragment") {
         const wire = await renderToString(
           adapter.Patch({ id: ev.id, children: raw(ev.html), merge: ev.merge }),
         );
@@ -58,10 +53,46 @@ function encodeWith(
   });
 }
 
+const ALL_MERGES = ["replace", "append", "prepend", "before", "after"] as const;
+
+/** Default capabilities: full streaming, every merge type. */
+const DEFAULT_CAPABILITIES: { streaming: true; merges: typeof ALL_MERGES } = {
+  streaming: true,
+  merges: ALL_MERGES,
+};
+
+/**
+ * Adapter definition with `encode` and `capabilities` optional — `encode`
+ * defaults to `encodeWith(Patch)`, `capabilities` to full streaming + all merges.
+ */
+type AdapterSpec<C extends AdapterCapabilities> = Omit<
+  Adapter,
+  "encode" | "capabilities"
+> &
+  Partial<Pick<Adapter, "encode">> & { capabilities?: C };
+
+/**
+ * Build an `Adapter` from a spec. When `encode` is omitted it defaults to
+ * `encodeWith(adapter.Patch)`, so the common streaming path stays the adapter's
+ * own `Patch` component with no self-referential boilerplate. The literal
+ * `capabilities` type is preserved so streaming entry points can reject
+ * non-streaming adapters at compile time.
+ */
+export function createAdapter<
+  const C extends AdapterCapabilities = typeof DEFAULT_CAPABILITIES,
+>(spec: AdapterSpec<C>): Adapter & { capabilities: C } {
+  const adapter: Adapter & { capabilities: C } = {
+    ...spec,
+    capabilities: spec.capabilities ?? (DEFAULT_CAPABILITIES as unknown as C),
+    encode: spec.encode ?? (() => encodeWith(adapter)),
+  };
+  return adapter;
+}
+
 // ── Turbo ────────────────────────────────────────────────────────────────
 
-export const TurboAdapter: PatchAdapter = {
-  Placeholder: function ({ id, src, children }) {
+export const TurboAdapter = createAdapter({
+  Placeholder: function ({ id, src, children }): JSXNode {
     return src ? (
       <turbo-frame id={id} src={src}>
         {children}
@@ -71,16 +102,16 @@ export const TurboAdapter: PatchAdapter = {
     );
   },
 
-  Patch: ({ id, children, merge }) => (
+  Patch: ({ id, children, merge }): JSXNode => (
     <turbo-stream action={merge} target={id}>
       <template>{children}</template>
     </turbo-stream>
   ),
 
-  Frame: ({ id, children }) => <turbo-frame id={id}>{children}</turbo-frame>,
-
-  encode: () => encodeWith(TurboAdapter),
-};
+  Frame: ({ id, children }): JSXNode => (
+    <turbo-frame id={id}>{children}</turbo-frame>
+  ),
+});
 
 // ── Native (inline polyfill) ─────────────────────────────────────────────
 
@@ -94,13 +125,13 @@ const ADJ: Record<Exclude<MergeType, "replace">, string> = {
   after: "afterend",
 };
 
-export const NativeAdapter: PatchAdapter = {
+export const NativeAdapter = createAdapter({
   transformShell: (shell) =>
     injectIntoHead(shell, `<script>${POLYFILL}</script>`),
 
-  Placeholder: function ({ id, src, children }) {
-    const open = raw(`<?start name="${id}">`);
-    const close = raw(`<?end>`);
+  Placeholder: function ({ id, src, children }): JSXNode {
+    const open: JSXNode = raw(`<?start name="${id}">`);
+    const close: JSXNode = raw(`<?end>`);
     if (src) {
       const safeJsonSrc = JSON.stringify(src).replace(/<\//g, "<\\/");
       const script = raw(
@@ -111,7 +142,7 @@ export const NativeAdapter: PatchAdapter = {
     return [open, children, close];
   },
 
-  Patch: ({ id, children, merge }) => {
+  Patch: ({ id, children, merge }): JSXNode => {
     if (merge === "replace") {
       return <template htmlFor={id}>{children}</template>;
     }
@@ -122,10 +153,10 @@ export const NativeAdapter: PatchAdapter = {
     return [<template id={tmplId}>{children}</template>, script];
   },
 
-  Frame: ({ id, children }) => <template htmlFor={id}>{children}</template>,
-
-  encode: () => encodeWith(NativeAdapter),
-};
+  Frame: ({ id, children }): JSXNode => (
+    <template htmlFor={id}>{children}</template>
+  ),
+});
 
 // ── HTMX ─────────────────────────────────────────────────────────────────
 
@@ -137,8 +168,8 @@ const SWAP: Record<MergeType, string> = {
   after: "afterend",
 };
 
-export const HtmxAdapter: PatchAdapter = {
-  Placeholder: function ({ id, src, children }) {
+export const HtmxAdapter = createAdapter({
+  Placeholder: function ({ id, src, children }): JSXNode {
     return src ? (
       <div id={id} hx-get={src} hx-trigger="load" hx-swap="outerHTML">
         {children}
@@ -148,30 +179,22 @@ export const HtmxAdapter: PatchAdapter = {
     );
   },
 
-  Patch: ({ id, children, merge }) => {
-    return (
-      <div id={id} hx-swap-oob={SWAP[merge]}>
-        {children}
-      </div>
-    );
-  },
+  Patch: ({ id, children, merge }): JSXNode => (
+    <div id={id} hx-swap-oob={SWAP[merge]}>
+      {children}
+    </div>
+  ),
 
-  Frame: ({ id, children }) => <div id={id}>{children}</div>,
-
-  encode: () => encodeWith(HtmxAdapter),
-
-  negotiate(req: Request): Negotiation {
-    const target = req.headers.get("HX-Target") ?? undefined;
-    // Vary on the headers this negotiation actually reads, so shared caches
-    // never serve a fragment response to a full-page navigation.
-    return { headers: { Vary: "HX-Target" }, target, mode: "full" };
-  },
-};
+  Frame: ({ id, children }): JSXNode => <div id={id}>{children}</div>,
+});
 
 // ── ESI (Edge Side Includes) ──────────────────────────────────────────────
 
-export const EsiAdapter: PatchAdapter = {
-  Placeholder: ({ src, children }) => {
+export const EsiAdapter = createAdapter({
+  // ESI is CDN-level composition: no live stream, replace-only semantics.
+  capabilities: { streaming: false, merges: ["replace"] },
+
+  Placeholder: ({ src, children }): JSXNode => {
     if (src) {
       const safeSrc = src.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
       return raw(`<esi:include src="${safeSrc}" />`);
@@ -179,12 +202,7 @@ export const EsiAdapter: PatchAdapter = {
     return children;
   },
 
-  Patch: ({ id, children, merge }) => {
-    if (merge !== "replace") {
-      throw new Error(
-        `EsiAdapter only supports "replace" — ESI has no insert/append/prepend semantics.`,
-      );
-    }
+  Patch: ({ id, children }): JSXNode => {
     return [
       raw(`<esi:inline name="${id}" fetchable="yes">`),
       children,
@@ -192,7 +210,7 @@ export const EsiAdapter: PatchAdapter = {
     ] as JSXNode;
   },
 
-  Frame: ({ children }) => children,
+  Frame: ({ children }): JSXNode => children,
 
   // ESI has no meaningful streaming encode — it is CDN-level composition.
   // Calling encode() at runtime throws; use renderToStatic.emitFragments instead.
@@ -201,7 +219,7 @@ export const EsiAdapter: PatchAdapter = {
       "EsiAdapter.encode() is not supported — ESI is CDN-level. Use renderToStatic with emitFragments instead.",
     );
   },
-};
+});
 
 // ── WebPlatform (WICG experimental) ──────────────────────────────────────
 // https://github.com/WICG/declarative-partial-updates
@@ -210,19 +228,15 @@ export const EsiAdapter: PatchAdapter = {
 // NativeAdapter is the same wire format plus the interim polyfill; this
 // adapter is the pure-spec subset (replace only, no injected script).
 
-export const WebPlatformAdapter: PatchAdapter = {
+export const WebPlatformAdapter = createAdapter({
+  // Pure WICG spec subset: streaming via <template for>, replace only.
+  capabilities: { streaming: true, merges: ["replace"] },
+
   Placeholder: NativeAdapter.Placeholder,
 
-  Patch: ({ id, children, merge }) => {
-    if (merge !== "replace") {
-      throw new Error(
-        `WebPlatformAdapter only supports "replace" (WICG spec). Use NativeAdapter for other merge types.`,
-      );
-    }
+  Patch: ({ id, children }): JSXNode => {
     return <template htmlFor={id}>{children}</template>;
   },
 
   Frame: NativeAdapter.Frame,
-
-  encode: () => encodeWith(WebPlatformAdapter),
-};
+});

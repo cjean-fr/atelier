@@ -40,13 +40,18 @@
     "./jsx-dev-runtime": {
       "types": "./dist/jsx-dev-runtime.d.ts",
       "default": "./dist/jsx-dev-runtime.js"
+    },
+    "./constants": {
+      "types": "./dist/utils/constants.d.ts",
+      "import": "./src/utils/constants.ts",
+      "default": "./dist/utils/constants.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "bunup src/index.ts src/jsx-runtime.ts src/jsx-dev-runtime.ts --format esm --minify",
+    "build": "bunup src/index.ts src/jsx-runtime.ts src/jsx-dev-runtime.ts src/utils/constants.ts --format esm --minify --target browser",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"

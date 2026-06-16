@@ -184,6 +184,9 @@
     "packages/precompile-core": {
       "name": "@cjean-fr/precompile-core",
       "version": "0.1.0",
+      "dependencies": {
+        "@cjean-fr/jsx-string": "catalog:",
+      },
     },
     "packages/vite-plugin-precompile": {
       "name": "@cjean-fr/vite-plugin-precompile",
