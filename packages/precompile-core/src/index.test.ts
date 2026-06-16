@@ -1,4 +1,3 @@
-import { describe, it, expect } from "bun:test";
 import {
   collapseJsxWhitespace,
   escapeAttr,
@@ -12,7 +11,11 @@ import {
   hasSpreadOrInnerHTML,
   remapAttrName,
   RUNTIME_SOURCE,
+  VOID_ELEMENTS,
+  URL_ATTRIBUTES,
+  ATTRIBUTE_NAME_MAP,
 } from "./index.js";
+import { describe, it, expect } from "bun:test";
 
 describe("precompile-core", () => {
   describe("isLower", () => {
@@ -63,23 +66,29 @@ describe("precompile-core", () => {
 
   describe("hasSpreadOrInnerHTML", () => {
     it("returns false for simple attrs", () => {
-      expect(hasSpreadOrInnerHTML([
-        { kind: "attribute" as const, name: "class" },
-        { kind: "attribute" as const, name: "id" },
-      ])).toBe(false);
+      expect(
+        hasSpreadOrInnerHTML([
+          { kind: "attribute" as const, name: "class" },
+          { kind: "attribute" as const, name: "id" },
+        ]),
+      ).toBe(false);
     });
 
     it("returns true for spread attrs", () => {
-      expect(hasSpreadOrInnerHTML([
-        { kind: "attribute" as const, name: "class" },
-        { kind: "spread" as const },
-      ])).toBe(true);
+      expect(
+        hasSpreadOrInnerHTML([
+          { kind: "attribute" as const, name: "class" },
+          { kind: "spread" as const },
+        ]),
+      ).toBe(true);
     });
 
     it("returns true for dangerouslySetInnerHTML", () => {
-      expect(hasSpreadOrInnerHTML([
-        { kind: "attribute" as const, name: "dangerouslySetInnerHTML" },
-      ])).toBe(true);
+      expect(
+        hasSpreadOrInnerHTML([
+          { kind: "attribute" as const, name: "dangerouslySetInnerHTML" },
+        ]),
+      ).toBe(true);
     });
 
     it("returns false for empty iterable", () => {
@@ -202,6 +211,42 @@ describe("precompile-core", () => {
   describe("RUNTIME_SOURCE", () => {
     it("is the jsx-string jsx-runtime path", () => {
       expect(RUNTIME_SOURCE).toBe("@cjean-fr/jsx-string/jsx-runtime");
+    });
+  });
+
+  describe("shared constants (imported from @cjean-fr/jsx-string/constants)", () => {
+    it("VOID_ELEMENTS matches expected HTML void elements", () => {
+      expect(VOID_ELEMENTS.has("br")).toBe(true);
+      expect(VOID_ELEMENTS.has("img")).toBe(true);
+      expect(VOID_ELEMENTS.has("input")).toBe(true);
+      expect(VOID_ELEMENTS.has("div")).toBe(false);
+      expect(VOID_ELEMENTS.has("span")).toBe(false);
+    });
+
+    it("URL_ATTRIBUTES matches expected URL-bearing attributes", () => {
+      expect(URL_ATTRIBUTES.has("href")).toBe(true);
+      expect(URL_ATTRIBUTES.has("src")).toBe(true);
+      expect(URL_ATTRIBUTES.has("srcset")).toBe(true);
+      expect(URL_ATTRIBUTES.has("class")).toBe(false);
+    });
+
+    it("ATTRIBUTE_NAME_MAP maps camelCase JSX attrs to HTML", () => {
+      expect(ATTRIBUTE_NAME_MAP.get("className")).toBe("class");
+      expect(ATTRIBUTE_NAME_MAP.get("htmlFor")).toBe("for");
+      expect(ATTRIBUTE_NAME_MAP.get("tabIndex")).toBe("tabindex");
+      expect(ATTRIBUTE_NAME_MAP.get("unknownProp")).toBeUndefined();
+    });
+
+    it('escapeAttr escapes & < > " identically to the runtime', () => {
+      expect(escapeAttr('a"b')).toBe("a&quot;b");
+      expect(escapeAttr("a&b<c>d")).toBe("a&amp;b&lt;c&gt;d");
+    });
+
+    it("isValidAttrName matches the runtime's validation", () => {
+      expect(isValidAttrName("class")).toBe(true);
+      expect(isValidAttrName("data-x")).toBe(true);
+      expect(isValidAttrName("a b")).toBe(false);
+      expect(isValidAttrName('a"b')).toBe(false);
     });
   });
 });

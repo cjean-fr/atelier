@@ -1,5 +1,6 @@
 import type { JSXNode } from "./core/types.js";
-import { RawString, renderChild } from "./utils/html.js";
+import { RawString } from "./core/types.js";
+import { renderChild } from "./utils/render-child.js";
 
 export { raw } from "./core/types.js";
 export { Fragment } from "./jsx-runtime.js";

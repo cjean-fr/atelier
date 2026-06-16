@@ -17,16 +17,24 @@ async function loadIndex(): Promise<SearchDocument[]> {
   if (index) return index;
   const res = await fetch("/search-index.json");
   if (!res.ok) throw new Error(`Failed to load search index: ${res.status}`);
-  index = await res.json() as SearchDocument[];
+  index = (await res.json()) as SearchDocument[];
   return index;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const trigger = document.getElementById("search-trigger") as HTMLButtonElement | null;
-  const dialog = document.getElementById("search-dialog") as HTMLDialogElement | null;
-  const input = document.getElementById("search-input") as HTMLInputElement | null;
+  const trigger = document.getElementById(
+    "search-trigger",
+  ) as HTMLButtonElement | null;
+  const dialog = document.getElementById(
+    "search-dialog",
+  ) as HTMLDialogElement | null;
+  const input = document.getElementById(
+    "search-input",
+  ) as HTMLInputElement | null;
   const status = document.getElementById("search-status") as HTMLElement | null;
-  const results = document.getElementById("search-results") as HTMLElement | null;
+  const results = document.getElementById(
+    "search-results",
+  ) as HTMLElement | null;
   if (!trigger || !dialog || !input || !status || !results) return;
 
   const triggerButton = trigger;
@@ -87,13 +95,15 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedIndex = -1;
 
     const items = await Promise.all(
-      ranked.slice(0, 10).map((hit, i) => createResultItem({
-        index: i,
-        url: hit.document.url,
-        title: hit.document.title,
-        excerpt: snippet(hit.document.text, q),
-        query: q,
-      })),
+      ranked.slice(0, 10).map((hit, i) =>
+        createResultItem({
+          index: i,
+          url: hit.document.url,
+          title: hit.document.title,
+          excerpt: snippet(hit.document.text, q),
+          query: q,
+        }),
+      ),
     );
     searchResults.replaceChildren(...items);
     searchResults.classList.remove("hidden");
@@ -138,10 +148,25 @@ document.addEventListener("DOMContentLoaded", () => {
   triggerButton.addEventListener("click", open);
 
   searchDialog.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { close(); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); selectNext(); return; }
-    if (e.key === "ArrowUp") { e.preventDefault(); selectPrev(); return; }
-    if (e.key === "Enter") { e.preventDefault(); follow(); return; }
+    if (e.key === "Escape") {
+      close();
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      selectNext();
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      selectPrev();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      follow();
+      return;
+    }
   });
 
   searchDialog.addEventListener("close", () => {
@@ -158,10 +183,12 @@ document.addEventListener("DOMContentLoaded", () => {
   searchResults.addEventListener("mouseover", (e) => {
     const item = (e.target as HTMLElement).closest<HTMLElement>("[data-index]");
     if (!item) return;
-    const idx = Number(item.dataset.index);
+    const idx = Number(item.dataset["index"]);
     if (!isNaN(idx)) {
       selectedIndex = idx;
-      updateSelection(searchResults.querySelectorAll<HTMLElement>("[data-index]"));
+      updateSelection(
+        searchResults.querySelectorAll<HTMLElement>("[data-index]"),
+      );
     }
   });
 
@@ -180,7 +207,10 @@ function search(docs: SearchDocument[], query: string): SearchHit[] {
   return docs
     .map((document) => ({ document, score: scoreDocument(document, terms) }))
     .filter((hit) => hit.score > 0)
-    .sort((a, b) => b.score - a.score || a.document.title.localeCompare(b.document.title));
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.document.title.localeCompare(b.document.title),
+    );
 }
 
 function scoreDocument(document: SearchDocument, terms: string[]): number {
@@ -196,7 +226,13 @@ function scoreDocument(document: SearchDocument, terms: string[]): number {
     let matchedTerm = false;
 
     for (const field of fields) {
-      if (minimatch(field.value, pattern, { nocase: true, nocomment: true, nonegate: true })) {
+      if (
+        minimatch(field.value, pattern, {
+          nocase: true,
+          nocomment: true,
+          nonegate: true,
+        })
+      ) {
         score += field.weight;
         matchedTerm = true;
       }
@@ -216,15 +252,22 @@ function escapeGlob(value: string): string {
   return value.replace(/[?*[\]{}()!+@#,\\]/g, "\\$&");
 }
 
-function createResultItem(data: { index: number; url: string; title: string; excerpt: string; query: string }) {
+function createResultItem(data: {
+  index: number;
+  url: string;
+  title: string;
+  excerpt: string;
+  query: string;
+}) {
   const item = document.createElement("li");
   item.setAttribute("role", "option");
   item.setAttribute("aria-selected", "false");
-  item.dataset.index = String(data.index);
+  item.dataset["index"] = String(data.index);
 
   const link = document.createElement("a");
   link.href = data.url;
-  link.className = "flex flex-col gap-0.5 px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 aria-selected:bg-blue-50 dark:aria-selected:bg-blue-950 aria-selected:border-l-2 aria-selected:border-blue-500 aria-selected:pl-3.5";
+  link.className =
+    "flex flex-col gap-0.5 px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 aria-selected:bg-blue-50 dark:aria-selected:bg-blue-950 aria-selected:border-l-2 aria-selected:border-blue-500 aria-selected:pl-3.5";
 
   const title = document.createElement("span");
   title.className = "font-medium text-sm text-gray-900 dark:text-gray-100";
@@ -256,7 +299,9 @@ function snippet(text: string, query: string, radius = 50): string {
   const prefix = start > 0 ? "..." : "";
   const suffix = end < text.length ? "..." : "";
   const before = escapeHtml(text.slice(start, match.idx));
-  const matchedText = escapeHtml(text.slice(match.idx, match.idx + match.term.length));
+  const matchedText = escapeHtml(
+    text.slice(match.idx, match.idx + match.term.length),
+  );
   const after = escapeHtml(text.slice(match.idx + match.term.length, end));
   return `${prefix}${before}<mark>${matchedText}</mark>${after}${suffix}`;
 }

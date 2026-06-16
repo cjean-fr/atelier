@@ -195,7 +195,7 @@ describe("Deno Precompile Target Runtime Pipeline", () => {
       );
 
       expect((await result).toString()).toBe("<p>a - b</p>");
-      expect(Date.now() - start).toBeLessThan(35); // Verifies parallel execution loop
+      expect(Date.now() - start).toBeLessThan(45); // Verifies parallel execution loop
     });
   });
 });

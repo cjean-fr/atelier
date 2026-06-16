@@ -9,7 +9,7 @@ Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML 
 | Package | Description |
 | :--- | :--- |
 | [`@cjean-fr/jsx-string`](./packages/jsx-string) | JSX-to-HTML string renderer. Zero dependencies. |
-| [`@cjean-fr/jsx-flow`](./packages/jsx-flow) | Orchestration layer for deferred fragments and DOM patching (`<Deferred>`, `<Patch>`, Turbo / HTMX / Native adapters). |
+| [`@cjean-fr/jsx-flow`](./packages/jsx-flow) | Deferred fragments, streaming, and DOM patching — the `<Defer>` primitive + Turbo / HTMX / Native / ESI adapters. |
 | [`@cjean-fr/jsx-vite`](./packages/jsx-vite) | Vite asset integration — `<Asset>`, `assetUrl`, manifest resolution. |
 
 ### Other tools

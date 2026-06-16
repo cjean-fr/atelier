@@ -3,7 +3,7 @@
 /**
  * Attributes that expect a URL and should be sanitized.
  */
-export const URL_ATTRIBUTES = new Set([
+export const URL_ATTRIBUTES: Set<string> = new Set([
   "href",
   "src",
   "action",

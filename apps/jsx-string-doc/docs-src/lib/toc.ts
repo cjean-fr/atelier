@@ -6,7 +6,10 @@ export interface TocEntry {
   level: number;
 }
 
-export function injectToc(html: string, renderToc: (entries: TocEntry[]) => string): string {
+export function injectToc(
+  html: string,
+  renderToc: (entries: TocEntry[]) => string,
+): string {
   const entries = extractTocEntries(html);
   if (entries.length === 0) {
     return html.replace(PLACEHOLDER_RE, "");
@@ -20,7 +23,11 @@ function extractTocEntries(html: string): TocEntry[] {
   const re = /<h([23])\s+id="([^"]+)"[^>]*>(.*?)<\/h\1>/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(html)) !== null) {
-    entries.push({ id: match[2], text: stripHtml(match[3]), level: parseInt(match[1], 10) });
+    entries.push({
+      id: match[2]!,
+      text: decodeHtmlEntities(stripHtml(match[3]!)),
+      level: parseInt(match[1]!, 10),
+    });
   }
   return entries;
 }
@@ -29,7 +36,17 @@ function stripHtml(s: string): string {
   return s.replace(/<[^>]*>/g, "");
 }
 
-export const TOC_PLACEHOLDER = '<aside data-toc-placeholder></aside>';
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x60;/g, "`");
+}
+
+export const TOC_PLACEHOLDER = "<aside data-toc-placeholder></aside>";
 
 export function renderTocHtml(entries: TocEntry[]): string {
   const items = entries
@@ -49,5 +66,9 @@ export function renderTocHtml(entries: TocEntry[]): string {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

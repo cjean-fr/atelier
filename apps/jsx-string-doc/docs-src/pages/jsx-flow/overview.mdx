@@ -12,9 +12,9 @@ sidebar:
 Traditional SSR holds the entire response until every `await` resolves — the
 slowest query sets your time-to-first-byte. jsx-flow breaks that coupling.
 
-You mark slow subtrees with `<Deferred>`. The page shell ships immediately.
-Fragments arrive later, each as soon as it resolves. No JavaScript framework.
-No hydration. Just HTML in chunks.
+You mark slow subtrees with `<Defer>` / `<Fill>`. The page shell ships
+immediately. Fragments arrive later, each as soon as it resolves. No JavaScript
+framework. No hydration. Just HTML in chunks.
 
 ## How it works
 
@@ -30,11 +30,11 @@ No hydration. Just HTML in chunks.
       </div>
       <div class="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-3 dark:border-amber-800 dark:bg-amber-950/40">
         <p class="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Fragment — deferred</p>
-        <p class="mt-1.5 font-mono text-xs text-gray-500 dark:text-gray-500">&lt;Deferred&gt; placeholder</p>
+        <p class="mt-1.5 font-mono text-xs text-gray-500 dark:text-gray-500">&lt;Slot&gt; placeholder</p>
       </div>
       <div class="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-3 dark:border-amber-800 dark:bg-amber-950/40">
         <p class="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Fragment — deferred</p>
-        <p class="mt-1.5 font-mono text-xs text-gray-500 dark:text-gray-500">&lt;Deferred&gt; placeholder</p>
+        <p class="mt-1.5 font-mono text-xs text-gray-500 dark:text-gray-500">&lt;Slot&gt; placeholder</p>
       </div>
     </div>
     <div class="flex items-center justify-center px-4 py-4 sm:py-0">
@@ -61,10 +61,6 @@ No hydration. Just HTML in chunks.
   </div>
 </div>
 
-Wrap any slow subtree with `<Deferred>`. The shell flushes first; each fragment
-streams in as it resolves, replacing its placeholder — no client JavaScript
-required.
-
 <CodeExample src="jsx-flow/deferred-stream.tsx" />
 
 ## Two rendering modes
@@ -78,7 +74,7 @@ required.
       <p class="text-sm text-gray-600 dark:text-gray-400">
         Fragments arrive in the <strong class="text-gray-900 dark:text-white">same HTTP response</strong> after the shell. One connection, progressive delivery.
       </p>
-      <p class="font-mono text-xs text-gray-500 dark:text-gray-500">renderToReadableStream()</p>
+      <p class="font-mono text-xs text-gray-500 dark:text-gray-500">renderStream()</p>
     </div>
   </div>
   <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">

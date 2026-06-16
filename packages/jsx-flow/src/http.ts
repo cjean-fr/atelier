@@ -1,75 +1,101 @@
-import { NativeAdapter, type PatchAdapter } from "./adapters.js";
-import type { FlowOptions, Negotiation } from "./events.js";
-import { renderToFlowEvents } from "./render.js";
+import { NativeAdapter } from "./adapters.js";
+import type { FlowOptions } from "./flow-options.js";
+import type {
+  Negotiate,
+  Negotiation,
+  StreamingAdapter,
+} from "./negotiation.js";
+import { renderStream } from "./render.js";
 import { type JSXNode } from "@cjean-fr/jsx-string";
 
-export type { Negotiation };
+export type { Negotiate, Negotiation } from "./negotiation.js";
 
-/**
- * Create a `Response` from a page component and an adapter, using the
- * adapter's HTTP negotiation to pick encoding mode and response headers.
- *
- * @example
- * ```ts
- * Bun.serve({
- *   async fetch(req) {
- *     return flowResponse(req, () => <App />, TurboAdapter);
- *   },
- * });
- * ```
- */
-export async function flowResponse(
-  req: Request,
-  page: (n: Negotiation) => JSXNode,
-  adapter: PatchAdapter,
-  opts?: FlowOptions & ResponseInit,
-): Promise<Response> {
-  const n = adapter.negotiate?.(req) ?? {};
-  const body = renderToFlowEvents(() => page(n), adapter, {
-    ...opts,
-    mode: n.mode,
-  })
-    .pipeThrough(adapter.encode())
-    .pipeThrough(new TextEncoderStream());
-  // Defaults, then caller headers, then negotiation headers — the protocol
-  // headers (X-Up-*, Vary…) must win over both.
-  const headers = new Headers({ "content-type": "text/html; charset=utf-8" });
-  for (const [k, v] of new Headers(opts?.headers ?? {})) headers.set(k, v);
-  for (const [k, v] of new Headers(n.headers ?? {})) headers.set(k, v);
-  return new Response(body, { ...opts, headers });
+function mergeHeaders(
+  defaults?: HeadersInit,
+  caller?: HeadersInit,
+  negotiation?: HeadersInit,
+): Headers {
+  const headers = new Headers(defaults);
+  for (const [k, v] of new Headers(caller ?? {})) headers.set(k, v);
+  for (const [k, v] of new Headers(negotiation ?? {})) headers.set(k, v);
+  return headers;
+}
+
+function buildResponse(
+  body: ReadableStream<Uint8Array> | string,
+  init?: ResponseInit,
+): Response {
+  return new Response(body, init);
 }
 
 /**
- * Unpoly adapter for jsx-flow.
+ * Create a `Response` from a page component and an adapter.
  *
- * Unpoly protocol: https://unpoly.com/up.protocol
+ * Negotiation is opt-in and orthogonal to the adapter: pass `negotiate` (e.g.
+ * `negotiateHtmx` / `negotiateUnpoly`, or your own) to extract per-request hints
+ * and headers. Without it, the full page is rendered — the client library
+ * extracts its own target. `mode: "fragment"` (shell suppressed) is an
+ * explicit opt-in; it only produces output when the targeted content is
+ * expressed as `<Defer>` fragments.
  *
- * Two modes:
- * 1. Initial page load — uses NativeAdapter's polyfill for streaming.
- * 2. Navigation / form submit — `negotiate()` reads X-Up-* headers and returns
- *    hints. The app uses `n.target` / `n.failTarget` to decide which layer to render.
+ * @example
+ * Bun.serve({
+ *   fetch: (req) =>
+ *     serve(req, (n) => <App n={n} />, NativeAdapter, {
+ *       negotiate: negotiateUnpoly,
+ *     }),
+ * });
  */
-export const UnpolyAdapter: PatchAdapter = {
-  Placeholder: NativeAdapter.Placeholder,
-  Patch: NativeAdapter.Patch,
-  Frame: NativeAdapter.Frame,
-  transformShell: NativeAdapter.transformShell,
-  encode: NativeAdapter.encode,
+export async function serve(
+  req: Request,
+  page: (n: Negotiation) => JSXNode,
+  adapter: StreamingAdapter = NativeAdapter,
+  opts?: FlowOptions &
+    ResponseInit & {
+      negotiate?: Negotiate;
+      mode?: "full" | "fragment";
+    },
+): Promise<Response> {
+  const n = opts?.negotiate?.(req) ?? {};
+  const body = renderStream(() => page(n), adapter, {
+    ...opts,
+    mode: opts?.mode ?? n.mode,
+  }).pipeThrough(new TextEncoderStream());
+  const headers = mergeHeaders(
+    { "content-type": "text/html; charset=utf-8" },
+    opts?.headers,
+    n.headers,
+  );
+  return buildResponse(body, { ...opts, headers });
+}
 
-  negotiate(req: Request): Negotiation {
-    const target = req.headers.get("X-Up-Target") ?? undefined;
-    const failTarget = req.headers.get("X-Up-Fail-Target") ?? undefined;
-    // X-Up-Target present = fragment request: the client only needs patches.
-    const mode = target ? ("patches-only" as const) : undefined;
+/**
+ * HTMX negotiation: read `HX-Target`, and `Vary` on it so shared caches never
+ * serve a fragment response to a full-page navigation.
+ */
+export function negotiateHtmx(req: Request): Negotiation {
+  const target = req.headers.get("HX-Target") ?? undefined;
+  return { headers: { Vary: "HX-Target" }, target };
+}
 
-    // Unpoly protocol: request headers that influenced the response must be
-    // listed in Vary, and the resolved target is echoed back.
-    const headers: Record<string, string> = {
-      Vary: "X-Up-Target, X-Up-Fail-Target",
-    };
-    if (target) headers["X-Up-Target"] = target;
-    if (failTarget) headers["X-Up-Fail-Target"] = failTarget;
-
-    return { headers, mode, target, failTarget };
-  },
-};
+/**
+ * Unpoly negotiation (https://unpoly.com/up.protocol): read `X-Up-Target` /
+ * `X-Up-Fail-Target`, echo them back, and `Vary` on them.
+ *
+ * Pairs with `NativeAdapter` (Unpoly's wire format is the Native one). It does
+ * NOT force `"fragment"` — pass `mode: "fragment"` to `serve`
+ * yourself, knowing the targeted content must be `<Defer>` fragments for the
+ * shell-suppressed response to carry anything.
+ */
+export function negotiateUnpoly(req: Request): Negotiation {
+  const target = req.headers.get("X-Up-Target") ?? undefined;
+  const failTarget = req.headers.get("X-Up-Fail-Target") ?? undefined;
+  // Unpoly protocol: request headers that influenced the response must be
+  // listed in Vary, and the resolved target is echoed back.
+  const headers: Record<string, string> = {
+    Vary: "X-Up-Target, X-Up-Fail-Target",
+  };
+  if (target) headers["X-Up-Target"] = target;
+  if (failTarget) headers["X-Up-Fail-Target"] = failTarget;
+  return { headers, target, failTarget };
+}

@@ -4,40 +4,35 @@
  * @module
  */
 
-export { Deferred } from "./components/Deferred.js";
-export { Patch } from "./components/Patch.js";
-export { Generator } from "./components/Generator.js";
+export { Defer, type DeferProps } from "./components/Defer.js";
+export { Fill, type FillProps } from "./components/Fill.js";
 export { Slot, type SlotProps } from "./components/Slot.js";
-export { assertFragmentId } from "./fragmentId.js";
-export type { PatchProps } from "./components/Patch.js";
-export type { GeneratorProps } from "./components/Generator.js";
-export { initFlow, Flow } from "./context.js";
-export type {
-  FragmentEffect,
-  StreamEffect,
-  FlowContext,
-  Config,
-} from "./context.js";
-export { streamFlow } from "./streamFlow.js";
 export {
-  renderToFlowEvents,
-  renderToReadableStream,
-  renderToStatic,
-} from "./render.js";
-export type { StaticContext, StaticOptions } from "./render.js";
+  ClientFetch,
+  type ClientFetchProps,
+} from "./components/ClientFetch.js";
+export { renderStream } from "./render.js";
+export { renderToStatic } from "./static.js";
+export type { StaticContext, StaticOptions } from "./static.js";
 export type {
+  AdapterCapabilities,
   MergeType,
-  FlowEvent,
-  FlowErrorInfo,
-  FlowOptions,
-  Negotiation,
-} from "./events.js";
-export type { PatchAdapter } from "./adapters.js";
+  DeferContent,
+} from "./protocol.js";
+export type { Negotiation, StreamingAdapter } from "./negotiation.js";
+export type { Adapter } from "./adapters.js";
 export {
+  createAdapter,
   NativeAdapter,
   TurboAdapter,
   HtmxAdapter,
   WebPlatformAdapter,
   EsiAdapter,
 } from "./adapters.js";
-export { flowResponse, UnpolyAdapter } from "./http.js";
+export {
+  serve,
+  negotiateHtmx,
+  negotiateUnpoly,
+  type Negotiate,
+} from "./http.js";
+export { composeShell, injectIntoHead } from "./utils.js";

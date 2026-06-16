@@ -20,7 +20,7 @@ import type {
   Program,
 } from "@oxc-project/types";
 import MagicString from "magic-string";
-import { parseSync } from "oxc-parser";
+import { parseSync, visitorKeys } from "oxc-parser";
 
 export interface PluginConfig {
   runtimeSource?: string;
@@ -78,6 +78,29 @@ interface Replacement {
   start: number;
   end: number;
   text: string;
+}
+
+/**
+ * Walk the visitor keys of an AST node, invoking `visit` for each child.
+ * Returns `true` if any visit call returned `true` (early termination).
+ */
+function walkChildren(
+  node: AnyNode,
+  visit: (child: AnyNode) => boolean,
+): boolean {
+  for (const key of visitorKeys[node.type] ?? []) {
+    const val = node[key];
+    if (Array.isArray(val)) {
+      for (const item of val) {
+        if (item && typeof item === "object" && "type" in item) {
+          if (visit(item as AnyNode)) return true;
+        }
+      }
+    } else if (val && typeof val === "object" && "type" in val) {
+      if (visit(val as AnyNode)) return true;
+    }
+  }
+  return false;
 }
 
 export default function precompileTransform(
@@ -162,18 +185,10 @@ function collectNode(
     return;
   }
 
-  for (const key of VISITOR_KEYS[node.type] ?? []) {
-    const val = node[key];
-    if (Array.isArray(val)) {
-      for (const item of val) {
-        if (item && typeof item === "object" && "type" in item) {
-          collectNode(item as AnyNode, ctx, replacements);
-        }
-      }
-    } else if (val && typeof val === "object" && "type" in val) {
-      collectNode(val as AnyNode, ctx, replacements);
-    }
-  }
+  walkChildren(node, (child) => {
+    collectNode(child, ctx, replacements);
+    return false;
+  });
 }
 
 function isEligibleElement(node: JSXElement): boolean {
@@ -411,18 +426,10 @@ function findNestedJsx(node: AnyNode, out: Replacement[], ctx: Ctx): void {
     return;
   }
 
-  for (const key of VISITOR_KEYS[node.type] ?? []) {
-    const val = node[key];
-    if (Array.isArray(val)) {
-      for (const item of val) {
-        if (item && typeof item === "object" && "type" in item) {
-          findNestedJsx(item as AnyNode, out, ctx);
-        }
-      }
-    } else if (val && typeof val === "object" && "type" in val) {
-      findNestedJsx(val as AnyNode, out, ctx);
-    }
-  }
+  walkChildren(node, (child) => {
+    findNestedJsx(child, out, ctx);
+    return false;
+  });
 }
 
 function hasJsxNode(node: AnyNode): boolean {
@@ -434,24 +441,7 @@ function hasJsxNode(node: AnyNode): boolean {
     return true;
   }
 
-  for (const key of VISITOR_KEYS[node.type] ?? []) {
-    const val = node[key];
-    if (Array.isArray(val)) {
-      for (const item of val) {
-        if (
-          item &&
-          typeof item === "object" &&
-          "type" in item &&
-          hasJsxNode(item as AnyNode)
-        ) {
-          return true;
-        }
-      }
-    } else if (val && typeof val === "object" && "type" in val) {
-      if (hasJsxNode(val as AnyNode)) return true;
-    }
-  }
-  return false;
+  return walkChildren(node, (child) => hasJsxNode(child));
 }
 
 function appendStatic(parts: string[], str: string): void {
@@ -539,146 +529,3 @@ function injectRuntimeImport(
     s.prepend(importLine);
   }
 }
-
-const VISITOR_KEYS: Record<string, string[]> = {
-  Program: ["body"],
-  ExpressionStatement: ["expression"],
-  VariableDeclaration: ["declarations"],
-  VariableDeclarator: ["id", "init"],
-  FunctionDeclaration: ["id", "params", "body"],
-  FunctionExpression: ["id", "params", "body"],
-  ArrowFunctionExpression: ["params", "body"],
-  CallExpression: ["callee", "arguments"],
-  ReturnStatement: ["argument"],
-  BlockStatement: ["body"],
-  IfStatement: ["test", "consequent", "alternate"],
-  ConditionalExpression: ["test", "consequent", "alternate"],
-  LogicalExpression: ["left", "right"],
-  BinaryExpression: ["left", "right"],
-  UnaryExpression: ["argument"],
-  MemberExpression: ["object", "property"],
-  Identifier: [],
-  IdentifierReference: [],
-  BindingIdentifier: [],
-  LabelIdentifier: [],
-  StringLiteral: [],
-  NumericLiteral: [],
-  BooleanLiteral: [],
-  NullLiteral: [],
-  TemplateLiteral: ["expressions", "quasis"],
-  TaggedTemplateExpression: ["tag", "quasi"],
-  TemplateElement: [],
-  ArrayExpression: ["elements"],
-  ObjectExpression: ["properties"],
-  ObjectProperty: ["key", "value"],
-  PropertyDefinition: ["key", "value"],
-  MethodDefinition: ["key", "value"],
-  ArrowFunction: ["params", "body"],
-  JSXElement: ["openingElement", "children", "closingElement"],
-  JSXOpeningElement: ["name", "attributes"],
-  JSXClosingElement: ["name"],
-  JSXFragment: ["openingFragment", "children", "closingFragment"],
-  JSXText: [],
-  JSXExpressionContainer: ["expression"],
-  JSXSpreadChild: ["expression"],
-  JSXAttribute: ["name", "value"],
-  JSXSpreadAttribute: ["argument"],
-  JSXIdentifier: [],
-  JSXNamespacedName: ["namespace", "name"],
-  JSXMemberExpression: ["object", "property"],
-  JSXEmptyExpression: [],
-  ExportDefaultDeclaration: ["declaration"],
-  ExportNamedDeclaration: ["declaration", "specifiers", "source"],
-  ImportDeclaration: ["specifiers", "source"],
-  ImportSpecifier: ["imported", "local"],
-  ImportDefaultSpecifier: ["local"],
-  ImportNamespaceSpecifier: ["local"],
-  ClassDeclaration: ["id", "body"],
-  ClassExpression: ["id", "body"],
-  ClassBody: ["body"],
-  SpreadElement: ["argument"],
-  YieldExpression: ["argument"],
-  AwaitExpression: ["argument"],
-  SequenceExpression: ["expressions"],
-  NewExpression: ["callee", "arguments"],
-  AssignmentExpression: ["left", "right"],
-  AssignmentPattern: ["left", "right"],
-  ChainExpression: ["expression"],
-  ParenthesizedExpression: ["expression"],
-  ImportExpression: ["source", "arguments"],
-  MetaProperty: ["meta", "property"],
-  ThisExpression: [],
-  Super: [],
-  ForStatement: ["init", "test", "update", "body"],
-  ForInStatement: ["left", "right", "body"],
-  ForOfStatement: ["left", "right", "body"],
-  WhileStatement: ["test", "body"],
-  DoWhileStatement: ["test", "body"],
-  SwitchStatement: ["discriminant", "cases"],
-  SwitchCase: ["test", "consequent"],
-  TryStatement: ["block", "handler", "finalizer"],
-  CatchClause: ["param", "body"],
-  ThrowStatement: ["argument"],
-  LabeledStatement: ["label", "body"],
-  BreakStatement: ["label"],
-  ContinueStatement: ["label"],
-  DebuggerStatement: [],
-  EmptyStatement: [],
-  WithStatement: ["object", "body"],
-  TSAsExpression: ["expression", "typeAnnotation"],
-  TSSatisfiesExpression: ["expression", "typeAnnotation"],
-  TSTypeAssertion: ["expression", "typeAnnotation"],
-  TSNonNullExpression: ["expression"],
-  TSInstantiationExpression: ["expression", "typeArguments"],
-  TSImportType: ["parameter", "qualifier", "typeArguments"],
-  TSModuleDeclaration: ["id", "body"],
-  TSModuleBlock: ["body"],
-  TSTypeAliasDeclaration: ["id", "typeAnnotation"],
-  TSInterfaceDeclaration: ["id", "body"],
-  TSInterfaceBody: ["body"],
-  TSEnumDeclaration: ["id", "members"],
-  TSEnumMember: ["id", "initializer"],
-  TSTypeReference: ["typeName", "typeArguments"],
-  TSFunctionType: ["params", "returnType"],
-  TSTypeParameterInstantiation: ["params"],
-  TSTypeParameter: ["name", "constraint", "default"],
-  TSTypeParameterDeclaration: ["params"],
-  TSUnionType: ["types"],
-  TSIntersectionType: ["types"],
-  TSArrayType: ["elementType"],
-  TSTupleType: ["elementTypes"],
-  TSLiteralType: ["literal"],
-  TSMappedType: ["typeParameter", "nameType", "typeAnnotation"],
-  TSConditionalType: ["checkType", "extendsType", "trueType", "falseType"],
-  TSIndexedAccessType: ["objectType", "indexType"],
-  TSInferType: ["typeParameter"],
-  TSQualifiedName: ["left", "right"],
-  TSTypeAnnotation: ["typeAnnotation"],
-  TSTypePredicate: ["parameterName", "typeAnnotation"],
-  TSTypeQuery: ["exprName"],
-  TSTypeOperator: ["typeAnnotation"],
-  TSRestType: ["typeAnnotation"],
-  TSOptionalType: ["typeAnnotation"],
-  TSNamedTupleMember: ["label", "elementType"],
-  TSExportAssignment: ["expression"],
-  TSNamespaceExportDeclaration: ["id"],
-  TSExternalModuleReference: ["expression"],
-  TSIndexSignature: ["parameters", "typeAnnotation"],
-  TSPropertySignature: ["key", "typeAnnotation"],
-  TSMethodSignature: ["key", "params", "returnType"],
-  TSCallSignatureDeclaration: ["params", "returnType"],
-  TSConstructSignatureDeclaration: ["params", "returnType"],
-  TSClassImplements: ["expression", "typeArguments"],
-  TSHeritageClause: ["types"],
-  TSAbstractPropertyDefinition: ["key", "value", "typeAnnotation"],
-  TSAbstractMethodDefinition: ["key", "value"],
-  TSParameterProperty: ["parameter"],
-  Decorator: ["expression"],
-  Property: ["key", "value"],
-  RestElement: ["argument"],
-  StaticBlock: ["body"],
-  V8IntrinsicExpression: ["arguments"],
-  JSDocUnknownType: [],
-  JSDocNonNullableType: ["typeAnnotation"],
-  JSDocNullableType: ["typeAnnotation"],
-};

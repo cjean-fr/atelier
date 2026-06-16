@@ -1,13 +1,11 @@
 import type { Component, JSXNode, HTMLAttributes } from "./core/types.js";
 import { RawString, type RenderResult } from "./core/types.js";
-import {
-  renderAttribute,
-  renderAttributeSync,
-  renderChild,
-  renderElement,
-} from "./utils/html.js";
+import { renderChild } from "./utils/render-child.js";
+import { renderElement } from "./utils/render-element.js";
 
 export type { JSX } from "./core/types.js";
+
+export { jsxAttr, jsxEscape, jsxTemplate } from "./precompile.js";
 
 /**
  * Automatic JSX Transform — production variant.
@@ -69,115 +67,4 @@ export function Fragment({
   children?: JSXNode;
 }): JSXNode | undefined {
   return children;
-}
-
-/**
- * Deno `jsx: "precompile"` runtime: serialize a single dynamic HTML attribute.
- *
- * Emitted by the compiler for each non-static attribute. Returns a string like
- * `name="value"` (or `name` for boolean `true`, or `""` when the attribute is
- * skipped). Applies the same security checks as the standard transform: URL
- * scheme blocking, attribute-name validation, event-handler filtering, safe
- * CSS values.
- *
- * `className` is rewritten to `class`. When a value is a Promise (e.g. from
- * an async source), returns `Promise<string>` so `jsxTemplate` can await it.
- */
-export function jsxAttr(
-  name: string,
-  value: unknown,
-): string | Promise<string> {
-  if (!(value instanceof Promise)) return renderAttributeSync(name, value);
-  return renderAttribute(name, value);
-}
-
-/**
- * Deno `jsx: "precompile"` runtime: prepare a dynamic child for embedding into
- * a template.
- *
- * Returns a value that `jsxTemplate` knows how to concatenate:
- * - `""` for nullish / boolean / empty string,
- * - the `RawString` itself (no re-escape),
- * - an escaped string for primitives,
- * - an array of escaped children (mirrors the JSX child-array shape),
- * - a `Promise` resolving to one of the above for async values — `jsxTemplate`
- * detects it and awaits before concatenation.
- */
-export function jsxEscape(value: unknown): unknown {
-  if (value == null || value === false || value === true || value === "")
-    return "";
-  if (value instanceof RawString) return value;
-  if (value instanceof Promise) return value.then(jsxEscape);
-
-  if (Array.isArray(value)) {
-    let hasAsync = false;
-    for (let i = 0; i < value.length; i++) {
-      if (value[i] instanceof Promise) {
-        hasAsync = true;
-        break;
-      }
-    }
-    if (!hasAsync) {
-      const out: unknown[] = new Array(value.length);
-      for (let i = 0; i < value.length; i++) {
-        out[i] = jsxEscape(value[i]);
-      }
-      return out;
-    }
-    return Promise.all(value.map(jsxEscape));
-  }
-  return renderChild(value as JSXNode);
-}
-
-/**
- * Deno `jsx: "precompile"` runtime: concatenate static template slices with
- * dynamic expressions (each already pre-rendered by `jsxAttr` / `jsxEscape`
- * or by a nested `jsx()` call).
- *
- * Expressions may include Promises (returned by `jsxAttr` for async attribute
- * values, by `jsxEscape` for async children, or by `jsx()` for async
- * components). If any are pending, returns `Promise<RawString>`; otherwise
- * returns a synchronous `RawString`.
- */
-export function jsxTemplate(
-  templates: ArrayLike<string>,
-  ...values: unknown[]
-): RenderResult {
-  let out = templates[0] ?? "";
-  for (let i = 0; i < values.length; i++) {
-    const value = values[i];
-    if (value instanceof Promise) {
-      return Promise.all(values).then(
-        (resolved) => new RawString(joinTemplate(templates, resolved)),
-      );
-    }
-    out += flattenExpr(value) + (templates[i + 1] ?? "");
-  }
-  return new RawString(out);
-}
-
-/**
- * Internal helper to join template strings and flattened expressions.
- */
-function joinTemplate(templates: ArrayLike<string>, exprs: unknown[]): string {
-  let out = templates[0] ?? "";
-  for (let i = 0; i < exprs.length; i++) {
-    out += flattenExpr(exprs[i]) + (templates[i + 1] ?? "");
-  }
-  return out;
-}
-
-/**
- * Internal helper to flatten and stringify structural values (arrays, RawStrings).
- */
-function flattenExpr(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value == null || value === false || value === true) return "";
-  if (value instanceof RawString) return value.value;
-  if (Array.isArray(value)) {
-    let out = "";
-    for (let i = 0; i < value.length; i++) out += flattenExpr(value[i]);
-    return out;
-  }
-  return String(value);
 }
