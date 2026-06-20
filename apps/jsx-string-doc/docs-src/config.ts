@@ -1,7 +1,7 @@
-import type { ResolvedDocsConfig, DocsConfig, HandlerEntry } from "./types.js";
+import { Layout } from "./components/Layout.js";
 import { JsxStringHandler } from "./handlers/jsx-string.js";
 import { MarkdownHandler } from "./handlers/markdown.js";
-import { Layout } from "./components/Layout.js";
+import type { ResolvedDocsConfig, DocsConfig, HandlerEntry } from "./types.js";
 
 const DEFAULTS = {
   pages: "./docs-src/pages",
@@ -15,7 +15,7 @@ const DEFAULTS = {
 const DEFAULT_HANDLERS: Record<string, HandlerEntry> = {
   ".tsx": { handler: JsxStringHandler },
   ".jsx": { handler: JsxStringHandler },
-  ".md":  { handler: MarkdownHandler, prose: true },
+  ".md": { handler: MarkdownHandler, prose: true },
 };
 
 export function defineConfig(config: DocsConfig): ResolvedDocsConfig {
@@ -38,6 +38,7 @@ export function defineConfig(config: DocsConfig): ResolvedDocsConfig {
     sidebar: config.sidebar ?? "auto",
     editUrl: config.editUrl ?? null,
     site: config.site ?? null,
+    image: config.image ?? null,
     sitemap: config.sitemap !== false && Boolean(config.site),
     handlers,
     layout: config.layout ?? Layout,

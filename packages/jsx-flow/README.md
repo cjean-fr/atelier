@@ -319,17 +319,6 @@ const MyAdapter = createAdapter({
 });
 ```
 
-### Imperative push from a plugin or hook
-
-```ts
-import { Flow } from "@cjean-fr/jsx-flow";
-import { useContext } from "@cjean-fr/jsx-string";
-
-const { defer } = useContext(Flow);
-defer("cart-badge", { content: () => <span>{count}</span>, merge: "replace" });
-defer("toast-list", { content: () => <li>Saved</li>, merge: "append" });
-```
-
 ## API
 
 ### Components
@@ -362,9 +351,7 @@ defer("toast-list", { content: () => <li>Saved</li>, merge: "append" });
 
 | Export          | Description                                                   |
 | --------------- | ------------------------------------------------------------- |
-| `Flow`          | Context token — `useContext(Flow)` from inside a render scope |
-| `FlowContext`   | Type: `{ config, pendingStore, nextId, defer }`               |
-| `StaticContext` | `FlowContext` + `renderPage(node)` + `emitFragments(cb)`      |
+| `StaticContext` | `{ config, pendingStore, nextId, defer, renderPage(node), emitFragments(cb) }` |
 
 ### Adapters & types
 

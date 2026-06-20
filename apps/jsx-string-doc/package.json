@@ -9,7 +9,8 @@
     "build:vite": "vite build",
     "build:ssg": "bun docs-src/build.tsx",
     "preview": "vite preview --outDir dist",
-    "test": "echo \"no tests\""
+    "test": "bun test",
+    "test:build": "bun test test/build.test.tsx"
   },
   "dependencies": {
     "@cjean-fr/jsx-flow": "workspace:*",
