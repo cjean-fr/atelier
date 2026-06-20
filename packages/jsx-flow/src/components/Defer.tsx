@@ -1,5 +1,4 @@
-import type { OnError } from "../flow-options.js";
-import type { DeferContent, MergeType } from "../protocol.js";
+import type { DeferContent, MergeType, OnError } from "../types.js";
 import { useFlowContext } from "./shared.js";
 import type { JSXNode, JSX } from "@cjean-fr/jsx-string";
 

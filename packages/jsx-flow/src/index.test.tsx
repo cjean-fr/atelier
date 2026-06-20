@@ -20,9 +20,9 @@ import {
   composeShell,
   injectIntoHead,
 } from "./index.js";
-import type { FlowEvent } from "./protocol.js";
 import { renderToFlowEvents, renderShell, orchestrateFlow } from "./render.js";
 import { streamFlow } from "./streamFlow.js";
+import type { FlowEvent } from "./types.js";
 import { withScope, renderToString, useContext } from "@cjean-fr/jsx-string";
 import { describe, it, expect } from "bun:test";
 

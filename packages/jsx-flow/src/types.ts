@@ -1,0 +1,62 @@
+import type { Adapter } from "./adapters.js";
+import type { JSXNode } from "@cjean-fr/jsx-string";
+
+export type MergeType = "replace" | "append" | "prepend" | "before" | "after";
+
+export interface AdapterCapabilities {
+  streaming: boolean;
+  merges: readonly MergeType[];
+}
+
+export type DeferContent = JSXNode | ((signal: AbortSignal) => JSXNode);
+
+export interface Shell {
+  type: "shell";
+  html: string;
+}
+
+export interface Fragment {
+  type: "fragment";
+  id: string;
+  html: string;
+  merge: MergeType;
+}
+
+export type FlowEvent = Shell | Fragment | { type: "close"; html: string };
+
+export type FlowErrorInfo = { id: string; kind: "fragment" | "stream" };
+
+export type OnError = (error: unknown, info: FlowErrorInfo) => JSXNode | void;
+
+export interface FlowOptions {
+  signal?: AbortSignal;
+  onError?: OnError;
+  defaultTimeout?: number;
+}
+
+export type FlowConfig =
+  | {
+      adapter: Adapter;
+      mode: "streaming";
+      generatePath?: never;
+      idPrefix?: string;
+    }
+  | {
+      adapter: Adapter;
+      mode: "static";
+      generatePath: (id: string) => string;
+      idPrefix?: string;
+    };
+
+export interface Negotiation {
+  headers?: HeadersInit;
+  mode?: "full" | "fragment";
+  target?: string;
+  failTarget?: string;
+}
+
+export type Negotiate = (req: Request) => Negotiation;
+
+export type StreamingAdapter = Adapter & {
+  capabilities: { streaming: true };
+};

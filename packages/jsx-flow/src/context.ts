@@ -1,7 +1,6 @@
 // @jsxImportSource @cjean-fr/jsx-string
-import type { FlowConfig, OnError } from "./flow-options.js";
-import { assertFragmentId } from "./fragmentId.js";
-import type { DeferContent, MergeType } from "./protocol.js";
+import type { DeferContent, FlowConfig, MergeType, OnError } from "./types.js";
+import { assertFragmentId } from "./utils.js";
 import {
   context,
   setContext,
@@ -10,7 +9,7 @@ import {
   type Context,
 } from "@cjean-fr/jsx-string";
 
-export type { FlowConfig } from "./flow-options.js";
+export type { FlowConfig } from "./types.js";
 
 /**
  * A unit of deferred work, keyed by its target DOM `id`. The renderer decides

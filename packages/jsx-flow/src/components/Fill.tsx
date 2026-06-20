@@ -1,4 +1,4 @@
-import type { DeferContent, MergeType } from "../protocol.js";
+import type { DeferContent, MergeType } from "../types.js";
 import { useFlowContext } from "./shared.js";
 import type { JSXNode } from "@cjean-fr/jsx-string";
 

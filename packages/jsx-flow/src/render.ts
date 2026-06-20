@@ -1,10 +1,8 @@
 import { NativeAdapter, type Adapter } from "./adapters.js";
 import { withFlow } from "./context.js";
 import { createFlowStream } from "./create-flow-stream.js";
-import type { FlowOptions } from "./flow-options.js";
-import type { StreamingAdapter } from "./negotiation.js";
-import type { FlowEvent } from "./protocol.js";
 import { streamFlow } from "./streamFlow.js";
+import type { FlowEvent, FlowOptions, StreamingAdapter } from "./types.js";
 import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 
 /**

@@ -1,14 +1,14 @@
 import { NativeAdapter } from "./adapters.js";
-import type { FlowOptions } from "./flow-options.js";
+import { renderStream } from "./render.js";
 import type {
+  FlowOptions,
   Negotiate,
   Negotiation,
   StreamingAdapter,
-} from "./negotiation.js";
-import { renderStream } from "./render.js";
-import { type JSXNode } from "@cjean-fr/jsx-string";
+} from "./types.js";
+import type { JSXNode } from "@cjean-fr/jsx-string";
 
-export type { Negotiate, Negotiation } from "./negotiation.js";
+export type { Negotiate, Negotiation } from "./types.js";
 
 function mergeHeaders(
   defaults?: HeadersInit,
