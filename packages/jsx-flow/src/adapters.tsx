@@ -1,6 +1,5 @@
 // @jsxImportSource @cjean-fr/jsx-string
-import type { FlowEvent, MergeType } from "./protocol.js";
-import type { AdapterCapabilities } from "./protocol.js";
+import type { AdapterCapabilities, FlowEvent, MergeType } from "./types.js";
 import { injectIntoHead } from "./utils.js";
 import { raw, renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 

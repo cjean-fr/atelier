@@ -1,7 +1,6 @@
 import type { PendingStore } from "./context.js";
-import type { FlowOptions } from "./flow-options.js";
 import { runFragment } from "./fragment-runner.js";
-import type { FlowEvent } from "./protocol.js";
+import type { FlowEvent, FlowOptions } from "./types.js";
 
 /**
  * Drain every registered `Defer` entry, emitting semantic `FlowEvent`s to

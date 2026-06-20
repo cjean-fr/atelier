@@ -16,10 +16,11 @@ export { renderToStatic } from "./static.js";
 export type { StaticContext, StaticOptions } from "./static.js";
 export type {
   AdapterCapabilities,
-  MergeType,
   DeferContent,
-} from "./protocol.js";
-export type { Negotiation, StreamingAdapter } from "./negotiation.js";
+  MergeType,
+  Negotiation,
+  StreamingAdapter,
+} from "./types.js";
 export type { Adapter } from "./adapters.js";
 export {
   createAdapter,

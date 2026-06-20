@@ -1,4 +1,4 @@
-import { assertFragmentId } from "../fragmentId.js";
+import { assertFragmentId } from "../utils.js";
 import { useFlowContext } from "./shared.js";
 import type { JSXNode, JSX } from "@cjean-fr/jsx-string";
 

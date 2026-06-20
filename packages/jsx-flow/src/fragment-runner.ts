@@ -1,6 +1,5 @@
 import type { Pending } from "./context.js";
-import type { FlowOptions } from "./flow-options.js";
-import type { FlowEvent } from "./protocol.js";
+import type { FlowEvent, FlowOptions } from "./types.js";
 import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 
 // ════════════════════════════════════════════════════════════════════════
