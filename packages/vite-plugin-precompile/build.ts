@@ -6,7 +6,13 @@ await build({
   outdir: "./dist",
   target: "node",
   format: "esm",
-  external: ["typescript", "vite", "oxc-parser", "magic-string"],
+  external: [
+    "typescript",
+    "vite",
+    "oxc-parser",
+    "magic-string",
+    "@cjean-fr/precompile-core",
+  ],
 });
 
 await $`bun x tsc -p tsconfig.build.json`;

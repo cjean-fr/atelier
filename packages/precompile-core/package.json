@@ -12,6 +12,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@cjean-fr/jsx-string": "catalog:"
+    "@cjean-fr/jsx-string": "workspace:*"
   }
 }

@@ -178,16 +178,3 @@ export function createTranslationBuilder<S extends TranslationSpec>(): <
 ) => V {
   return (translations) => translations;
 }
-
-/**
- * @deprecated Use `createTranslationBuilder` to isolate your domains without double invocation.
- */
-export function defineTranslations<S extends TranslationSpec>(): <
-  const V extends ValidTranslations<S>,
->(
-  translations: V & {
-    [K in keyof S]: CheckParams<V[K] & string, S[K][number]>;
-  },
-) => V {
-  return (translations) => translations;
-}

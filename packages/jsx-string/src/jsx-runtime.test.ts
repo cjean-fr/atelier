@@ -197,5 +197,15 @@ describe("Deno Precompile Target Runtime Pipeline", () => {
       expect((await result).toString()).toBe("<p>a - b</p>");
       expect(Date.now() - start).toBeLessThan(45); // Verifies parallel execution loop
     });
+
+    it("awaits a Promise nested inside a sub-array instead of stringifying it", async () => {
+      // A top-level-only async scan would take the sync path here and render
+      // the nested Promise as "[object Promise]".
+      const result = jsxTemplate(
+        ["<ul>", "</ul>"],
+        jsxEscape(["a", [Promise.resolve("b"), "c"]]),
+      );
+      expect((await result).toString()).toBe("<ul>abc</ul>");
+    });
   });
 });

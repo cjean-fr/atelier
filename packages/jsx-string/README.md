@@ -234,8 +234,8 @@ All outputs are sanitized **automatically** — no configuration needed.
 
 #### Attributes
 
-- **Names:** Rejects whitespace, quotes, `>`, `/`, `=`, and Unicode "Other" chars (controls, ZWSP, LRM, surrogates).
-  Regex: `/^[^\s"'>/=\p{C}]+$/u`
+- **Names:** Rejects whitespace, quotes, `<`, `>`, `/`, `=`, and Unicode "Other" chars (controls, ZWSP, LRM, surrogates).
+  Regex: `/^[^\s"'<>/=\p{C}]+$/u`
 - **Values:** Escapes `&` ` <` `>` `"`; always double-quoted.
 - **URL attributes:** Blocks `javascript:`, `vbscript:`, non-image `data:` schemes.
   Blocked schemes replaced with `#blocked`.
@@ -375,8 +375,8 @@ _Ryzen 7 PRO 8840HS, median of 3 runs._
 
 Use [`@cjean-fr/jsx-flow`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-flow):
 
-- Adds `<Deferred>`, `<Patch>`, streaming support
-- Adapters for Turbo Streams, HTMX, Native DOM updates, ESI
+- Adds `<Defer>` (deferred + streaming fragments), `<Slot>`/`<Fill>`, `<ClientFetch>`
+- Adapters for Native DOM updates, Turbo Streams, HTMX, ESI, and the Web Platform
 
 ---
 

@@ -19,6 +19,8 @@ import {
   createAdapter,
   composeShell,
   injectIntoHead,
+  NATIVE_POLYFILL,
+  nativePolyfillHash,
 } from "./index.js";
 import { renderToFlowEvents, renderShell, orchestrateFlow } from "./render.js";
 import { streamFlow } from "./streamFlow.js";
@@ -128,6 +130,29 @@ describe("ClientFetch", () => {
       const html = await renderToString(<ClientFetch src="/api/fragment" />);
       expect(html).toContain('src="/api/fragment"');
       expect(useContext(Flow).pendingStore.size).toBe(0);
+    });
+  });
+
+  it("accepts http(s)/relative URL literals and rejects everything else at compile time", () => {
+    // Whitelisted forms compile.
+    void (<ClientFetch src="/api/fragment" />);
+    void (<ClientFetch src="https://example.com/f" />);
+    void (<ClientFetch src="./rel?x=1#h" />);
+
+    // @ts-expect-error - javascript: scheme
+    void (<ClientFetch src="javascript:alert(1)" />);
+    // @ts-expect-error - any data: (ClientFetch loads HTML, not inline data)
+    void (<ClientFetch src="data:image/png;base64,abc" />);
+    // @ts-expect-error - mailto: is not fetchable HTML
+    void (<ClientFetch src="mailto:a@b.com" />);
+  });
+
+  it("still accepts a dynamic string src (checked at runtime, not compile time)", async () => {
+    await withScope(async () => {
+      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+      const dynamic: string = "/api/" + Math.random().toString(36).slice(2);
+      const html = await renderToString(<ClientFetch src={dynamic} />);
+      expect(html).toContain(dynamic);
     });
   });
 });
@@ -855,17 +880,52 @@ describe("adapters", () => {
     ).toContain('hx-swap-oob="beforebegin"');
   });
 
-  it("NativeAdapter: replace → template; non-replace → insertAdjacentHTML", async () => {
+  it("NativeAdapter patches are declarative templates — never per-fragment scripts (CSP)", async () => {
     const repl = await renderToString(
       NativeAdapter.Patch({ id: "x", children: "c", merge: "replace" }),
     );
-    expect(repl).toContain("template");
-    expect(repl).not.toContain("insertAdjacentHTML");
+    expect(repl).toContain('<template for="x">');
+    expect(repl).not.toContain("data-merge"); // replace carries no merge attr
+    expect(repl).not.toContain("<script");
+
     const app = await renderToString(
       NativeAdapter.Patch({ id: "x", children: "c", merge: "append" }),
     );
-    expect(app).toContain("insertAdjacentHTML");
-    expect(app).toContain("beforeend");
+    expect(app).toContain('<template for="x" data-merge="append">');
+    expect(app).not.toContain("<script");
+  });
+
+  it("NativeAdapter src placeholder is a declarative data-src template, not a fetch script (CSP)", async () => {
+    const ph = await renderToString(
+      NativeAdapter.Placeholder({ id: "x", src: "/api/frag", children: null }),
+    );
+    expect(ph).toContain('<template for="x" data-src="/api/frag">');
+    expect(ph).not.toContain("<script");
+    expect(ph).not.toContain("streamAppendHTML");
+  });
+
+  it("NativeAdapter escapes a hostile src into the data-src attribute", async () => {
+    const ph = await renderToString(
+      NativeAdapter.Placeholder({
+        id: "x",
+        src: '"><script>alert(1)</script>',
+        children: null,
+      }),
+    );
+    expect(ph).not.toContain("<script>alert(1)");
+    expect(ph).toContain("&quot;&gt;&lt;script&gt;");
+  });
+
+  it("exposes the polyfill source and a stable CSP hash for it", async () => {
+    expect(NATIVE_POLYFILL).toContain("MutationObserver");
+    // transformShell inlines exactly this string, so the hash must cover it.
+    expect(NativeAdapter.transformShell!("<head></head>")).toContain(
+      `<script>${NATIVE_POLYFILL}</script>`,
+    );
+    const hash = await nativePolyfillHash();
+    expect(hash).toMatch(/^sha256-[A-Za-z0-9+/]+=*$/);
+    // Deterministic: same input → same token (cache/SSG-safe).
+    expect(await nativePolyfillHash()).toBe(hash);
   });
 
   it("NativeAdapter.transformShell injects the polyfill into <head>", () => {
@@ -977,6 +1037,24 @@ describe("HTTP negotiation (decoupled from the adapter)", () => {
     expect(res.headers.get("content-type")).toContain("text/html");
     expect(res.headers.get("Vary")).toContain("HX-Target");
     expect(await res.text()).toContain("hi");
+  });
+
+  it("serve unions a caller's Vary with the negotiator's instead of overwriting it", async () => {
+    const res = await serve(
+      new Request("http://localhost", { headers: { "HX-Target": "zone" } }),
+      () => (
+        <html>
+          <body>
+            <p>hi</p>
+          </body>
+        </html>
+      ),
+      HtmxAdapter,
+      { negotiate: negotiateHtmx, headers: { Vary: "Cookie" } },
+    );
+    const vary = res.headers.get("Vary") ?? "";
+    expect(vary).toContain("Cookie");
+    expect(vary).toContain("HX-Target");
   });
 
   it("serve passes negotiation hints to the page", async () => {

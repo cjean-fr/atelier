@@ -22,6 +22,9 @@ import { VOID_ELEMENTS } from "./void-elements.js";
 // (HTML/SVG elements + a few user custom-elements) and are reused thousands of
 // times per render, so a cache avoids re-running the validation regex.
 const VALID_TAGS = new Set<string>();
+// Invalid tag names already warned about, so a bad tag in a loop warns once
+// instead of flooding the console on every render.
+const WARNED_TAGS = new Set<string>();
 
 export function renderElement(
   tag: string,
@@ -30,9 +33,12 @@ export function renderElement(
 ): RawString | Promise<RawString> {
   if (!VALID_TAGS.has(tag)) {
     if (!isValidTagName(tag)) {
-      console.warn(
-        `[jsx-string] Invalid tag name "${tag}" was skipped. Tag names must start with a letter and contain only letters, digits, or hyphens.`,
-      );
+      if (!WARNED_TAGS.has(tag)) {
+        WARNED_TAGS.add(tag);
+        console.warn(
+          `[jsx-string] Invalid tag name "${tag}" was skipped. Tag names must start with a letter and contain only letters, digits, or hyphens.`,
+        );
+      }
       return EMPTY_RAW;
     }
     VALID_TAGS.add(tag);

@@ -304,4 +304,36 @@ describe("precompileTransform", () => {
       expect(pos.line).toBe(3);
     });
   });
+
+  describe("static content escaping", () => {
+    it("escapes backticks in static text so codegen stays valid", () => {
+      const out = transform("const a = <div>price `x`</div>;");
+      expect(out).toContain("jsxTemplate`<div>price \\`x\\`</div>`");
+      // the emitted module parses as valid JS
+      expect(() =>
+        new Bun.Transpiler({ loader: "ts" }).transformSync(out),
+      ).not.toThrow();
+    });
+
+    it("escapes backticks in static attribute values", () => {
+      const out = transform("const a = <div title='a`b'>x</div>;");
+      expect(out).toContain('title="a\\`b"');
+      expect(() =>
+        new Bun.Transpiler({ loader: "ts" }).transformSync(out),
+      ).not.toThrow();
+    });
+
+    it("serializes namespaced static attributes (xlink:href)", () => {
+      const out = transform('const a = <use xlink:href="#i" />;');
+      expect(out).toContain('xlink:href="#i"');
+      expect(out).not.toContain("[object Object]");
+    });
+
+    it("HTML-escapes bare ampersands in static text but keeps entities", () => {
+      const out = transform("const a = <div>fish & chips &amp; &copy;</div>;");
+      expect(out).toContain(
+        "jsxTemplate`<div>fish &amp; chips &amp; &copy;</div>`",
+      );
+    });
+  });
 });

@@ -5,6 +5,7 @@ import { renderChild } from "./utils/render-child.js";
 export { raw } from "./core/types.js";
 export { Fragment } from "./jsx-runtime.js";
 export type {
+  RawString,
   CSSProperties,
   StringEventHandlers,
   ToStatic,

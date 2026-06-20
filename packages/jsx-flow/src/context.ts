@@ -107,6 +107,7 @@ export interface FlowContext {
   config: FlowConfig;
   /** Internal deferred-work store. */
   pendingStore: PendingStore;
+
   nextId: () => string;
   /**
    * Register deferred work to render into the DOM element with this `id`.

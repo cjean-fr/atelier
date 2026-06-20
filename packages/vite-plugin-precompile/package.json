@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@cjean-fr/precompile-core": "workspace:*",
-    "@oxc-parser/binding-linux-x64-gnu": "^0.135.0",
     "magic-string": "^0.30.21",
     "oxc-parser": "^0.135.0"
   },

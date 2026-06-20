@@ -116,28 +116,37 @@ import { interpolate } from "@cjean-fr/i18n-tiny";
 interpolate("Hello {name}", { name: "Bob" }); // "Hello Bob"
 ```
 
+> ⚠️ The default interpolator **only** replaces simple `{name}` placeholders. Richer ICU constructs such as `{count, plural, ...}` are **passed through unchanged** — wire up a [custom interpolator](#advanced-custom-interpolator-icu-etc) to handle them. A missing parameter leaves its `{placeholder}` in place.
+
 ## Advanced: Custom Result Types (JSX, etc.)
 
-By default, the translator returns a `string`. You can customize the return type (and allowed parameter types) to integrate with UI libraries like React.
+By default, the translator returns a `string`. Pass the return type as the second type argument to `createTranslator` to integrate with UI libraries like React — you then also accept that type as a parameter. Supply an `interpolate` that knows how to weave the nodes together (the default one stringifies, which would turn a JSX element into `"[object Object]"`).
 
 ```tsx
-import { type Translator } from "@cjean-fr/i18n-tiny";
+import { createTranslator } from "@cjean-fr/i18n-tiny";
 import type { ReactNode } from "react";
 
-// Define tx returning ReactNode and accepting ReactNode as parameters
-const tx: Translator<AppTranslationSpec, ReactNode> = (key, ...args) => {
-  return t(key, ...(args as any));
-};
+type Spec = { welcome: readonly ["name"] };
+
+// Return ReactNode, and accept ReactNode params — no casts needed.
+const tx = createTranslator<Spec, ReactNode>(
+  { welcome: "Hello {name}!" },
+  {
+    interpolate: (template, params) =>
+      // split on {placeholders}; odd indices are the captured keys
+      template
+        .split(/\{(\w+)\}/)
+        .map((part, i) => (i % 2 === 0 ? part : params[part])),
+  },
+);
 
 // Now you can pass JSX elements as parameters!
-const element = tx("welcome", {
-  name: <strong>Alice</strong>,
-});
+const element = tx("welcome", { name: <strong>Alice</strong> });
 ```
 
 ## Advanced: Custom Interpolator (ICU, etc.)
 
-By default, the library uses simple regex string replacement. You can easily plug in a more powerful interpolator like **ICU MessageFormat** (useful for plurals, gender, etc.) by passing an `interpolate` function in the config.
+By default, the library uses simple regex string replacement, which **does not understand ICU syntax** — `{count, plural, ...}` would be emitted verbatim. To get plurals, gender, etc., plug in a real interpolator like **ICU MessageFormat** by passing an `interpolate` function in the config. The types accept ICU placeholders, so this wiring is required, not optional, when you use them.
 
 ```typescript
 import { createTranslator } from "@cjean-fr/i18n-tiny";
@@ -175,7 +184,10 @@ npx skills add cjean-fr/atelier --skill i18n-tiny
 
 ⚠️ **This library does NOT sanitize inputs.**
 
-The `interpolate` function performs simple string replacement. **Do not** use the output directly in HTML (e.g., `innerHTML`) if parameters contain user-generated content.
+The `interpolate` function performs simple string replacement. This is deliberate: the output is type-agnostic (plain `string` or a UI node), so escaping belongs to whoever renders it, not here.
+
+- ✅ **With [`@cjean-fr/jsx-string`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string)**, translator output passed as a JSX child is HTML-escaped automatically — the safe default. No extra work.
+- ⚠️ **Do not** feed the output to `innerHTML` / `dangerouslySetInnerHTML` / `raw()` when parameters contain user-generated content — those bypass escaping. Escape it yourself first (or pass it through jsx-string).
 
 ## License
 

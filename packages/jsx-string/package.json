@@ -26,7 +26,7 @@
   "type": "module",
   "types": "./dist/index.d.ts",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=22.0.0"
   },
   "exports": {
     ".": {
@@ -41,17 +41,16 @@
       "types": "./dist/jsx-dev-runtime.d.ts",
       "default": "./dist/jsx-dev-runtime.js"
     },
-    "./constants": {
-      "types": "./dist/utils/constants.d.ts",
-      "import": "./src/utils/constants.ts",
-      "default": "./dist/utils/constants.js"
+    "./html": {
+      "types": "./dist/utils/html-primitives.d.ts",
+      "default": "./dist/utils/html-primitives.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "bunup src/index.ts src/jsx-runtime.ts src/jsx-dev-runtime.ts src/utils/constants.ts --format esm --minify --target browser",
+    "build": "tsc -p tsconfig.build.json",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"
@@ -59,7 +58,7 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/bun": "catalog:",
-    "bunup": "catalog:",
+    "fast-check": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {

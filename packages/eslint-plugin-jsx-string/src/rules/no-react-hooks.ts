@@ -1,5 +1,29 @@
 import { ESLintUtils } from "@typescript-eslint/utils";
 
+// React's stateful/effect hooks, which have no meaning in static rendering.
+// `useContext` is deliberately absent: it is part of @cjean-fr/jsx-string's own
+// (synchronous, scope-based) public API, so flagging every `use*` identifier
+// would reject idiomatic jsx-string code.
+const REACT_HOOKS = new Set<string>([
+  "useState",
+  "useEffect",
+  "useLayoutEffect",
+  "useInsertionEffect",
+  "useReducer",
+  "useRef",
+  "useImperativeHandle",
+  "useCallback",
+  "useMemo",
+  "useTransition",
+  "useDeferredValue",
+  "useId",
+  "useSyncExternalStore",
+  "useDebugValue",
+  "useActionState",
+  "useFormStatus",
+  "useOptimistic",
+]);
+
 export const noReactHooks = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
     type: "problem",
@@ -23,7 +47,7 @@ export const noReactHooks = ESLintUtils.RuleCreator.withoutDocs({
       CallExpression(node) {
         if (
           node.callee.type === "Identifier" &&
-          node.callee.name.startsWith("use")
+          REACT_HOOKS.has(node.callee.name)
         ) {
           const name = node.callee.name;
           let messageId: "noHook" | "useState" | "useEffect" = "noHook";

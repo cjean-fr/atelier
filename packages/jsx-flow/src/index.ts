@@ -29,6 +29,8 @@ export {
   HtmxAdapter,
   WebPlatformAdapter,
   EsiAdapter,
+  NATIVE_POLYFILL,
+  nativePolyfillHash,
 } from "./adapters.js";
 export {
   serve,

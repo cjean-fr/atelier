@@ -135,6 +135,14 @@ describe("translation system", () => {
     it("should handle non-string values gracefully", () => {
       expect(interpolate("Count: {count}", { count: 42 })).toBe("Count: 42");
     });
+
+    it("leaves ICU constructs untouched (they need a custom interpolator)", () => {
+      // Documented footgun: the type system accepts `{count, plural, ...}` but
+      // the default interpolator only matches simple `{name}` and passes ICU
+      // through verbatim. README points users to a custom interpolator.
+      const icu = "You have {count, plural, one {1 item} other {# items}}";
+      expect(interpolate(icu, { count: 5 })).toBe(icu);
+    });
   });
 
   describe("createTranslationBuilder & InferSpec", () => {
@@ -189,6 +197,29 @@ describe("translation system", () => {
   });
 
   describe("extensibility", () => {
+    it("supports JSX-style node return types without casts (README example)", () => {
+      // Mirrors the "Custom Result Types" README snippet so it can't rot: a
+      // node-typed translator whose interpolator interleaves param nodes
+      // between the static text. No `as any` anywhere.
+      type Spec = { welcome: readonly ["name"] };
+      type El = { tag: string; child: string };
+      type Node = string | El | Node[];
+
+      const tx = createTranslator<Spec, Node>(
+        { welcome: "Hello {name}!" },
+        {
+          interpolate: (template, params) =>
+            template
+              .split(/\{(\w+)\}/)
+              .map((part, i) => (i % 2 === 0 ? part : params[part])),
+        },
+      );
+
+      expect(
+        tx("welcome", { name: { tag: "strong", child: "Alice" } }),
+      ).toEqual(["Hello ", { tag: "strong", child: "Alice" }, "!"]);
+    });
+
     it("should support complex pluralization via custom interpolator", () => {
       const tFr = createTranslator<UserSpec>(validEnglish, {
         locale: "fr-FR",

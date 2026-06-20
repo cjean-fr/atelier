@@ -14,9 +14,22 @@ same HTTP response.
 
 Returns a `ReadableStream<string>`. The shell chunk is emitted first; fragment
 chunks follow as they resolve. The adapter is optional — it defaults to
-`NativeAdapter` (zero-JS polyfill).
+`NativeAdapter` (inclut un polyfill ~550B).
 
 <CodeExample src="jsx-flow/deferred-stream.tsx" />
+
+## Node HTTP server
+
+Pipe the stream into any Node.js `http.ServerResponse` with `for await`. Each
+chunk is written as it becomes ready — the shell flushes immediately, deferred
+fragments arrive later.
+
+<CodeExample src="jsx-flow/node-server.tsx" />
+
+The example uses `http.createServer`, but the same pattern works with **Express**,
+**Fastify**, or any framework built on `node:http`. The key is consuming the
+`ReadableStream` chunk by chunk and writing each one to the response without
+buffering.
 
 ## Declaring slots and content
 

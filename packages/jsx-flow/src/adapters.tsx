@@ -112,17 +112,63 @@ export const TurboAdapter = createAdapter({
   ),
 });
 
-// ── Native (inline polyfill) ─────────────────────────────────────────────
+// ── Native (declarative polyfill) ────────────────────────────────────────
 
-// Minimal MutationObserver polyfill for <template for> streaming support.
-const POLYFILL = `(function(){function a(t){var n=t.getAttribute('for'),it=document.createNodeIterator(document.body||document.documentElement,128),nd,s=null,e=null;while((nd=it.nextNode())){if(!s&&nd.nodeValue==='?start name="'+n+'"'){s=nd;continue;}if(s&&nd.nodeValue==='?end'){e=nd;break;}}if(!s)return;var c=s.nextSibling;while(c&&c!==e){var x=c.nextSibling;c.remove();c=x;}s.after(t.content.cloneNode(true));t.remove();}new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeName==='TEMPLATE'&&n.getAttribute&&n.getAttribute('for'))a(n);});});}).observe(document.documentElement,{childList:true,subtree:true});})()`;
+// One static script drives every streaming update — no per-fragment inline
+// JS — so a strict CSP can allow it with a single `'sha256-...'` (see
+// `nativePolyfillHash`) or by serving it from your own origin (the exported
+// `NATIVE_POLYFILL` string) under `script-src 'self'`. Fragments are plain
+// `<template for>` elements; the script reads `data-merge` / `data-src`:
+//   • no attribute      → replace the <?start name="ID"> … <?end> range
+//   • data-merge="..."  → insertAdjacentHTML onto getElementById(ID)
+//   • data-src="URL"    → fetch URL, then fill the range (lazy client load)
+// Templates already in the shell are picked up by an initial scan; streamed
+// ones by a MutationObserver.
+const POLYFILL = `(function(){
+var ADJ={append:"beforeend",prepend:"afterbegin",before:"beforebegin",after:"afterend"};
+function fill(name,frag){
+var it=document.createNodeIterator(document.body||document.documentElement,128),nd,s=null,e=null;
+while((nd=it.nextNode())){if(!s&&nd.nodeValue==='?start name="'+name+'"'){s=nd;continue;}if(s&&nd.nodeValue==='?end'){e=nd;break;}}
+if(!s)return;var c=s.nextSibling;while(c&&c!==e){var x=c.nextSibling;c.remove();c=x;}s.after(frag);
+}
+function run(t){
+var name=t.getAttribute("for");if(!name)return;
+var src=t.getAttribute("data-src");
+if(src!=null){fetch(src).then(function(r){return r.text();}).then(function(h){var x=document.createElement("template");x.innerHTML=h;fill(name,x.content);});t.remove();return;}
+var merge=t.getAttribute("data-merge");
+if(merge&&merge!=="replace"){var el=document.getElementById(name);if(el)el.insertAdjacentHTML(ADJ[merge],t.innerHTML);t.remove();return;}
+fill(name,t.content.cloneNode(true));t.remove();
+}
+function scan(r){var ts=r.querySelectorAll?r.querySelectorAll("template[for]"):[];for(var i=0;i<ts.length;i++)run(ts[i]);}
+scan(document);
+new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeName==='TEMPLATE'&&n.getAttribute&&n.getAttribute('for'))run(n);});});}).observe(document.documentElement,{childList:true,subtree:true});
+})()`;
 
-const ADJ: Record<Exclude<MergeType, "replace">, string> = {
-  append: "beforeend",
-  prepend: "afterbegin",
-  before: "beforebegin",
-  after: "afterend",
-};
+/**
+ * The NativeAdapter's client polyfill, as a standalone JS string. Serve it from
+ * your own origin (e.g. write it to `/jsx-flow.js`) and replace the adapter's
+ * `transformShell` with `<script src="/jsx-flow.js"></script>` to satisfy a
+ * `script-src 'self'` CSP. By default the adapter inlines it instead.
+ */
+export const NATIVE_POLYFILL: string = POLYFILL;
+
+/**
+ * The CSP source token for the inline polyfill, e.g. `"sha256-abc..."`. Add it
+ * to your `script-src` to keep the default inline `<script>` under a strict CSP
+ * — it is static, so the hash is stable and cache/SSG-safe (unlike a nonce).
+ *
+ * @example
+ * res.headers.set("Content-Security-Policy",
+ *   `script-src 'self' '${await nativePolyfillHash()}'`);
+ */
+export async function nativePolyfillHash(): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(POLYFILL),
+  );
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(digest)));
+  return `sha256-${b64}`;
+}
 
 export const NativeAdapter = createAdapter({
   transformShell: (shell) =>
@@ -132,11 +178,8 @@ export const NativeAdapter = createAdapter({
     const open: JSXNode = raw(`<?start name="${id}">`);
     const close: JSXNode = raw(`<?end>`);
     if (src) {
-      const safeJsonSrc = JSON.stringify(src).replace(/<\//g, "<\\/");
-      const script = raw(
-        `<script>(function(){fetch(${safeJsonSrc}).then(function(r){document.body.streamAppendHTML(r.body)})})();</script>`,
-      );
-      return [open, children, close, script];
+      // Declarative lazy fetch: the polyfill reads data-src and fills the range.
+      return [open, children, close, <template htmlFor={id} data-src={src} />];
     }
     return [open, children, close];
   },
@@ -145,11 +188,12 @@ export const NativeAdapter = createAdapter({
     if (merge === "replace") {
       return <template htmlFor={id}>{children}</template>;
     }
-    const tmplId = `patch-${id}`;
-    const script = raw(
-      `<script>(function(){var t=document.getElementById(${JSON.stringify(tmplId)});var el=document.getElementById(${JSON.stringify(id)});if(t&&el){el.insertAdjacentHTML(${JSON.stringify(ADJ[merge])},t.innerHTML);t.remove();}})();</script>`,
+    // Non-replace merges are declarative too: the polyfill reads data-merge.
+    return (
+      <template htmlFor={id} data-merge={merge}>
+        {children}
+      </template>
     );
-    return [<template id={tmplId}>{children}</template>, script];
   },
 
   Frame: ({ id, children }): JSXNode => (
