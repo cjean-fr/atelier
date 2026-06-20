@@ -56,6 +56,21 @@ describe("context", () => {
   });
 
   describe("withScope", () => {
+    it("handles many concurrent scopes (race on ensureStorage)", async () => {
+      const Token = context<number>("test:concurrent-ensure");
+      const count = 20;
+      const results = await Promise.all(
+        Array.from({ length: count }, (_, i) =>
+          withScope(async () => {
+            setContext(Token, i);
+            await Promise.resolve();
+            return useContext(Token);
+          }),
+        ),
+      );
+      expect(results).toEqual(Array.from({ length: count }, (_, i) => i));
+    });
+
     it("isolates concurrent scopes", async () => {
       const results = await Promise.all([
         withScope(async () => {

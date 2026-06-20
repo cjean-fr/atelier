@@ -5,6 +5,12 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 beforeAll(async () => {
+  if (!existsSync("dist/assets/.vite/manifest.json")) {
+    const proc = Bun.spawnSync(["bun", "run", "build:vite"], {
+      cwd: import.meta.dirname + "/..",
+    });
+    if (!proc.success) throw new Error(proc.stderr.toString());
+  }
   await initBuild();
   await rebuildAll();
 });
