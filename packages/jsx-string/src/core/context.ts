@@ -24,13 +24,17 @@ type ScopeMap = Map<Context<unknown>, unknown>;
 // Lazy — deferred to first withScope() call so runtimes without
 // node:async_hooks (Workers, Deno, browser) can still import the package.
 let storage: AsyncLocalStorage<ScopeMap> | undefined;
+let storagePromise: Promise<AsyncLocalStorage<ScopeMap>> | undefined;
 
 async function ensureStorage(): Promise<AsyncLocalStorage<ScopeMap>> {
-  if (!storage) {
+  if (storage) return storage;
+  if (storagePromise) return storagePromise;
+  storagePromise = (async () => {
     const mod = await import("node:async_hooks");
     storage = new mod.AsyncLocalStorage<ScopeMap>();
-  }
-  return storage!;
+    return storage;
+  })();
+  return storagePromise;
 }
 
 const namedContexts = new Map<string, symbol>();

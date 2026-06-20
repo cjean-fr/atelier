@@ -14,9 +14,6 @@ import { writeFile, mkdir, rm, readdir, copyFile } from "node:fs/promises";
 import { availableParallelism, cpus } from "node:os";
 import path from "node:path";
 
-let manifest: ViteManifest | null = null;
-let allPages: Page[] = [];
-
 function mapConcurrent<T, R>(
   items: T[],
   fn: (item: T) => Promise<R>,
@@ -43,6 +40,9 @@ function concurrency(): number {
     16,
   );
 }
+
+let manifest: ViteManifest | null = null;
+let allPages: Page[] = [];
 
 export async function initBuild(): Promise<void> {
   manifest = await loadViteManifest(path.resolve(config.viteManifest));

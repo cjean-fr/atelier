@@ -37,7 +37,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bunup src/index.tsx --format esm --minify --jsx.import-source @cjean-fr/jsx-string",
+    "build": "bunup src/index.tsx --format esm --minify --jsx.import-source @cjean-fr/jsx-string --external @cjean-fr/jsx-string",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "bun test"
