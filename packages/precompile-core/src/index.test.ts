@@ -1,13 +1,13 @@
 import {
   collapseJsxWhitespace,
   escapeAttr,
+  escapeJsxText,
   isEventHandlerName,
   isLower,
   isLowercaseTag,
   isUrlAttribute,
   isValidAttrName,
   isVoidElement,
-  normalizeText,
   hasSpreadOrInnerHTML,
   remapAttrName,
   RUNTIME_SOURCE,
@@ -45,22 +45,27 @@ describe("precompile-core", () => {
     });
   });
 
-  describe("normalizeText", () => {
-    it("trims leading newlines", () => {
-      expect(normalizeText("\n\n  hello")).toBe("  hello");
+  describe("escapeJsxText", () => {
+    it("escapes bare &, <, and >", () => {
+      expect(escapeJsxText("fish & chips")).toBe("fish &amp; chips");
+      expect(escapeJsxText("a < b > c")).toBe("a &lt; b &gt; c");
     });
 
-    it("trims trailing newlines", () => {
-      expect(normalizeText("hello  \n\n")).toBe("hello  ");
+    it("leaves well-formed entities intact (no double-escaping)", () => {
+      expect(escapeJsxText("a &amp; b")).toBe("a &amp; b");
+      expect(escapeJsxText("&copy; &eacute;")).toBe("&copy; &eacute;");
+      expect(escapeJsxText("&#65; &#x42;")).toBe("&#65; &#x42;");
     });
 
-    it("replaces internal newlines with space", () => {
-      expect(normalizeText("hello\nworld")).toBe("hello world");
-      expect(normalizeText("line1\n\nline2")).toBe("line1 line2");
+    it("escapes an ampersand that does not open an entity", () => {
+      expect(escapeJsxText("Tom & Jerry & co")).toBe(
+        "Tom &amp; Jerry &amp; co",
+      );
+      expect(escapeJsxText("a &notanentity b")).toBe("a &amp;notanentity b");
     });
 
-    it("replaces carriage returns", () => {
-      expect(normalizeText("hello\r\nworld")).toBe("hello world");
+    it("returns clean text unchanged", () => {
+      expect(escapeJsxText("hello world")).toBe("hello world");
     });
   });
 
@@ -214,7 +219,7 @@ describe("precompile-core", () => {
     });
   });
 
-  describe("shared constants (imported from @cjean-fr/jsx-string/constants)", () => {
+  describe("shared primitives (imported from @cjean-fr/jsx-string/html)", () => {
     it("VOID_ELEMENTS matches expected HTML void elements", () => {
       expect(VOID_ELEMENTS.has("br")).toBe(true);
       expect(VOID_ELEMENTS.has("img")).toBe(true);
@@ -247,6 +252,23 @@ describe("precompile-core", () => {
       expect(isValidAttrName("data-x")).toBe(true);
       expect(isValidAttrName("a b")).toBe(false);
       expect(isValidAttrName('a"b')).toBe(false);
+    });
+
+    // Regression guard for the bundler: the `./html` subpath is a pure
+    // re-export barrel. The previous bundler (bunup/Bun splitting) emitted a
+    // broken module that re-exported names it never imported, so every symbol
+    // resolved to `undefined` at runtime — invisible to tests that read the
+    // source via tsconfig paths. This imports the *published* entry point
+    // (resolved to dist through the package `exports` map) and asserts every
+    // named export is actually wired up.
+    it("the published html-primitives barrel exports every symbol (not undefined)", async () => {
+      const barrel = await import("@cjean-fr/jsx-string/html");
+      expect(barrel.VOID_ELEMENTS).toBeInstanceOf(Set);
+      expect(barrel.URL_ATTRIBUTES).toBeInstanceOf(Set);
+      expect(barrel.ATTRIBUTE_NAME_MAP).toBeInstanceOf(Map);
+      expect(typeof barrel.escapeAttr).toBe("function");
+      expect(typeof barrel.isValidAttrName).toBe("function");
+      expect(typeof barrel.isValidTagName).toBe("function");
     });
   });
 });

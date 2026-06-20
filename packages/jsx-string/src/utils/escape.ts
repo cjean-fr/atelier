@@ -20,11 +20,11 @@ const REGEX_CONTENT_TEST = /[&<>]/;
 const REGEX_ATTR_TEST = /[&<>"]/;
 const REGEX_OTHER_UNICODE_CHARS_TEST = /\p{C}/u;
 const REGEX_OTHER_UNICODE_CHARS_REPLACE = /\p{C}/gu;
-// Reject whitespace, quotes, brackets, `=`, `/`, AND any Unicode "Other"
+// Reject whitespace, quotes, angle brackets, `=`, `/`, AND any Unicode "Other"
 // codepoint (controls, formatters, surrogates, etc.) in one pass. This lets
 // `renderAttributeSync`'s hot path validate with a single regex test for
 // clean ASCII names — only names that fail need the slower `sanitize` retry.
-const REGEX_VALID_ATTR_NAME = /^[^\s"'>/=\p{C}]+$/u;
+const REGEX_VALID_ATTR_NAME = /^[^\s"'<>/=\p{C}]+$/u;
 const REGEX_VALID_TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 const REGEX_UNSAFE_PROTOCOLS = /^(?:java|vb)script:/i;
 const REGEX_NON_IMAGE_DATA_URI = /^data:(?!image\/)/i;

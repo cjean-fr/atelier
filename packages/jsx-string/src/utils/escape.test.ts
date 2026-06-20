@@ -85,7 +85,7 @@ describe("escape utilities", () => {
     });
 
     it("should block structural separators", () => {
-      const invalid = ["a b", "a=", 'a"', "a'", "a>", "a/"];
+      const invalid = ["a b", "a=", 'a"', "a'", "a<", "a>", "a/"];
       invalid.forEach((name) => expect(isValidAttrName(name)).toBe(false));
     });
   });

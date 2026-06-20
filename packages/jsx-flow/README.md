@@ -130,7 +130,12 @@ Renders a placeholder with a `src` attribute — the browser fetches the fragmen
 import { ClientFetch } from "@cjean-fr/jsx-flow";
 
 <ClientFetch src="/fragments/comments.html" />;
+
+// @ts-expect-error — dangerous schemes are rejected at compile time
+<ClientFetch src="javascript:alert(1)" />;
 ```
+
+`src` uses a strict **whitelist**: for string **literals**, only `http(s):` and relative paths compile. Every other scheme (`javascript:`, `data:`, `mailto:`, …) is a compile-time error — exactly what a fragment fetch needs. Dynamic `string` values pass through and remain the caller's responsibility.
 
 ### Content forms
 
@@ -173,13 +178,13 @@ An adapter that cannot express a merge **rejects it at registration** with a cle
 
 Each adapter implements `Placeholder`/`Patch`/`Frame` (JSX), `encode()` (streaming wire format, delegated to `Patch`), optional `transformShell`, and a `capabilities` descriptor. Adapters are **pure wire formats** — HTTP negotiation is a separate concern (see below).
 
-| Adapter              | `Placeholder`          | `Patch` (streaming inline)                  | `Frame` (SSG lazy-load) |
-| -------------------- | ---------------------- | ------------------------------------------- | ----------------------- |
-| `TurboAdapter`       | `<turbo-frame>`        | `<turbo-stream action="…">`                 | `<turbo-frame id="…">`  |
-| `HtmxAdapter`        | `<div hx-get>`         | `<div hx-swap-oob="…">`                     | `<div id="…">`          |
-| `NativeAdapter`      | `<?start name>…<?end>` | `<template for>` + `insertAdjacentHTML`     | `<template for="…">`    |
-| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)       | `<template for="…">`    |
-| `EsiAdapter`         | `<esi:include src>`    | `<esi:inline name fetchable>` (static only) | raw HTML                |
+| Adapter              | `Placeholder`          | `Patch` (streaming inline)                      | `Frame` (SSG lazy-load) |
+| -------------------- | ---------------------- | ----------------------------------------------- | ----------------------- |
+| `TurboAdapter`       | `<turbo-frame>`        | `<turbo-stream action="…">`                     | `<turbo-frame id="…">`  |
+| `HtmxAdapter`        | `<div hx-get>`         | `<div hx-swap-oob="…">`                         | `<div id="…">`          |
+| `NativeAdapter`      | `<?start name>…<?end>` | `<template for>` (`data-merge` for non-replace) | `<template for="…">`    |
+| `WebPlatformAdapter` | `<?start name>…<?end>` | `<template for="…">` (`replace` only)           | `<template for="…">`    |
+| `EsiAdapter`         | `<esi:include src>`    | `<esi:inline name fetchable>` (static only)     | raw HTML                |
 
 - **`Patch`** — fragment delivered inline in the same HTTP response as the shell.
 - **`Frame`** — fragment served as a standalone file fetched by the client (SSG).
@@ -200,7 +205,33 @@ This is surfaced in the type system. `renderStream` / `serve` require a streamin
 
 #### `NativeAdapter` (default)
 
-Uses the [Declarative Partial Updates](https://developer.chrome.com/blog/declarative-partial-updates) API plus a minimal inline polyfill injected via `transformShell`. All merge types, no external client library, works in modern browsers.
+Uses the [Declarative Partial Updates](https://developer.chrome.com/blog/declarative-partial-updates) API plus a minimal polyfill injected via `transformShell`. All merge types, no external client library, works in modern browsers.
+
+Every update is a **declarative `<template for>`** — the merge mode rides on `data-merge`, lazy client fetches on `data-src`. There are **no per-fragment inline scripts**; the only JS is a single static polyfill, which makes a strict CSP straightforward:
+
+```ts
+import {
+  NativeAdapter,
+  nativePolyfillHash,
+  NATIVE_POLYFILL,
+} from "@cjean-fr/jsx-flow";
+
+// Option A — keep the inline <script>, pin it by hash (static ⇒ cache/SSG-safe):
+res.headers.set(
+  "Content-Security-Policy",
+  `script-src 'self' '${await nativePolyfillHash()}'`,
+);
+
+// Option B — serve the polyfill from your origin under script-src 'self':
+//   write NATIVE_POLYFILL to e.g. /jsx-flow.js, then:
+const selfHosted = {
+  ...NativeAdapter,
+  transformShell: (shell: string) =>
+    injectIntoHead(shell, `<script src="/jsx-flow.js"></script>`),
+};
+```
+
+A per-request **nonce** is intentionally not offered: it would break the static-cache/SSG story. A hash works because the script never changes.
 
 #### `WebPlatformAdapter`
 
@@ -349,29 +380,31 @@ const MyAdapter = createAdapter({
 
 ### Context
 
-| Export          | Description                                                   |
-| --------------- | ------------------------------------------------------------- |
+| Export          | Description                                                                    |
+| --------------- | ------------------------------------------------------------------------------ |
 | `StaticContext` | `{ config, pendingStore, nextId, defer, renderPage(node), emitFragments(cb) }` |
 
 ### Adapters & types
 
-| Export                | Description                                                                   |
-| --------------------- | ----------------------------------------------------------------------------- |
-| `createAdapter`       | Build an adapter; defaults `encode` (delegates to `Patch`) and `capabilities` |
-| `TurboAdapter`        | Hotwire Turbo Streams — all merge types                                       |
-| `HtmxAdapter`         | HTMX OOB swaps — all merge types                                              |
-| `NativeAdapter`       | Declarative Partial Updates + bundled polyfill — all merge types (default)    |
-| `WebPlatformAdapter`  | Pure WICG spec, zero JS — `replace` only                                      |
-| `EsiAdapter`          | CDN-level ESI composition — `replace` only, static only                       |
-| `Adapter`             | `{ Placeholder, Patch, Frame, capabilities, encode, transformShell? }`        |
-| `StreamingAdapter`    | An `Adapter` with `capabilities.streaming: true`                              |
-| `AdapterCapabilities` | `{ streaming: boolean; merges: readonly MergeType[] }`                        |
-| `MergeType`           | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                   |
-| `DeferContent`        | `JSXNode \| ((signal: AbortSignal) => JSXNode)`                               |
-| `FlowEvent`           | `{ type: "shell" \| "fragment" \| "close", … }` — semantic streaming event    |
-| `Negotiation`         | `{ headers?, mode?, target?, failTarget? }`                                   |
-| `composeShell`        | Compose several `transformShell` (string→string) into one                     |
-| `injectIntoHead`      | Insert markup before `</head>` (building block for shell transforms)          |
+| Export                | Description                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `createAdapter`       | Build an adapter; defaults `encode` (delegates to `Patch`) and `capabilities`          |
+| `TurboAdapter`        | Hotwire Turbo Streams — all merge types                                                |
+| `HtmxAdapter`         | HTMX OOB swaps — all merge types                                                       |
+| `NativeAdapter`       | Declarative Partial Updates + bundled polyfill — all merge types (default)             |
+| `WebPlatformAdapter`  | Pure WICG spec, zero JS — `replace` only                                               |
+| `EsiAdapter`          | CDN-level ESI composition — `replace` only, static only                                |
+| `Adapter`             | `{ Placeholder, Patch, Frame, capabilities, encode, transformShell? }`                 |
+| `NATIVE_POLYFILL`     | The Native adapter's client polyfill as a JS string — serve it for `script-src 'self'` |
+| `nativePolyfillHash`  | `() => Promise<string>` — the `'sha256-…'` CSP token for the inline polyfill           |
+| `StreamingAdapter`    | An `Adapter` with `capabilities.streaming: true`                                       |
+| `AdapterCapabilities` | `{ streaming: boolean; merges: readonly MergeType[] }`                                 |
+| `MergeType`           | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                            |
+| `DeferContent`        | `JSXNode \| ((signal: AbortSignal) => JSXNode)`                                        |
+| `FlowEvent`           | `{ type: "shell" \| "fragment" \| "close", … }` — semantic streaming event             |
+| `Negotiation`         | `{ headers?, mode?, target?, failTarget? }`                                            |
+| `composeShell`        | Compose several `transformShell` (string→string) into one                              |
+| `injectIntoHead`      | Insert markup before `</head>` (building block for shell transforms)                   |
 
 ## License
 

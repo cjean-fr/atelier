@@ -1,6 +1,7 @@
 import {
   collapseJsxWhitespace,
   escapeAttr,
+  escapeJsxText,
   hasSpreadOrInnerHTML,
   isEventHandlerName,
   isLowercaseTag,
@@ -205,7 +206,10 @@ function isEligibleElement(node: JSXElement): boolean {
 
 function attrName(attr: JSXAttribute): string {
   if (attr.name.type === "JSXIdentifier") return attr.name.name;
-  return `${attr.name.namespace.name}:${attr.name.name}`;
+  // JSXNamespacedName: both `namespace` and `name` are JSXIdentifier nodes, so
+  // the local part is `attr.name.name.name`, not `attr.name.name` (which would
+  // stringify to "[object Object]" and corrupt e.g. `xlink:href`).
+  return `${attr.name.namespace.name}:${attr.name.name.name}`;
 }
 
 function transformElement(node: JSXElement, ctx: Ctx): string {
@@ -343,7 +347,7 @@ function emitChildren(
 ): void {
   for (const child of children) {
     if (child.type === "JSXText") {
-      appendStatic(parts, collapseJsxWhitespace(child.value));
+      appendStatic(parts, escapeJsxText(collapseJsxWhitespace(child.value)));
     } else if (child.type === "JSXExpressionContainer") {
       if (child.expression.type !== "JSXEmptyExpression") {
         const inner = child.expression;
@@ -444,8 +448,18 @@ function hasJsxNode(node: AnyNode): boolean {
   return walkChildren(node, (child) => hasJsxNode(child));
 }
 
+// Escape the characters that have special meaning inside the template-literal
+// slices emitted by `buildTaggedTemplate` (`` ` ``, `\`, and `${`). Without
+// this, a backtick or `${` coming from static JSX text or attribute values
+// would either break codegen (SyntaxError) or, worse, inject an arbitrary
+// interpolation into the generated template.
+function escapeForTemplate(str: string): string {
+  return str.replace(/[\\`]/g, "\\$&").replace(/\$\{/g, "\\${");
+}
+
 function appendStatic(parts: string[], str: string): void {
-  parts[parts.length - 1] = (parts[parts.length - 1] ?? "") + str;
+  parts[parts.length - 1] =
+    (parts[parts.length - 1] ?? "") + escapeForTemplate(str);
 }
 
 function addDynamic(parts: string[], exprs: string[], expr: string): void {

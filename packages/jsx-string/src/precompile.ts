@@ -55,21 +55,17 @@ export function jsxEscape(value: unknown): unknown {
   if (value instanceof Promise) return value.then(jsxEscape);
 
   if (Array.isArray(value)) {
+    // Escape each element first, then decide sync vs async from the *results*.
+    // A Promise nested inside a sub-array surfaces as a Promise here (the
+    // recursive call returns one), so it is awaited instead of being stringified
+    // to "[object Promise]" — which a top-level-only scan would miss.
+    const out: unknown[] = new Array(value.length);
     let hasAsync = false;
     for (let i = 0; i < value.length; i++) {
-      if (value[i] instanceof Promise) {
-        hasAsync = true;
-        break;
-      }
+      out[i] = jsxEscape(value[i]);
+      if (out[i] instanceof Promise) hasAsync = true;
     }
-    if (!hasAsync) {
-      const out: unknown[] = new Array(value.length);
-      for (let i = 0; i < value.length; i++) {
-        out[i] = jsxEscape(value[i]);
-      }
-      return out;
-    }
-    return Promise.all(value.map(jsxEscape));
+    return hasAsync ? Promise.all(out) : out;
   }
   return toRenderString(value);
 }

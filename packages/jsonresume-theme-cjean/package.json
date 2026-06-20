@@ -14,7 +14,7 @@
     "url": "https://github.com/cjean-fr/atelier/issues"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "jsonresume-theme",

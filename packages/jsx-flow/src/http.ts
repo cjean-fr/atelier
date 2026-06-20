@@ -10,14 +10,40 @@ import type { JSXNode } from "@cjean-fr/jsx-string";
 
 export type { Negotiate, Negotiation } from "./types.js";
 
+// `Vary` is a comma-separated list, so later sources must union their tokens
+// into it rather than overwrite — otherwise a negotiator's `Vary: HX-Target`
+// would silently drop a caller's `Vary: Cookie`, corrupting shared-cache keys.
+function appendVary(headers: Headers, value: string): void {
+  const seen = new Set<string>();
+  const tokens: string[] = [];
+  const add = (list: string | null) => {
+    if (!list) return;
+    for (const raw of list.split(",")) {
+      const tok = raw.trim();
+      const key = tok.toLowerCase();
+      if (tok && !seen.has(key)) {
+        seen.add(key);
+        tokens.push(tok);
+      }
+    }
+  };
+  add(headers.get("vary"));
+  add(value);
+  headers.set("vary", tokens.join(", "));
+}
+
 function mergeHeaders(
   defaults?: HeadersInit,
   caller?: HeadersInit,
   negotiation?: HeadersInit,
 ): Headers {
   const headers = new Headers(defaults);
-  for (const [k, v] of new Headers(caller ?? {})) headers.set(k, v);
-  for (const [k, v] of new Headers(negotiation ?? {})) headers.set(k, v);
+  for (const source of [caller, negotiation]) {
+    for (const [k, v] of new Headers(source ?? {})) {
+      if (k === "vary") appendVary(headers, v);
+      else headers.set(k, v);
+    }
+  }
   return headers;
 }
 

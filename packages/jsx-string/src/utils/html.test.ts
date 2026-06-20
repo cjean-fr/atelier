@@ -323,6 +323,21 @@ describe("html utilities", () => {
       expect((renderElement("<script>", {}, []) as RawString).value).toBe("");
     });
 
+    it("should warn only once per invalid tag name", () => {
+      // WARNED_TAGS is module-global and never cleared, so this test must use
+      // an invalid tag name no other test renders.
+      const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        for (let i = 0; i < 3; i++) {
+          expect((renderElement("7bad", {}, []) as RawString).value).toBe("");
+        }
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(String(warnSpy.mock.calls[0]?.[0])).toContain("7bad");
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
     it("should supports nested renderElement", () => {
       expect(
         (renderElement("div", {}, [renderElement("span", {}, [])]) as RawString)
