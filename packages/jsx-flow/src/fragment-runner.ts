@@ -4,68 +4,6 @@ import type { FlowEvent } from "./protocol.js";
 import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 
 // ════════════════════════════════════════════════════════════════════════
-// Pure classification — zero side effects
-// ════════════════════════════════════════════════════════════════════════
-
-export type TimeoutSignalConfig = {
-  isFactory: boolean;
-  entryTimeout: number | undefined;
-  defaultTimeout: number | undefined;
-  hasGlobalSignal: boolean;
-};
-
-export type TimeoutSignalPlan = {
-  usesTimer: boolean;
-  timerMs: number | undefined;
-  signalSource: "none" | "global" | "timer" | "combined";
-  description: string;
-};
-
-/**
- * Given a fragment's configuration, determine how timeout and signal interact
- * — without performing any side effects.
- *
- * @example
- * planTimeoutSignal({ isFactory: true, entryTimeout: 3000, defaultTimeout: undefined, hasGlobalSignal: true })
- * // => { usesTimer: true, timerMs: 3000, signalSource: "combined", description: "AbortSignal.any([global, timer.signal])" }
- *
- * @example
- * // Non-factory with timeout — timer is NOT created:
- * planTimeoutSignal({ isFactory: false, entryTimeout: 3000, defaultTimeout: undefined, hasGlobalSignal: true })
- * // => { usesTimer: false, timerMs: undefined, signalSource: "global", description: "global signal (passed through)" }
- */
-export function planTimeoutSignal(
-  config: TimeoutSignalConfig,
-): TimeoutSignalPlan {
-  const ms = config.entryTimeout ?? config.defaultTimeout;
-  const usesTimer = config.isFactory && ms != null;
-
-  let signalSource: TimeoutSignalPlan["signalSource"];
-  let description: string;
-
-  if (config.hasGlobalSignal && usesTimer) {
-    signalSource = "combined";
-    description = "AbortSignal.any([global, timer.signal])";
-  } else if (config.hasGlobalSignal) {
-    signalSource = "global";
-    description = "global signal (passed through)";
-  } else if (usesTimer) {
-    signalSource = "timer";
-    description = "timer.signal (no global signal)";
-  } else {
-    signalSource = "none";
-    description = "undefined (no signal at all)";
-  }
-
-  return {
-    usesTimer,
-    timerMs: usesTimer ? ms : undefined,
-    signalSource,
-    description,
-  };
-}
-
-// ════════════════════════════════════════════════════════════════════════
 // Internal helpers
 // ════════════════════════════════════════════════════════════════════════
 

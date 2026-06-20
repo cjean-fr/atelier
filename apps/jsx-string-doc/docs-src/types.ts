@@ -1,6 +1,7 @@
 export interface PageMeta {
   title: string;
   description?: string;
+  image?: string;
   slug?: string;
   draft?: boolean;
   sidebar?: {
@@ -76,6 +77,7 @@ export interface DocsConfig {
   sidebar?: SidebarConfig;
   editUrl?: string | null;
   site?: string | null;
+  image?: string;
   sitemap?: boolean;
   handlers?: Record<string, HandlerEntry>;
   /** Override the default page shell (Layout). Receives children already wrapped by the handler's prose wrapper. */
@@ -97,6 +99,7 @@ export interface ResolvedDocsConfig {
   sidebar: SidebarConfig;
   editUrl: string | null;
   site: string | null;
+  image: string | null;
   sitemap: boolean;
   handlers: Record<string, HandlerEntry>;
   layout: (props: {

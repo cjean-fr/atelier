@@ -1,6 +1,13 @@
+import config from "../docs.config.js";
+import {
+  initBuild,
+  rebuildAll,
+  rebuildPages,
+  refreshPages,
+  getAllPages,
+} from "./lib/build-engine.js";
 import { serve } from "bun";
 import type { ServerWebSocket } from "bun";
-import { spawn } from "node:child_process";
 import { watch } from "node:fs";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -21,19 +28,23 @@ ws.onclose=function(){setTimeout(function(){location.reload()},1000)}})()
   return html.replace("</body>", script + "\n</body>");
 }
 
-async function rebuild(): Promise<boolean> {
-  console.log("[dev] Building SSG...");
-  return await run("bun", ["run", "build:ssg"]);
+const watcherExtensions = new Set(Object.keys(config.handlers));
+const pagesDir = resolve(config.pages);
+const configFile = resolve(APP_ROOT, "docs.config.ts");
+
+function isPageFile(filePath: string): boolean {
+  return (
+    filePath.startsWith(pagesDir) && watcherExtensions.has(extname(filePath))
+  );
 }
 
-function run(cmd: string, args: string[]): Promise<boolean> {
-  return new Promise((resolve) => {
-    const proc = spawn(cmd, args, {
-      cwd: APP_ROOT,
-      stdio: ["ignore", "inherit", "inherit"],
-    });
-    proc.on("exit", (code) => resolve(code === 0));
-  });
+function fileToUrl(filePath: string): string | null {
+  if (!filePath.startsWith(pagesDir)) return null;
+  const rel = relative(pagesDir, filePath);
+  let route = rel.replace(extname(rel), "");
+  if (route.endsWith("/index")) route = route.slice(0, -6);
+  if (route === "index") route = "";
+  return "/" + route;
 }
 
 function notifyClients(): void {
@@ -50,14 +61,33 @@ let rebuilding = false;
 
 async function onSourceChange(filePath: string): Promise<void> {
   if (filePath.includes("node_modules") || filePath.includes("/dist/")) return;
-  const rel = relative(APP_ROOT, filePath);
-  if (!rel.startsWith("docs-src") && rel !== "docs.config.ts") return;
   if (rebuilding) return;
 
   rebuilding = true;
   try {
-    const ok = await rebuild();
-    if (ok) notifyClients();
+    if (filePath === configFile) {
+      console.log("[dev] Config changed, full rebuild...");
+      process.exit(0); // Restart required for config changes
+    }
+
+    if (isPageFile(filePath)) {
+      const url = fileToUrl(filePath);
+      if (url) {
+        // Check if it's a new page or existing
+        const known = getAllPages().find((p) => p.url === url);
+        if (known) {
+          await rebuildPages([url]);
+        } else {
+          await refreshPages();
+        }
+        notifyClients();
+        return;
+      }
+    }
+
+    // Fallback: full page refresh for layout/component changes
+    await refreshPages();
+    notifyClients();
   } finally {
     rebuilding = false;
   }
@@ -77,11 +107,13 @@ const mimeTypes: Record<string, string> = {
 };
 
 async function main(): Promise<void> {
-  const initialOk = await rebuild();
+  await initBuild();
+  const initialOk = await rebuildAll()
+    .then(() => true)
+    .catch(() => false);
   if (!initialOk) process.exit(1);
   console.log(`[dev] Serving http://localhost:${PORT}`);
 
-  // Watch source files
   watch(APP_ROOT, { recursive: true }, (_event, filename) => {
     if (filename) onSourceChange(resolve(APP_ROOT, filename));
   });
@@ -112,7 +144,11 @@ async function main(): Promise<void> {
       if (!existsSync(filePath)) {
         const alt = join(DIST, url.pathname + ".html");
         if (existsSync(alt)) filePath = alt;
-        else return new Response("Not Found", { status: 404 });
+        else {
+          const fallback = join(DIST, "404.html");
+          if (existsSync(fallback)) filePath = fallback;
+          else return new Response("Not Found", { status: 404 });
+        }
       }
 
       return readFile(filePath).then((content) => {

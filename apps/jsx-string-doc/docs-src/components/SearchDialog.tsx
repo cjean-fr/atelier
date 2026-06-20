@@ -6,7 +6,6 @@ export function SearchDialog() {
         id="search-trigger"
         type="button"
         class="docs-search-trigger inline-flex w-full items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-500 transition-colors hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-gray-600"
-        aria-label="Open search"
       >
         <svg
           class="docs-search-icon size-4 shrink-0"

@@ -1,0 +1,229 @@
+import config from "../../docs.config.js";
+import { setDocs } from "../context.js";
+import { buildMinimatchIndex } from "../search/minimatch-build.js";
+import type { Page, ViteManifest, ResolvedDocsConfig } from "../types.js";
+import { buildRobots } from "./build-robots.js";
+import { buildSitemap } from "./build-sitemap.js";
+import { discoverPages } from "./pages.js";
+import { renderDocument } from "./render-document.js";
+import { resolveSidebar, resolveNavigation } from "./sidebar.js";
+import { injectToc, renderTocHtml } from "./toc.js";
+import { loadViteManifest, setVite } from "@cjean-fr/jsx-vite";
+import { existsSync } from "node:fs";
+import { writeFile, mkdir, rm, readdir, copyFile } from "node:fs/promises";
+import { availableParallelism, cpus } from "node:os";
+import path from "node:path";
+
+let manifest: ViteManifest | null = null;
+let allPages: Page[] = [];
+
+function mapConcurrent<T, R>(
+  items: T[],
+  fn: (item: T) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+  const worker = async () => {
+    while (index < items.length) {
+      const i = index++;
+      results[i] = await fn(items[i]);
+    }
+  };
+  const pool = Math.min(concurrency, items.length) || 1;
+  return Promise.all(Array.from({ length: pool }, worker)).then(() => results);
+}
+
+function concurrency(): number {
+  return Math.min(
+    Number(process.env.BUILD_CONCURRENCY) ||
+      availableParallelism?.() ||
+      cpus().length ||
+      4,
+    16,
+  );
+}
+
+export async function initBuild(): Promise<void> {
+  manifest = await loadViteManifest(path.resolve(config.viteManifest));
+  if (!manifest) {
+    throw new Error(
+      `[jsx-string-doc] Vite manifest not found. Run \`vite build\` first.`,
+    );
+  }
+}
+
+export async function rebuildAll(): Promise<void> {
+  if (!manifest) await initBuild();
+  allPages = await discoverPages(config);
+  await renderPages(allPages);
+  await postBuild(allPages);
+  await cleanupCompiled();
+  console.log(`Built ${allPages.length} pages.`);
+}
+
+async function cleanupCompiled(): Promise<void> {
+  const compiledDir = path.resolve(config.pages, ".compiled");
+  if (existsSync(compiledDir)) {
+    await rm(compiledDir, { recursive: true, force: true });
+  }
+}
+
+export async function rebuildPages(urls: string[]): Promise<void> {
+  if (!manifest) await initBuild();
+
+  const knownUrls = new Map(allPages.map((p) => [p.url, p]));
+  const newPages: Page[] = [];
+
+  for (const url of urls) {
+    if (knownUrls.has(url)) {
+      newPages.push(knownUrls.get(url)!);
+    }
+  }
+
+  if (newPages.length > 0) {
+    await renderPages(newPages);
+    console.log(`[dev] Rebuilt ${newPages.length} page(s).`);
+  }
+}
+
+export async function refreshPages(): Promise<void> {
+  allPages = await discoverPages(config);
+  await renderPages(allPages);
+  await postBuild(allPages);
+  console.log(`[dev] Refreshed ${allPages.length} pages.`);
+}
+
+async function renderPages(
+  pages: Page[],
+): Promise<{ url: string; title: string; html: string }[]> {
+  return mapConcurrent(
+    pages,
+    async (page) => {
+      const meta = page.meta;
+      const sidebar = resolveSidebar(
+        allPages as typeof allPages & { meta: typeof meta }[],
+        config.sidebar,
+        page.url,
+      );
+      const { prev, next } = resolveNavigation(sidebar, page.url);
+      const ext = path.extname(page.file);
+      const prose = config.handlers[ext]?.prose ?? false;
+
+      const html = await renderDocument(
+        () => {
+          setVite(manifest!, { base: config.base });
+          setDocs({
+            config,
+            currentPage: page.url,
+            meta,
+            sidebar,
+            lastUpdated: null,
+            editUrl: null,
+            prev,
+            next,
+          });
+          const rawInner = page.Component({});
+          const inner = prose ? (
+            <div class="docs-prose">{rawInner}</div>
+          ) : (
+            rawInner
+          );
+          return config.layout({ children: inner });
+        },
+        { transforms: [(h) => injectToc(h, renderTocHtml)] },
+      );
+
+      const fullHtml = "<!DOCTYPE html>\n" + html;
+      await mkdir(path.dirname(page.outPath), { recursive: true });
+      await writeFile(page.outPath, fullHtml, "utf-8");
+
+      return { url: page.url, title: meta.title ?? page.url, html };
+    },
+    concurrency(),
+  );
+}
+
+async function postBuild(pages: Page[]): Promise<void> {
+  const pageData = pages.map((p) => ({
+    url: p.url,
+    title: p.meta.title ?? p.url,
+    html: "",
+  }));
+
+  await buildMinimatchIndex(
+    pageData,
+    path.join(config.out, "search-index.json"),
+  );
+  await buildRobots(config.site, config.out);
+
+  if (config.sitemap && config.site) {
+    await buildSitemap(
+      pages.map((p) => ({ url: p.url, draft: p.meta.draft })),
+      config.site,
+      config.out,
+    );
+  }
+
+  await render404();
+  await copyPublicAssets();
+}
+
+async function render404(): Promise<void> {
+  const notFoundMeta = { title: "Page Not Found" };
+  const notFoundSidebar = { groups: [] };
+  const html = await renderDocument(() => {
+    setVite(manifest!, { base: config.base });
+    setDocs({
+      config,
+      currentPage: "/404",
+      meta: notFoundMeta,
+      sidebar: notFoundSidebar,
+      lastUpdated: null,
+      editUrl: null,
+      prev: null,
+      next: null,
+    });
+    return config.layout({
+      children: (
+        <main class="docs-main mx-auto max-w-2xl py-16 text-center">
+          <h1 class="text-6xl font-bold text-gray-300 dark:text-gray-700">
+            404
+          </h1>
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
+            Page not found.
+          </p>
+          <a
+            href="/"
+            class="mt-6 inline-block text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+          >
+            ← Back to home
+          </a>
+        </main>
+      ),
+    });
+  });
+  await writeFile(
+    path.join(config.out, "404.html"),
+    "<!DOCTYPE html>\n" + html,
+    "utf-8",
+  );
+}
+
+async function copyPublicAssets(): Promise<void> {
+  const publicDir = path.resolve(config.pages, "../../public");
+  if (!existsSync(publicDir)) return;
+  const entries = await readdir(publicDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isFile()) {
+      await copyFile(
+        path.join(publicDir, entry.name),
+        path.join(config.out, entry.name),
+      );
+    }
+  }
+}
+
+export function getAllPages(): Page[] {
+  return allPages;
+}
