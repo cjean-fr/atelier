@@ -11,6 +11,10 @@ import { ProfilePageJsonLd } from "./ProfilePageJsonLd.js";
 import Projects from "./Projects.js";
 import SEO from "./SEO.js";
 import Skills from "./Skills.js";
+import ThemeToggle, {
+  themeInitScript,
+  initThemeToggle,
+} from "./ThemeToggle.js";
 import WorkExperience from "./WorkExperience.js";
 import { raw, type HTMLAttributes } from "@cjean-fr/jsx-string";
 
@@ -99,6 +103,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
               `,
             }}
           />
+          {themeInitScript}
         </head>
         <body
           className="bg-gray-200 text-gray-800 dark:bg-slate-950 dark:text-slate-300 print:bg-transparent print:text-sm"
@@ -112,6 +117,9 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
           </a>
 
           <Header bgTiles={bgTiles} />
+          <div className="fixed top-4 right-4 z-30">
+            <ThemeToggle />
+          </div>
           <main
             id="main-content"
             className="relative z-10 container mx-auto max-w-5xl rounded bg-white p-4 shadow-md backdrop-blur-3xl md:p-6 dark:bg-slate-900/95 dark:text-slate-200 dark:shadow-2xl dark:ring-1 dark:ring-white/10 print:rounded-none print:shadow-none [&_a]:underline"
@@ -163,7 +171,7 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
           <ProfilePageJsonLd resume={resume} />
           <script
             dangerouslySetInnerHTML={{
-              __html: `if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');`,
+              __html: `(${initThemeToggle.toString()})();`,
             }}
           />
         </body>

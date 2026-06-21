@@ -1,4 +1,4 @@
-# @cjean-fr/jsx-flowd
+# @cjean-fr/jsx-flow
 
 Fragment streaming extension for [@cjean-fr/jsx-string](../jsx-string). Renders deferred JSX fragments and delivers them to the browser as DOM patches — via Turbo Streams, HTMX, the WICG Declarative Partial Updates API, or ESI-based CDN composition.
 
@@ -45,9 +45,9 @@ bun add @cjean-fr/jsx-flow
 
 jsx-flow provides four declarative primitives for deferred content. Each works with any adapter, in both streaming and static generation.
 
-### `<Slot>` — a hole with optional default content
+### `<Slot>` — a named insertion point with fallback content
 
-Declares a named insertion point in the shell. Its children are the default content, rendered immediately. An empty slot tells the adapter to render an empty placeholder.
+Declares a named insertion point in the shell. Its `children` are rendered immediately as placeholder content — visible in the initial HTML until a `<Fill target="…">` overrides them. An empty slot tells the adapter to render an empty placeholder.
 
 ```tsx
 import { Slot, Fill } from "@cjean-fr/jsx-flow";
@@ -70,34 +70,32 @@ function Layout() {
 // Elsewhere in the tree (or a different component):
 function PageContent() {
   return (
-    <Fill target="page">
-      <h1>Hello</h1>
-    </Fill>
+    <Fill target="page">{() => <h1>Hello</h1>}</Fill>
   );
 }
 ```
 
-`Slot` registers nothing in the pending store when called without children — it's just a passive hole. When called with children, it registers them as the default and renders a placeholder.
+`Slot` registers nothing in the pending store — it is purely a passive hole. The `children` are the initial fallback, visible until a `<Fill>` pushes deferred content that patches the placeholder.
 
 ### `<Fill>` — push content into a slot
 
-Pushes content into an existing slot by name. Renders nothing itself (returns `null`). Accepts children as a node, a `Promise<node>`, an `AsyncIterable<node>` (streams one patch per item), or a `(signal) => …` factory.
+Pushes deferred content into an existing slot by name. Renders nothing itself (returns `null`). The `children` must be a factory `(signal: AbortSignal) => JSXNode` — the runtime resolves the returned node (and can unwrap `Promise` / `AsyncIterable` thereof).
 
 ```tsx
 import { Fill } from "@cjean-fr/jsx-flow";
 
-// One-shot: replaces the target
-<Fill target="page"><h1>Hello</h1></Fill>
+// One-shot: the factory returns a node
+<Fill target="page">{() => <h1>Hello</h1>}</Fill>
 
-// Async: resolves and patches in
-<Fill target="comments"><Comments /></Fill>
+// Async: factory returns a Promise (resolved by the runtime)
+<Fill target="comments">{() => <Comments />}</Fill>
 
-// Stream: each yield is a separate patch
+// Stream: factory returns an AsyncIterable — each yield is a separate patch
 <Fill target="feed" merge="append">
-  {liveRows()}
+  {() => liveRows()}
 </Fill>
 
-// Cancellable factory with timeout
+// Cancellable factory with timeout — receives AbortSignal
 <Fill target="dashboard" timeout={2000}>
   {(signal) => <Dashboard signal={signal} />}
 </Fill>
@@ -105,19 +103,19 @@ import { Fill } from "@cjean-fr/jsx-flow";
 
 ### `<Defer>` — deferred content (streaming or SSG)
 
-Same shape as `Fill`, but renders a placeholder in the shell instead of returning `null`. Use `<Defer>` when the content should have a visible placeholder in the initial HTML. The placeholder is rendered by the active adapter (e.g. `<turbo-frame id="…">`, `<div id="…">`, `<?start name="…">`).
+Declares a deferred region with a placeholder in the shell. The `fallback` prop defines placeholder content shown immediately. The `children` must be a factory `(signal: AbortSignal) => JSXNode` — this is what renders asynchronously and patches the placeholder when ready.
 
 ```tsx
 import { Defer, Fill } from "@cjean-fr/jsx-flow";
 
-// Default content is shown in the shell; <Comments /> replaces it
-<Defer name="comments">
-  <Comments />
+// fallback is shown in the shell; the factory replaces it when resolved
+<Defer name="comments" fallback={<p>Loading…</p>}>
+  {(signal) => <Comments signal={signal} />}
 </Defer>
 
 // Same pattern with Slot for the placeholder + Fill for the content:
 <Slot name="comments"><p>Loading…</p></Slot>
-<Fill target="comments"><Comments /></Fill>
+<Fill target="comments">{(signal) => <Comments signal={signal} />}</Fill>
 ```
 
 ### `<ClientFetch>` — client-side fetch only
@@ -137,24 +135,26 @@ import { ClientFetch } from "@cjean-fr/jsx-flow";
 
 ### Content forms
 
-All three content-bearing primitives (`Defer`, `Fill`, `Slot` with children) accept:
+`Defer` and `Fill` accept deferred content in the following forms:
 
 | Child                        | Behaviour                                                        |
 | ---------------------------- | ---------------------------------------------------------------- |
-| a node / `Promise<node>`     | one-shot patch — write JSX as usual, it streams when it resolves |
-| an `AsyncIterable<node>`     | a **stream** — one patch per item, as each arrives               |
 | `(signal: AbortSignal) => …` | the **cancellable** form — aborts on request cancel or `timeout` |
 
-The node form starts its work eagerly and is not cancellable; reach for the `(signal) => …` factory only when you need cancellation or a `timeout`. Detection of a stream is by `Symbol.asyncIterator` — synchronous iterables are treated as ordinary nodes.
+The factory starts lazily and receives an `AbortSignal` for cancellation. It must return a renderable JSX node (or a `Promise` / `AsyncIterable` thereof — the runtime unwraps these automatically).
+
+`Slot` children are plain JSX (not deferred) — they render immediately as the fallback placeholder in the shell.
 
 ### Common props
 
 | Prop      | Applies to      | Meaning                                                             |
 | --------- | --------------- | ------------------------------------------------------------------- |
-| `name`    | `Slot`, `Defer` | id of the rendered placeholder (auto-generated if omitted)          |
+| `name`    | `Slot`          | id of the placeholder (required)                                    |
+| `name`    | `Defer`         | id of the placeholder (auto-generated if omitted)                   |
 | `target`  | `Fill`          | target slot id to push content into                                 |
+| `fallback`| `Defer`         | placeholder content shown in the shell while deferred content loads |
 | `merge`   | `Defer`, `Fill` | how content applies to its target (default `"replace"`) — see below |
-| `timeout` | `Defer`, `Fill` | per-fragment render timeout in ms (factory content only)            |
+| `timeout` | `Defer`, `Fill` | per-fragment render timeout in ms                                   |
 | `onError` | `Defer`, `Fill` | per-fragment error handler, overriding the renderer's `onError`     |
 | `src`     | `ClientFetch`   | URL the browser fetches for the fragment content                    |
 
@@ -240,9 +240,13 @@ Pure WICG spec — no JS at all. Requires `chrome://flags/#enable-experimental-w
 For **SSG with a CDN ESI processor** (Varnish, Fastly, nginx ESI module). The shell contains `<esi:include src="…">` tags; the CDN fetches each fragment independently, applies separate TTLs, and assembles the final response before it reaches the browser. `"replace"` only; no client-side JS.
 
 ```tsx
-// Defer with explicit src pointing to the fragment URL
-<Defer name="nav" />
-<Defer name="feed" />
+// Defer with ESI — placeholder becomes esi:include, the factory renders the fragment
+<Defer name="nav" fallback={<span>Loading nav…</span>}>
+  {(signal) => <Nav signal={signal} />}
+</Defer>
+<Defer name="feed" fallback={<span>Loading feed…</span>}>
+  {(signal) => <Feed signal={signal} />}
+</Defer>
 ```
 
 ## Usage
@@ -354,7 +358,7 @@ const MyAdapter = createAdapter({
 
 | Export        | Description                                                       |
 | ------------- | ----------------------------------------------------------------- |
-| `Slot`        | Passive hole with optional default content; renders a placeholder |
+| `Slot`        | Named insertion point with optional fallback children; renders a placeholder |
 | `Fill`        | Push content into a slot by target id; renders nothing            |
 | `Defer`       | Deferred content with a placeholder; fills when resolved          |
 | `ClientFetch` | Client-side fetch placeholder — no server deferral                |
@@ -398,7 +402,7 @@ const MyAdapter = createAdapter({
 | `StreamingAdapter`    | An `Adapter` with `capabilities.streaming: true`                                       |
 | `AdapterCapabilities` | `{ streaming: boolean; merges: readonly MergeType[] }`                                 |
 | `MergeType`           | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                            |
-| `DeferContent`        | `JSXNode \| ((signal: AbortSignal) => JSXNode)`                                        |
+| `DeferContent`        | `(signal: AbortSignal) => JSXNode`                                        |
 | `FlowEvent`           | `{ type: "shell" \| "fragment" \| "close", … }` — semantic streaming event             |
 | `Negotiation`         | `{ headers?, mode?, target?, failTarget? }`                                            |
 | `composeShell`        | Compose several `transformShell` (string→string) into one                              |

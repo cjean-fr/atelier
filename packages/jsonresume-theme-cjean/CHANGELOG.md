@@ -1,5 +1,14 @@
 # jsonresume-theme-cjean
 
+## 1.3.4
+
+### New features
+
+- **Dark mode toggle**: A sun/moon toggle button lets users switch
+  theme interactively. Preference is persisted in localStorage and
+  respects `prefers-color-scheme` on first visit. Includes a
+  flash-of-wrong-theme prevention script in `<head>`.
+
 ## 1.3.3
 
 ### New features
