@@ -197,21 +197,18 @@ describe("Slot", () => {
     });
   });
 
-  it("registers content and renders a placeholder when children are present", async () => {
+  it("renders children as placeholder content with no registration", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
       const html = await renderToString(
-        <Slot name="main">{() => <span>content</span>}</Slot>,
+        <Slot name="main">
+          <span>content</span>
+        </Slot>,
       );
       expect(html).toContain('id="main"');
+      expect(html).toContain("<span>content</span>");
       const { pendingStore } = useContext(Flow);
-      expect(pendingStore.size).toBe(1);
-      // The factory must be stored as-is, not re-wrapped: invoking it once
-      // yields the node, which renders to markup (not stringified source).
-      const entry = debugStore(pendingStore).get("main")!;
-      expect(await renderToString(entry.content(undefined as never))).toBe(
-        "<span>content</span>",
-      );
+      expect(pendingStore.size).toBe(0);
     });
   });
 });
