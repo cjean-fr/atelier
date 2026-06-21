@@ -1,6 +1,6 @@
 import { RawString, type RenderResult } from "./core/types.js";
 import { renderAttribute } from "./utils/render-attributes.js";
-import { toRenderString } from "./utils/render-child.js";
+import { renderChild } from "./utils/render-child.js";
 
 /**
  * Serialize a single dynamic HTML attribute.
@@ -67,7 +67,7 @@ export function jsxEscape(value: unknown): unknown {
     }
     return hasAsync ? Promise.all(out) : out;
   }
-  return toRenderString(value);
+  return renderChild(value);
 }
 
 /**
@@ -117,5 +117,5 @@ function flattenExpr(value: unknown): string {
     for (let i = 0; i < value.length; i++) out += flattenExpr(value[i]);
     return out;
   }
-  return toRenderString(value) as string;
+  return renderChild(value) as string;
 }

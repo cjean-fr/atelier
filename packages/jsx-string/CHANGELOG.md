@@ -1,5 +1,57 @@
 # Changelog
 
+## 2.1.0
+
+### Added
+
+- **Error annotation**: Errors thrown inside components are now prefixed with
+  `[ComponentName]` for easier debugging. The original error type and custom
+  properties (e.g. `status` on an `HttpError`) are preserved — only `message`
+  is wrapped.
+- **`dangerouslySetInnerHTML` with `Promise<__html>`**: The `__html` value can
+  now be a `Promise<string | null>`. When it resolves, the content is rendered
+  as raw HTML; when it rejects, the promise propagates to `renderToString`.
+- **`RawString` / `Promise<RawString>` in `renderToString`**: The top-level
+  entry point now accepts `RawString` and `Promise<RawString>` directly, not
+  just JSX elements.
+- **`@cjean-fr/jsx-string/html` subpath**: Exposes low-level HTML primitives
+  (`VOID_ELEMENTS`, `URL_ATTRIBUTES`, `escapeAttr`, `isValidAttrName`,
+  `isValidTagName`, `ATTRIBUTE_NAME_MAP`) so compilers can reuse the runtime's
+  exact functions.
+- **`react-augment.d.ts`**: Augments `@types/react`'s `HTMLAttributes` and
+  `SVGAttributes` to accept `class` and `on*` string event handlers when
+  `@types/react` is installed.
+- **Property-based fuzz tests**: `escape.fuzz.test.ts` runs 2000+ randomly
+  generated adversarial strings through every escaping and URL-safety function,
+  plus end-to-end angle-bracket-invariant assertions. Uses `fast-check`.
+
+### Changed
+
+- **Monolithic `html.ts` split** into `render-child.ts`, `render-attributes.ts`,
+  `render-element.ts`, and `html-primitives.ts`. The public API is unchanged.
+- **Attribute meta caching**: Name-based validation, camelCase→kebab remapping,
+  event-handler detection, and URL/srcset classification are computed once per
+  distinct attribute name and cached thereafter. Value-dependent work (escaping,
+  URL/CSS safety) is never cached.
+- **`renderAttributes` skips internal props upfront**: `children`,
+  `dangerouslySetInnerHTML`, `key`, `ref` are filtered before the attribute
+  loop instead of after `renderAttributeSync` returns, avoiding a full
+  validation pass on every internal prop.
+- **Precompile extracted to `precompile.ts`**: `jsxAttr`, `jsxEscape`,
+  `jsxTemplate` now live in their own module. No API change.
+- **`jsxEscape` deep Promise detection**: A `Promise` nested inside a sub-array
+  is now awaited instead of being stringified to `"[object Promise]"`.
+- **`WARNED_EVENT_HANDLERS` / `WARNED_TAGS` dedup**: Console warnings for
+  function event handlers and invalid tag names are emitted at most once per
+  attribute/tag name, not on every render.
+
+### Fixed
+
+- **`isValidAttrName` now rejects `<`**: The attribute-name validation regex
+  was missing `<` in its structural-chars list. Added.
+- **`REGEX_CAMEL_TO_KEBAB` g flag**: The `g` flag is present on the global
+  regex (it was already fixed in v1.5.0; the regression check is preserved).
+
 ## 2.0.0
 
 ### Breaking changes

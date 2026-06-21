@@ -14,7 +14,7 @@
   "devDependencies": {
     "@kitajs/html": "5.0.0-next.1",
     "@types/bun": "catalog:",
-    "@types/react": "catalog:",
+    "@types/react": "^19",
     "@types/react-dom": "^19",
     "hono": "^4",
     "mitata": "^1",
@@ -23,6 +23,6 @@
     "react": "^19",
     "react-dom": "^19",
     "typescript": "catalog:",
-    "vite": "^8"
+    "vite": "catalog:"
   }
 }

@@ -1,5 +1,33 @@
 # jsonresume-theme-cjean
 
+## 1.3.3
+
+### New features
+
+- **Projects section**: A new optional Projects section renders the
+  `projects` array from resume.json with timeline layout matching
+  Work and Volunteer sections.
+- **FAB behavior**: Floating Action Button now scrolls the page to the
+  top/bottom with improved UX.
+
+### Changed
+
+- **Component refactoring**: Multiple components refactored for better
+  code organization.
+- **Dark mode timeline marker**: Decoupled from nested selector for
+  better CSS compatibility.
+
+### Fixed
+
+- **Icon name**: Fixed icon name bug in FAB component.
+
+## 1.3.2
+
+### Changed
+
+- **Internal**: Updated i18n to use `createTranslationBuilder` API,
+  updated dependencies.
+
 ## 1.3.1
 
 ### New features

@@ -18,13 +18,10 @@ function classifyEntry(
   entry: Pending,
   factorySignal: AbortSignal | undefined,
 ): ClassificationResult {
-  const isFactory = typeof entry.content === "function";
   try {
-    const value = isFactory
-      ? (entry.content as (s: AbortSignal | undefined) => JSXNode)(
-          factorySignal,
-        )
-      : (entry.content as JSXNode);
+    const value = (entry.content as (s: AbortSignal | undefined) => JSXNode)(
+      factorySignal,
+    );
     if (isAsyncIterable(value)) return { kind: "stream", iterable: value };
     return { kind: "value", value };
   } catch (error) {
@@ -77,13 +74,11 @@ export function runFragment(
   opts: FlowOptions,
 ): FragmentResult {
   const handle = entry.onError ?? opts.onError;
-  const isFactory = typeof entry.content === "function";
 
   // Per-entry timeout fires its own controller; combine it with the request
-  // signal so the factory aborts on whichever comes first. Only meaningful for
-  // factory content — a plain node has no signal to react to.
+  // signal so the factory aborts on whichever comes first.
   const ms = entry.timeout ?? opts.defaultTimeout;
-  const timer = isFactory && ms != null ? new AbortController() : null;
+  const timer = ms != null ? new AbortController() : null;
   const timeout = timer
     ? setTimeout(
         () => timer.abort(new Error(`Defer "${id}" timed out after ${ms}ms`)),
@@ -178,10 +173,6 @@ async function runStream(
   } catch (error) {
     await emitError(emit, onError, id, "stream", error);
   } finally {
-    // On abort, ask the iterator to run its cleanup (finally blocks, closing
-    // cursors…). Fire-and-forget: a parked generator only processes return()
-    // once its pending await settles, and we must not wait for that.
-    if (opts.signal?.aborted)
-      void Promise.resolve(it.return?.(undefined)).catch(() => {});
+    if (opts.signal?.aborted) await it.return?.(undefined).catch(() => {});
   }
 }

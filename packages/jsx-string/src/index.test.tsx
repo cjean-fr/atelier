@@ -198,6 +198,54 @@ describe("Error propagation", () => {
       renderToString(<div>{Promise.reject(new Error("child-boom"))}</div>),
     ).rejects.toThrow("child-boom");
   });
+
+  it("annotates sync error with component name", () => {
+    const Boom = () => {
+      throw new Error("fail");
+    };
+    expect(() => renderToString(<Boom />)).toThrow("[Boom] fail");
+  });
+
+  it("annotates async error with component name", async () => {
+    const AsyncBoom = async () => {
+      await Promise.resolve();
+      throw new Error("fail");
+    };
+    expect(() => renderToString(<AsyncBoom />)).toThrow("[AsyncBoom] fail");
+  });
+
+  it("annotates with the innermost component, not the chain above it", () => {
+    const Child = () => {
+      throw new Error("fail");
+    };
+    const Parent = () => (
+      <div>
+        <Child />
+      </div>
+    );
+    expect(() => renderToString(<Parent />)).toThrow("[Child] fail");
+  });
+
+  it("preserves the original error type and properties", () => {
+    class HttpError extends Error {
+      status: number;
+      constructor(status: number) {
+        super("boom");
+        this.status = status;
+      }
+    }
+    const Boom = () => {
+      throw new HttpError(503);
+    };
+    try {
+      renderToString(<Boom />);
+      throw new Error("expected to throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(HttpError);
+      expect((e as HttpError).status).toBe(503);
+      expect((e as Error).message).toBe("[Boom] boom");
+    }
+  });
 });
 
 describe("__html Promise", () => {

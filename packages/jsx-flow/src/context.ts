@@ -14,8 +14,8 @@ export type { FlowConfig } from "./types.js";
 /**
  * A unit of deferred work, keyed by its target DOM `id`. The renderer decides
  * at drain time whether `content` is a one-shot patch or a live stream — see
- * `streamFlow`. `factory` content receives an `AbortSignal` combining the
- * request signal with this entry's own `timeout` (if any).
+ * `streamFlow`. The factory receives an `AbortSignal` combining the request
+ * signal with this entry's own `timeout` (if any).
  */
 export type Pending = {
   content: DeferContent;

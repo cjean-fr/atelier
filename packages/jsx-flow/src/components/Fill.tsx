@@ -1,10 +1,9 @@
 import type { DeferContent, MergeType } from "../types.js";
 import { useFlowContext } from "./shared.js";
-import type { JSXNode } from "@cjean-fr/jsx-string";
 
 export interface FillProps {
   target: string;
-  children: JSXNode;
+  children: DeferContent;
   merge?: MergeType;
 }
 
@@ -13,7 +12,7 @@ export function Fill(props: FillProps): null {
   const { target, children, merge } = props;
 
   defer(target, {
-    content: children as DeferContent,
+    content: children,
     merge: merge ?? "replace",
   });
 

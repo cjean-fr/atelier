@@ -9,7 +9,7 @@
 | **Fragment** | JSX fragment (`<></>`), rendered as empty string (just children). |
 | **renderElement** | Builds an HTML element string from tag + props + children. Validates tag names, applies escaping. |
 | **renderAttributes** | Serializes JSX props to HTML attribute string. Handles event filtering, URL safety, style objects, boolean attrs. |
-| **renderChild** / **toRenderString** | Converts any JSXNode to its string representation. Coerces null/boolean/string/number/RawString/Array/Promise/Iterable. |
+| **renderChild** | Converts any JSXNode to its string representation. Coerces null/boolean/string/number/RawString/Array/Promise/Iterable. |
 | **escapeContent** / **escapeAttr** | HTML escaping: `& < >` for content, plus `"` for attributes. Two-stage fast-path + manual loop. |
 | **context** / **setContext** / **useContext** / **withScope** | Async-scoped context API backed by `AsyncLocalStorage`. Used for per-request state without passing it through props. |
 | **withScope** | Creates an isolated AsyncLocalStorage scope. Each render call runs in its own scope. |
@@ -24,9 +24,10 @@
 |------|-----------|
 | **shell** | Initial page HTML sent before deferred content. Contains layout, navigation, above-the-fold content. |
 | **fragment** | A unit of deferred content that replaces or modifies a placeholder in the shell. One-shot (Promise) or stream (AsyncIterable). |
-| **defer** / **`<Defer>`** | Declares a deferred region with a placeholder in the shell. Content renders asynchronously and patches in when ready. |
+| **defer** / **`<Defer>`** | Declares a deferred region with a `fallback` placeholder in the shell. Content (`children`, a factory `(signal) => JSXNode`) renders asynchronously and patches in when ready. |
+| **fallback** | Placeholder content shown inside a `<Defer>` in the shell while the deferred `children` resolve. Passed as `children` to `adapter.Placeholder`. |
 | **fill** / **`<Fill>`** | Pushes content into a named slot. Renders nothing itself — pure registration. |
-| **slot** / **`<Slot>`** | Declares a named insertion point in the shell. Optional default content. |
+| **slot** / **`<Slot>`** | Declares a named insertion point in the shell. Optional default content as a factory `() => JSXNode`, deferred and overridable by a `<Fill>` on the same name. |
 | **pending store** | Internal `Map<id, Pending>` that collects all deferred work during render. Drained by `streamFlow`. |
 | **streamFlow** | Drain loop that processes the pending store in waves: one-shots barrier-first, streams run concurrently, loops until quiescence. |
 | **FlowEvent** | Semantic streaming event: `{ type: "shell" | "fragment" | "close" }`. Emitted before adapter encoding. |
