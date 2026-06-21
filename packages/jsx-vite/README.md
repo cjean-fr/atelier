@@ -1,7 +1,5 @@
 # @cjean-fr/jsx-vite
 
-> 🚧 Early development — API may change. Version 0.1.0.
-
 Vite asset integration for [@cjean-fr/jsx-string](../jsx-string) projects. Reference your assets by their **source path** (`src/main.ts`, `src/styles/main.css`, `src/logo.svg`) and let one component (or one helper for arbitrary tags) resolve them correctly in both dev and production.
 
 ## Why

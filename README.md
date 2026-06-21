@@ -33,9 +33,11 @@ Managed with **Bun workspaces** and **Turbo**.
 ```bash
 bun install
 bun run build    # Build all packages
-bun run test     # Run all tests
+bun run test     # Run all tests (unit + fuzz/property-based)
 bun run check    # Type-check everything
 ```
+
+Security-sensitive modules are reinforced with **property-based (fuzz) testing** via `fast-check` — thousands of adversarial inputs (control chars, astral codepoints, scheme obfuscations) are generated per run to verify XSS invariants hold for every possible input, not just hand-picked examples.
 
 ## License
 

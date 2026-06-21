@@ -7,17 +7,37 @@ export type { JSX } from "./core/types.js";
 
 export { jsxAttr, jsxEscape, jsxTemplate } from "./precompile.js";
 
+const ANNOTATED_ERROR = Symbol("annotated");
+
+/**
+ * Prefix an error's message with the component that threw, exactly once.
+ *
+ * Mutates the original error rather than wrapping it, so the type, `cause`, and
+ * any custom properties survive. The innermost component wins: the `ANNOTATED`
+ * marker stops outer `jsx` calls from re-prefixing as the error unwinds.
+ *
+ * The stack is left untouched on purpose: by the time we catch, the throwing
+ * frame is already unwound and survives only in the frozen stack string, so
+ * removing the runtime's own frames means parsing that string — brittle across
+ * runtimes and a no-op under minification. The `[Component]` prefix carries the
+ * attribution robustly instead.
+ */
+function annotateError(error: unknown, tag: Component<any>): unknown {
+  if (error instanceof Error && !(ANNOTATED_ERROR in error)) {
+    error.message = `[${tag.name || "<anonymous>"}] ${error.message}`;
+    Object.defineProperty(error, ANNOTATED_ERROR, { value: true });
+  }
+  return error;
+}
+
 /**
  * Automatic JSX Transform — production variant.
  *
  * Per the JSX automatic runtime spec, signature is `(type, props, key?)`. The
  * `key` is diagnostic, NOT a child. Children always live in `props.children`.
  *
- * Older versions of this package accepted variadic positional children for
- * classic-transform compatibility. That overload was removed in v2.0 because
- * it silently mis-rendered any element with a `key` and no children — the key
- * string was treated as the child. If you need classic-style `jsx(tag, props,
- * child1, child2)`, pass an explicit `children` array on `props` instead.
+ * This function does not accept variadic positional children. To pass children,
+ * use an explicit `children` property on the `props` object.
  */
 export function jsx<P extends {} = {}>(
   tag: string | Component<P>,
@@ -27,10 +47,16 @@ export function jsx<P extends {} = {}>(
   const p = (props ?? {}) as P & { children?: any };
 
   if (typeof tag === "function") {
-    const result = renderChild(tag(p));
-    return typeof result === "string"
-      ? new RawString(result)
-      : result.then((s) => new RawString(s));
+    try {
+      const result = renderChild(tag(p));
+      if (typeof result === "string") return new RawString(result);
+      return result.then(
+        (s) => new RawString(s),
+        (e) => Promise.reject(annotateError(e, tag)),
+      );
+    } catch (e) {
+      throw annotateError(e, tag);
+    }
   }
 
   return renderElement(tag, p as HTMLAttributes, p.children as JSXNode);

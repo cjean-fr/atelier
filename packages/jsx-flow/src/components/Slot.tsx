@@ -1,10 +1,11 @@
+import type { DeferContent } from "../types.js";
 import { assertFragmentId } from "../utils.js";
 import { useFlowContext } from "./shared.js";
-import type { JSXNode, JSX } from "@cjean-fr/jsx-string";
+import type { JSX } from "@cjean-fr/jsx-string";
 
 export interface SlotProps {
   name: string;
-  children?: JSXNode;
+  children?: DeferContent;
 }
 
 export function Slot(props: SlotProps): JSX.Element | null {

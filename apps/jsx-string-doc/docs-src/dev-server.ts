@@ -17,6 +17,8 @@ const PORT = 3000;
 const APP_ROOT = resolve(import.meta.dirname!, "..");
 const DIST = join(APP_ROOT, "dist");
 
+let watcher: ReturnType<typeof watch>;
+
 const clients = new Set<ServerWebSocket<undefined>>();
 
 function injectLiveReload(html: string): string {
@@ -67,6 +69,7 @@ async function onSourceChange(filePath: string): Promise<void> {
   try {
     if (filePath === configFile) {
       console.log("[dev] Config changed, full rebuild...");
+      watcher.close();
       process.exit(0); // Restart required for config changes
     }
 
@@ -106,6 +109,10 @@ const mimeTypes: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
+function cleanup(watcher: ReturnType<typeof watch>): void {
+  watcher.close();
+}
+
 async function main(): Promise<void> {
   await initBuild();
   const initialOk = await rebuildAll()
@@ -114,8 +121,17 @@ async function main(): Promise<void> {
   if (!initialOk) process.exit(1);
   console.log(`[dev] Serving http://localhost:${PORT}`);
 
-  watch(APP_ROOT, { recursive: true }, (_event, filename) => {
+  watcher = watch(APP_ROOT, { recursive: true }, (_event, filename) => {
     if (filename) onSourceChange(resolve(APP_ROOT, filename));
+  });
+
+  process.on("SIGINT", () => {
+    cleanup(watcher);
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    cleanup(watcher);
+    process.exit(0);
   });
 
   serve({

@@ -1,6 +1,4 @@
-# @cjean-fr/jsx-flow
-
-> 🚧 Early development — API may change. Version 0.2.0.
+# @cjean-fr/jsx-flowd
 
 Fragment streaming extension for [@cjean-fr/jsx-string](../jsx-string). Renders deferred JSX fragments and delivers them to the browser as DOM patches — via Turbo Streams, HTMX, the WICG Declarative Partial Updates API, or ESI-based CDN composition.
 

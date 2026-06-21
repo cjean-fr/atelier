@@ -72,13 +72,11 @@ describe("Defer", () => {
     });
   });
 
-  it("accepts a node child — no thunk needed", async () => {
+  it("accepts a factory returning a node", async () => {
     await withScope(async () => {
       initFlow({ adapter: TurboAdapter, mode: "streaming" });
       const html = await renderToString(
-        <Defer>
-          <span>inline</span>
-        </Defer>,
+        <Defer>{() => <span>inline</span>}</Defer>,
       );
       expect(html).toContain('id="fragment-1"');
       const { pendingStore } = useContext(Flow);
@@ -155,6 +153,22 @@ describe("ClientFetch", () => {
       expect(html).toContain(dynamic);
     });
   });
+
+  it("rejects template literal types for bad schemes at compile time", () => {
+    const payload = "alert(1)" as const;
+    const hidden = "javascript:" as const;
+    // @ts-expect-error - template literal with bad scheme is caught
+    void (<ClientFetch src={`${hidden}${payload}`} />);
+  });
+
+  it("throws at runtime for invalid dynamic strings", async () => {
+    await withScope(async () => {
+      initFlow({ adapter: TurboAdapter, mode: "streaming" });
+      expect(() => (
+        <ClientFetch src={"javascript:alert(1)" as string} />
+      )).toThrow(/forbidden scheme/);
+    });
+  });
 });
 
 describe("Fill", () => {
@@ -192,7 +206,12 @@ describe("Slot", () => {
       expect(html).toContain('id="main"');
       const { pendingStore } = useContext(Flow);
       expect(pendingStore.size).toBe(1);
-      expect(debugStore(pendingStore).get("main")).toBeDefined();
+      // The factory must be stored as-is, not re-wrapped: invoking it once
+      // yields the node, which renders to markup (not stringified source).
+      const entry = debugStore(pendingStore).get("main")!;
+      expect(await renderToString(entry.content(undefined as never))).toBe(
+        "<span>content</span>",
+      );
     });
   });
 });
@@ -248,7 +267,7 @@ describe("streamFlow", () => {
 
   it("emits a fragment for a one-shot node entry", async () => {
     const store = createPendingStore(cfg);
-    store.defer("t1", { content: <div>Hello</div>, merge: "replace" });
+    store.defer("t1", { content: () => <div>Hello</div>, merge: "replace" });
     const results = await drain(store);
     expect(results).toHaveLength(1);
     expect(results[0]!.type).toBe("fragment");
@@ -262,7 +281,7 @@ describe("streamFlow", () => {
       yield <li>b</li>;
     }
     const store = createPendingStore(cfg);
-    store.defer("feed", { content: rows(), merge: "append" });
+    store.defer("feed", { content: () => rows(), merge: "append" });
     const results = await drain(store);
     const fragments = results.filter((e) => e.type === "fragment");
     expect(fragments).toHaveLength(2);
@@ -451,7 +470,7 @@ describe("renderToFlowEvents", () => {
           <body>
             <ul id="feed" />
             <Fill target="feed" merge="append">
-              {items()}
+              {() => items()}
             </Fill>
           </body>
         </html>
@@ -649,7 +668,7 @@ describe("Defer — streaming sequences (async-iterable child)", () => {
             <body>
               <ul id="feed" />
               <Fill target="feed" merge="append">
-                {rows()}
+                {() => rows()}
               </Fill>
             </body>
           </html>
@@ -674,7 +693,7 @@ describe("Defer — streaming sequences (async-iterable child)", () => {
             <body>
               <ul id="feed" />
               <Fill target="feed" merge="append">
-                {rows()}
+                {() => rows()}
               </Fill>
             </body>
           </html>
@@ -700,7 +719,7 @@ describe("Defer — streaming sequences (async-iterable child)", () => {
                   <div>
                     deferred
                     <Fill target="feed" merge="append">
-                      {inner()}
+                      {() => inner()}
                     </Fill>
                   </div>
                 )}
@@ -1120,7 +1139,7 @@ describe("edge cases", () => {
           <body>
             <ul id="feed" />
             <Fill target="feed" merge="append">
-              {inf()}
+              {() => inf()}
             </Fill>
           </body>
         </html>
@@ -1170,7 +1189,7 @@ describe("edge cases", () => {
           <body>
             <div id="out" />
             <Fill target="out" merge="append">
-              {many()}
+              {() => many()}
             </Fill>
           </body>
         </html>
@@ -1262,7 +1281,7 @@ describe("edge cases", () => {
             <body>
               <div id="out" />
               <Fill target="out" merge="append">
-                {g()}
+                {() => g()}
               </Fill>
             </body>
           </html>
@@ -1291,7 +1310,7 @@ describe("edge cases", () => {
             <body>
               <Defer>{() => <span>d</span>}</Defer>
               <Fill target="feed" merge="append">
-                {g()}
+                {() => g()}
               </Fill>
             </body>
           </html>

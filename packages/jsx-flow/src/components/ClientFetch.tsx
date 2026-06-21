@@ -2,9 +2,7 @@ import { useFlowContext } from "./shared.js";
 import type { JSX } from "@cjean-fr/jsx-string";
 
 // ClientFetch fetches an HTML fragment, so its `src` is a strict whitelist:
-// http(s) or a relative path only. A scheme is the text before the first ':' —
-// unless a '/', '?' or '#' precedes it, in which case the colon sits inside a
-// path and the URL is relative.
+// http(s) or a relative path only.
 type SchemeOf<S extends string> = S extends `${infer Head}:${string}`
   ? Head extends `${string}${"/" | "?" | "#"}${string}`
     ? null
@@ -23,13 +21,20 @@ type FetchUrl<S extends string> =
         };
 
 export interface ClientFetchProps<S extends string = string> {
-  /**
-   * URL of the HTML fragment to fetch on the client. Restricted to a whitelist
-   * — `http(s):` or a relative path — so `javascript:`, `data:`, `mailto:` and
-   * every other scheme are a compile-time error for string literals. Dynamic
-   * `string` values pass through.
-   */
   src: S & FetchUrl<S>;
+}
+
+function isAllowedUrl(url: string): boolean {
+  const colon = url.indexOf(":");
+  if (colon === -1) return true;
+  const preSlash = url.lastIndexOf("/", colon);
+  const preQ = url.indexOf("?", colon);
+  const preHash = url.indexOf("#", colon);
+  if (preSlash !== -1 && preSlash < colon) return true;
+  if (preQ !== -1 && preQ < colon) return true;
+  if (preHash !== -1 && preHash < colon) return true;
+  const scheme = url.slice(0, colon).toLowerCase();
+  return scheme === "http" || scheme === "https";
 }
 
 export function ClientFetch<const S extends string>(
@@ -37,6 +42,11 @@ export function ClientFetch<const S extends string>(
 ): JSX.Element | null {
   const { adapter, nextId } = useFlowContext();
   const id = nextId();
+
+  if (!isAllowedUrl(props.src))
+    throw new Error(
+      `ClientFetch: "${props.src}" has a forbidden scheme — only http(s): or relative paths are allowed`,
+    );
 
   return adapter.Placeholder({
     id,

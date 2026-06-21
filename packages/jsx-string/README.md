@@ -223,6 +223,8 @@ bun examples/server.tsx  # then: curl 'http://localhost:3000/?name=World'
 
 ## Security Model (Deep Dive)
 
+The security layer is reinforced with **property-based (fuzz) tests** using `fast-check` — every commit generates thousands of adversarial inputs (control chars, astral codepoints, scheme obfuscations, Unicode injections) to verify invariants like "no angle bracket escapes" and "lossless reversible encoding" hold for every possible input, not just hand-picked payloads.
+
 ### ✅ Defended by Default
 
 All outputs are sanitized **automatically** — no configuration needed.

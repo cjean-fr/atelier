@@ -1,4 +1,3 @@
-import type { JSXNode } from "../core/types.js";
 import { RawString } from "../core/types.js";
 import { escapeContent } from "./escape.js";
 
@@ -12,7 +11,7 @@ function renderArrayAsync(
   const tail: (string | Promise<string>)[] = new Array(remaining);
   tail[0] = pending;
   for (let i = 1; i < remaining; i++) {
-    tail[i] = toRenderString(arr[startIndex + i]);
+    tail[i] = renderChild(arr[startIndex + i]);
   }
   return Promise.all(tail).then((parts) => {
     let out = prefix;
@@ -38,7 +37,7 @@ function renderArray(arr: unknown[]): string | Promise<string> {
       continue;
     }
     if (item == null || item === true || item === false) continue;
-    const r = toRenderString(item);
+    const r = renderChild(item);
     if (typeof r === "string") out += r;
     else return renderArrayAsync(arr, i, out, r);
   }
@@ -49,24 +48,20 @@ async function renderAsyncIterable(
   iterable: AsyncIterable<unknown>,
 ): Promise<string> {
   let out = "";
-  for await (const item of iterable) out += await toRenderString(item);
+  for await (const item of iterable) out += await renderChild(item);
   return out;
 }
 
-export function toRenderString(value: unknown): string | Promise<string> {
+export function renderChild(value: unknown): string | Promise<string> {
   if (value == null || value === true || value === false) return "";
   if (typeof value === "string") return escapeContent(value);
   if (typeof value === "number") return String(value);
   if (value instanceof RawString) return value.value;
   if (Array.isArray(value)) return renderArray(value);
-  if (value instanceof Promise) return value.then(toRenderString);
+  if (value instanceof Promise) return value.then(renderChild);
   if (typeof (value as any)[Symbol.iterator] === "function")
-    return toRenderString(Array.from(value as Iterable<unknown>));
+    return renderChild(Array.from(value as Iterable<unknown>));
   if (typeof (value as any)[Symbol.asyncIterator] === "function")
     return renderAsyncIterable(value as AsyncIterable<unknown>);
   return escapeContent(String(value));
-}
-
-export function renderChild(child: JSXNode): string | Promise<string> {
-  return toRenderString(child);
 }

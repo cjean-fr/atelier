@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/jsx-flow",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "HTML document orchestration layer for @cjean-fr/jsx-string",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -23,6 +23,7 @@
     "htmx",
     "turbo"
   ],
+  "sideEffects": false,
   "type": "module",
   "types": "./dist/index.d.ts",
   "engines": {

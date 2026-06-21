@@ -8,7 +8,7 @@ export interface AdapterCapabilities {
   merges: readonly MergeType[];
 }
 
-export type DeferContent = JSXNode | ((signal: AbortSignal) => JSXNode);
+export type DeferContent = (signal: AbortSignal) => JSXNode;
 
 export interface Shell {
   type: "shell";

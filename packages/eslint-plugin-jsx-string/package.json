@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/eslint-plugin-jsx-string",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ESLint plugin for @cjean-fr/jsx-string to ensure static rendering compatibility",
   "author": "Christophe Jean",
   "license": "MIT",
