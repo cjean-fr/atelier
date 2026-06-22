@@ -21,9 +21,7 @@ function Page() {
         <Slot name="comments">
           <p>Loading comments…</p>
         </Slot>
-        <Fill target="comments">
-          <Comments />
-        </Fill>
+        <Fill target="comments">{() => <Comments />}</Fill>
       </body>
     </html>
   );

@@ -2,7 +2,7 @@
 title: Streaming
 sidebar:
   group: jsx-flow
-  order: 2
+  order: 3
 ---
 
 # Streaming
@@ -31,46 +31,15 @@ The example uses `http.createServer`, but the same pattern works with **Express*
 `ReadableStream` chunk by chunk and writing each one to the response without
 buffering.
 
-## Declaring slots and content
+## Components
 
-Three primitives split the concern between declaring a placeholder and pushing
-content:
+jsx-flow provides four primitives for deferred content. See the
+[Components](/jsx-flow/components) page for the full API:
 
-- **`<Slot name="…">`** — a named hole in the shell. Its children are the
-  default/fallback content rendered immediately. Registering nothing if no
-  children are passed — just an empty placeholder.
-- **`<Fill target="…">`** — pushes content into a slot. Renders nothing itself.
-  Use for one-shot patches, async content, or streaming iterables.
-- **`<Defer name="…">`** — deferred content with a visible placeholder. Same
-  as `Fill` but the adapter renders a placeholder in the shell.
-
-### `<Slot>` — passive hole
-
-```tsx
-<Slot name="comments">
-  <p>Loading comments…</p>
-</Slot>
-```
-
-### `<Fill>` — push content
-
-A plain node (or async component) starts eagerly and streams in when it
-resolves. Use a `(signal) => …` factory only when you want cancellation or a
-`timeout`.
-
-```tsx
-<Fill target="comments">
-  <Comments />
-</Fill>
-```
-
-### `<Defer>` — deferred with placeholder
-
-```tsx
-<Defer name="dashboard">
-  {(signal) => <HeavyDashboard signal={signal} />}
-</Defer>
-```
+- **`<Slot name="…">`** — a named hole with fallback content in the shell.
+- **`<Fill target="…">`** — pushes deferred content into a slot.
+- **`<Defer name="…">`** — deferred content with a built-in placeholder.
+- **`<ClientFetch src="…">`** — client-side fetch placeholder.
 
 ## `<ClientFetch>` — client-side fetch
 
@@ -81,11 +50,11 @@ server-push required — works with any static file server.
 
 ## Async iterables — streaming sequences
 
-An `AsyncIterable` child streams one patch per item:
+An `AsyncIterable` returned by the factory streams one patch per item:
 
 ```tsx
 <Fill target="feed" merge="append">
-  {liveRows()}
+  {() => liveRows()}
 </Fill>
 ```
 
