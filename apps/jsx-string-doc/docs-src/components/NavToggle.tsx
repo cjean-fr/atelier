@@ -17,7 +17,7 @@ export function NavToggle() {
       aria-label="Open navigation"
       aria-expanded="false"
       aria-controls="docs-nav"
-      class="docs-nav-toggle fixed top-4 right-4 z-50 inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-md md:hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+      class="docs-nav-toggle fixed top-3 right-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 shadow-md transition-colors hover:bg-gray-50 active:bg-gray-100 md:hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700"
     >
       <span class="docs-nav-toggle-open">{HAMBURGER}</span>
       <span class="docs-nav-toggle-close" hidden>

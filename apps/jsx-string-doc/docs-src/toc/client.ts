@@ -45,6 +45,13 @@ function installScrollSpy(toc: HTMLElement): void {
   );
 
   for (const h of headings) observer.observe(h);
+
+  const activeLink = toc.querySelector<HTMLAnchorElement>(
+    ".docs-toc-link.is-active",
+  );
+  if (activeLink) {
+    activeLink.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
 }
 
 export {};

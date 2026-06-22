@@ -15,7 +15,7 @@ export function PageFooter() {
           {prev ? (
             <a
               href={prev.href}
-              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               ← {prev.label}
             </a>
@@ -25,7 +25,7 @@ export function PageFooter() {
           {next ? (
             <a
               href={next.href}
-              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
+              class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               {next.label} →
             </a>
@@ -38,7 +38,7 @@ export function PageFooter() {
         <footer class="docs-page-footer mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 pt-6 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
           {editUrl ? (
             <a
-              class="docs-page-footer-edit inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100"
+              class="docs-page-footer-edit inline-flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100"
               href={editUrl}
               target="_blank"
               rel="noopener"

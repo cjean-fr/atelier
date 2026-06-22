@@ -44,14 +44,21 @@ export function Layout({ children }: { children: JSXNode }) {
         <Asset entry="docs-src/client.ts" />
       </head>
       <body class="docs-body bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+        <a href="#docs-main" class="docs-skip-link">
+          Skip to content
+        </a>
         <NavToggle />
         <div
           data-docs-nav-backdrop
-          class="docs-nav-backdrop fixed inset-0 z-30 hidden bg-gray-900/40 backdrop-blur-sm data-[open]:block md:hidden dark:bg-black/60"
+          class="docs-nav-backdrop fixed inset-0 z-30 bg-gray-900/40 opacity-0 backdrop-blur-sm data-[open]:opacity-100 md:hidden dark:bg-black/60"
         />
-        <div class="docs-shell mx-auto flex min-h-screen max-w-6xl gap-8 px-6">
+        <div class="docs-shell mx-auto flex min-h-screen max-w-7xl gap-8 px-6">
           <Nav />
-          <main id="docs-main" class="docs-main min-w-0 flex-1 py-8">
+          <main
+            id="docs-main"
+            class="docs-main min-w-0 flex-1 py-8"
+            tabindex={-1}
+          >
             {children}
             <PageFooter />
           </main>

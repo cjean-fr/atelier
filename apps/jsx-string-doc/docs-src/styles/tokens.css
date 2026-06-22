@@ -1,7 +1,11 @@
 :root {
+  color-scheme: light;
+
   --docs-color-bg: #ffffff;
   --docs-color-text: #111827;
+  --docs-color-text-secondary: #6b7280;
   --docs-color-accent: #2563eb;
+  --docs-color-accent-hover: #1d4ed8;
   --docs-color-accent-soft: #eff6ff;
   --docs-color-border: #e5e7eb;
 
@@ -16,15 +20,23 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
 
-  --docs-shell-max-width: 64rem;
+  --docs-shell-max-width: 80rem;
   --docs-sidebar-width: 14rem;
   --docs-content-padding: 1.5rem;
+
+  --docs-transition-fast: 150ms ease;
+  --docs-transition-normal: 200ms ease;
+  --docs-transition-slow: 300ms ease;
 }
 
 .dark {
+  color-scheme: dark;
+
   --docs-color-bg: #030712;
   --docs-color-text: #f3f4f6;
+  --docs-color-text-secondary: #9ca3af;
   --docs-color-accent: #60a5fa;
+  --docs-color-accent-hover: #93bbfd;
   --docs-color-accent-soft: #172554;
   --docs-color-border: #1f2937;
 

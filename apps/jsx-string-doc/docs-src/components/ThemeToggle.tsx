@@ -14,7 +14,7 @@ export function ThemeToggle() {
     <button
       type="button"
       data-docs-theme-toggle
-      class="docs-theme-toggle inline-grid h-9 w-9 place-items-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 dark:focus-visible:ring-offset-gray-950"
+      class="docs-theme-toggle inline-grid h-9 w-9 place-items-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
       aria-label="Toggle theme"
     >
       {SUN_ICON}
@@ -24,5 +24,5 @@ export function ThemeToggle() {
 }
 
 export const themeInitScript = raw(
-  `<script>(function(){try{var t=localStorage.getItem("docs-theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})();</script>`,
+  `<script>(function(){try{var t=localStorage.getItem("docs-theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);if(d){document.documentElement.classList.add("dark");var b=document.querySelector("[data-docs-theme-toggle]");if(b)b.setAttribute("aria-pressed","true")}}catch(e){}})();</script>`,
 );
