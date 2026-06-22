@@ -31,18 +31,6 @@ The example uses `http.createServer`, but the same pattern works with **Express*
 `ReadableStream` chunk by chunk and writing each one to the response without
 buffering.
 
-## Components
-
-jsx-flow provides four primitives for deferred content. See the
-[Components](/jsx-flow/components) page for the full API:
-
-- **`<Slot name="…">`** — a named hole with fallback content in the shell.
-- **`<Fill target="…">`** — pushes deferred content into a slot.
-- **`<Defer name="…">`** — deferred content with a built-in placeholder.
-- **`<ClientFetch src="…">`** — client-side fetch placeholder.
-
-<ClientFetchSection />
-
 ## Async iterables — streaming sequences
 
 An `AsyncIterable` returned by the factory streams one patch per item:
