@@ -1,16 +1,39 @@
-import { compile } from "@mdx-js/mdx";
 import grayMatter from "gray-matter";
 import crypto from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import rehypeSlug from "rehype-slug";
+import { mdxToJs, defineHastPlugin } from "satteri";
+import type { MdxCompileOptions } from "satteri";
 
 export interface CompiledMdx {
   Component: (props: object) => import("@cjean-fr/jsx-string").JSXNode;
   meta: Record<string, unknown>;
 }
+
+const headingIds = defineHastPlugin({
+  name: "heading-ids",
+  element: {
+    filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
+    visit(node, ctx) {
+      const id = ctx
+        .textContent(node)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      if (id) ctx.setProperty(node, "id", id);
+    },
+  },
+});
+
+const compileOptions: MdxCompileOptions = {
+  jsxImportSource: "@cjean-fr/jsx-string",
+  providerImportSource: pathToFileURL(
+    path.resolve("docs-src/mdx-components.jsx"),
+  ).href,
+  hastPlugins: [headingIds],
+};
 
 export class MdxCache {
   #compiled = new Map<string, string>();
@@ -43,19 +66,11 @@ export class MdxCache {
     key: string,
   ): Promise<CompiledMdx> {
     const { data: frontmatter, content } = grayMatter(raw);
-    const compiled = String(
-      await compile(content, {
-        jsxImportSource: "@cjean-fr/jsx-string",
-        providerImportSource: pathToFileURL(
-          path.resolve("docs-src/mdx-components.jsx"),
-        ).href,
-        rehypePlugins: [rehypeSlug],
-      }),
-    );
+    const { code } = mdxToJs(content, compileOptions);
 
-    this.#compiled.set(key, compiled);
+    this.#compiled.set(key, code);
 
-    const mod = await this.#importModule(file, compiled);
+    const mod = await this.#importModule(file, code);
     const Component = mod.default;
     if (typeof Component !== "function") {
       throw new Error(

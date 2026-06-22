@@ -6,6 +6,12 @@
 @import "./shiki.css";
 @import "./prose.css" layer(components);
 
+.docs-toc-link.is-active {
+  border-left-color: var(--docs-color-accent);
+  color: var(--docs-color-accent);
+  font-weight: 500;
+}
+
 .docs-theme-toggle-icon {
   width: 1.25rem;
   height: 1.25rem;

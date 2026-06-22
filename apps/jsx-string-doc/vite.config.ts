@@ -1,40 +1,38 @@
-import { defineConfig } from 'vite';
-import tailwindcss from '@tailwindcss/vite';
-import mdx from '@mdx-js/rollup';
-import remarkFrontmatter from 'remark-frontmatter';
-import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
-import remarkGfm from 'remark-gfm';
-import precompile from '@cjean-fr/vite-plugin-precompile';
+import precompile from "@cjean-fr/vite-plugin-precompile";
+import tailwindcss from "@tailwindcss/vite";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { defineConfig } from "vite";
+import satteri from "vite-plugin-satteri";
 
 export default defineConfig({
   plugins: [
     precompile(),
-    mdx({
-      jsxImportSource: '@cjean-fr/jsx-string',
-      providerImportSource: './docs-src/mdx-components.jsx',
-      remarkPlugins: [
-        remarkFrontmatter,
-        [remarkMdxFrontmatter, { name: 'meta' }],
-        remarkGfm,
-      ],
+    satteri({
+      mdx: {
+        jsxImportSource: "@cjean-fr/jsx-string",
+        providerImportSource: pathToFileURL(
+          path.resolve("docs-src/mdx-components.jsx"),
+        ).href,
+      },
     }),
     tailwindcss(),
   ],
-  appType: 'custom',
-  publicDir: 'public',
+  appType: "custom",
+  publicDir: "public",
   esbuild: {
-    jsx: 'automatic',
-    jsxImportSource: '@cjean-fr/jsx-string',
+    jsx: "automatic",
+    jsxImportSource: "@cjean-fr/jsx-string",
   },
   build: {
-    outDir: 'dist/assets',
-    assetsDir: '',
+    outDir: "dist/assets",
+    assetsDir: "",
     manifest: true,
     rollupOptions: {
-      input: 'docs-src/client.ts',
+      input: "docs-src/client.ts",
       output: {
-        entryFileNames: '[name]-[hash].js',
-        assetFileNames: '[name]-[hash][extname]',
+        entryFileNames: "[name]-[hash].js",
+        assetFileNames: "[name]-[hash][extname]",
       },
     },
   },

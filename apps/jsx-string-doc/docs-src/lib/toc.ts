@@ -53,7 +53,7 @@ export function renderTocHtml(entries: TocEntry[]): string {
     .map(
       (e) =>
         `<li class="docs-toc-entry docs-toc-level-${e.level} m-0">` +
-        `<a href="#${e.id}" class="docs-toc-link block py-1 ${e.level === 3 ? "pl-6 text-xs" : "pl-3"} text-sm text-gray-500 dark:text-gray-400 border-l-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 -ml-px transition-colors">${escapeHtml(e.text)}</a>` +
+        `<a href="#${e.id}" class="docs-toc-link block py-1 ${e.level === 3 ? "pl-6 text-xs" : "pl-3 text-sm"} text-gray-500 dark:text-gray-400 border-l-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 -ml-px transition-colors">${escapeHtml(e.text)}</a>` +
         `</li>`,
     )
     .join("");
