@@ -56,8 +56,8 @@ export async function initBuild(): Promise<void> {
 export async function rebuildAll(): Promise<void> {
   if (!manifest) await initBuild();
   allPages = await discoverPages(config);
-  await renderPages(allPages);
-  await postBuild(allPages);
+  const rendered = await renderPages(allPages);
+  await postBuild(allPages, rendered);
   await cleanupCompiled();
   console.log(`Built ${allPages.length} pages.`);
 }
@@ -89,8 +89,8 @@ export async function rebuildPages(urls: string[]): Promise<void> {
 
 export async function refreshPages(): Promise<void> {
   allPages = await discoverPages(config);
-  await renderPages(allPages);
-  await postBuild(allPages);
+  const rendered = await renderPages(allPages);
+  await postBuild(allPages, rendered);
   console.log(`[dev] Refreshed ${allPages.length} pages.`);
 }
 
@@ -144,11 +144,14 @@ async function renderPages(
   );
 }
 
-async function postBuild(pages: Page[]): Promise<void> {
-  const pageData = pages.map((p) => ({
-    url: p.url,
-    title: p.meta.title ?? p.url,
-    html: "",
+async function postBuild(
+  pages: Page[],
+  rendered: { url: string; title: string; html: string }[],
+): Promise<void> {
+  const pageData = rendered.map((r) => ({
+    url: r.url,
+    title: r.title,
+    html: r.html,
   }));
 
   await buildMinimatchIndex(

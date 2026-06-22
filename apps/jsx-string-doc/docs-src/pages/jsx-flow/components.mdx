@@ -15,6 +15,7 @@ deferred content:
 - **`<Fill>`** — pushes deferred content into a slot, overriding its fallback
 - **`<Defer>`** — a deferred region with a placeholder and fallback in one
   component
+- **`<ClientFetch>`** — client-side fetch placeholder.
 
 ## `<Slot>` — named insertion point
 
@@ -77,6 +78,14 @@ import { Defer } from "@cjean-fr/jsx-flow";
 `<Defer>` is equivalent to a `<Slot>` + `<Fill>` pair, but in a single
 declaration. It is useful when a component needs its own placeholder without
 relying on an external layout slot.
+
+## `<ClientFetch>` — client-side fetch
+
+Browser fetches the fragment from a URL after the shell lands. No server-push
+required — works with any static file server.
+    
+<CodeExample src="jsx-flow/deferred-src.tsx" />
+
 
 ## The `(signal) => JSXNode` factory
 

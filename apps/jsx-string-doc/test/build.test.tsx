@@ -34,13 +34,18 @@ describe("SSG build", () => {
     expect(html).toContain("404");
   });
 
-  it("produces search-index.json (array of entries)", async () => {
+  it("produces search-index.json (array of entries with body text)", async () => {
     const index = await readFile("dist/search-index.json", "utf-8");
     const data = JSON.parse(index);
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBeGreaterThan(0);
     expect(data[0]).toHaveProperty("url");
     expect(data[0]).toHaveProperty("title");
+    expect(data[0]).toHaveProperty("text");
+    const hasBodyText = data.some(
+      (d: { text: string }) => d.text && d.text.length > 50,
+    );
+    expect(hasBodyText).toBe(true);
   });
 
   it("builds all page files", async () => {
