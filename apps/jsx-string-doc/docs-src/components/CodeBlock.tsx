@@ -46,9 +46,9 @@ export async function CodeBlock({
   }
 
   return (
-    <div class="docs-code-block relative my-4">
+    <div class="docs-code-block group relative my-4">
       {(label ?? language) !== "text" && (
-        <span class="docs-code-lang absolute top-2 right-3 font-mono text-xs text-gray-500 select-none dark:text-gray-400">
+        <span class="docs-code-lang absolute top-2 right-3 font-mono text-[10px] font-medium tracking-wide text-gray-500 uppercase select-none dark:text-gray-400">
           {label ?? language}
         </span>
       )}

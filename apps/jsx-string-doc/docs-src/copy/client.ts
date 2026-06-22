@@ -6,8 +6,7 @@ function initCopyButtons(): void {
       "docs-copy-btn absolute top-2 right-2 z-10 px-2 py-1 text-xs rounded " +
       "bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 " +
       "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 " +
-      "opacity-0 group-hover:opacity-100 transition-opacity duration-200 " +
-      "focus:opacity-100 focus:outline-none";
+      "opacity-0 group-hover:opacity-100 focus:opacity-100";
     btn.textContent = "Copy";
     btn.setAttribute("aria-label", "Copy code to clipboard");
 
@@ -19,9 +18,11 @@ function initCopyButtons(): void {
       if (!code) return;
       try {
         await navigator.clipboard.writeText(code.textContent ?? "");
-        btn.textContent = "Copied!";
+        btn.textContent = "✓ Copied!";
+        btn.classList.add("text-green-600", "dark:text-green-400");
         setTimeout(() => {
           btn.textContent = "Copy";
+          btn.classList.remove("text-green-600", "dark:text-green-400");
         }, 2000);
       } catch {
         btn.textContent = "Failed";

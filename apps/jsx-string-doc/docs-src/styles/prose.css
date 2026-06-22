@@ -1,5 +1,5 @@
 .docs-prose {
-  max-width: 42rem;
+  max-width: 48rem;
 }
 .docs-prose h1 {
   font-size: 1.875rem;
@@ -42,9 +42,10 @@
   color: #2563eb;
   text-decoration: underline;
   text-underline-offset: 2px;
+  transition: color var(--docs-transition-fast);
 }
 .docs-prose a:hover {
-  color: #3b82f6;
+  color: #1d4ed8;
 }
 .docs-prose strong {
   font-weight: 600;
@@ -98,7 +99,7 @@
   color: #60a5fa;
 }
 .dark .docs-prose a:hover {
-  color: #3b82f6;
+  color: #93bbfd;
 }
 .dark .docs-prose code:not(.docs-code-block code) {
   background: #1f2937;

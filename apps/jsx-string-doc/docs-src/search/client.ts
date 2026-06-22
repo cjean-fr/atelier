@@ -267,7 +267,7 @@ function createResultItem(data: {
   const link = document.createElement("a");
   link.href = data.url;
   link.className =
-    "flex flex-col gap-0.5 px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 aria-selected:bg-blue-50 dark:aria-selected:bg-blue-950 aria-selected:border-l-2 aria-selected:border-blue-500 aria-selected:pl-3.5";
+    "flex flex-col gap-0.5 px-4 py-2.5 rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 aria-selected:bg-blue-50 dark:aria-selected:bg-blue-950 aria-selected:border-l-2 aria-selected:border-blue-500 aria-selected:pl-3.5";
 
   const title = document.createElement("span");
   title.className = "font-medium text-sm text-gray-900 dark:text-gray-100";
