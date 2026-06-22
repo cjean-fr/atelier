@@ -1,4 +1,5 @@
 /** @jsxImportSource @cjean-fr/jsx-string */
+import { ClientFetchSection } from "./components/ClientFetchSection.js";
 import { CodeBlock } from "./components/CodeBlock.js";
 import { CodeExample } from "./components/CodeExample.js";
 import type { JSXNode } from "@cjean-fr/jsx-string";
@@ -38,7 +39,7 @@ function Tabs({ tabs, syncKey }: { tabs: Tab[]; syncKey?: string }) {
   );
 }
 
-const base = { CodeBlock, CodeExample, Tabs };
+const base = { ClientFetchSection, CodeBlock, CodeExample, Tabs };
 
 export function useMDXComponents(
   components?: Readonly<Record<string, unknown>>,
