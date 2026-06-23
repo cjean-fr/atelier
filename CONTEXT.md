@@ -55,7 +55,6 @@
 |------|-----------|
 | **precompile-core** | AST-agnostic shared helpers: whitespace collapse, tag/attribute classification, attribute name mapping. |
 | **vite-plugin-precompile** | Vite plugin (`enforce: "pre"`) that runs the precompile transform before esbuild. Uses oxc-parser. |
-| **babel-plugin-precompile** | Babel plugin equivalent for non-Vite setups. Uses `@babel/types` AST. |
 
 ## Monorepo conventions
 

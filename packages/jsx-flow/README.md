@@ -69,9 +69,7 @@ function Layout() {
 
 // Elsewhere in the tree (or a different component):
 function PageContent() {
-  return (
-    <Fill target="page">{() => <h1>Hello</h1>}</Fill>
-  );
+  return <Fill target="page">{() => <h1>Hello</h1>}</Fill>;
 }
 ```
 
@@ -147,16 +145,16 @@ The factory starts lazily and receives an `AbortSignal` for cancellation. It mus
 
 ### Common props
 
-| Prop      | Applies to      | Meaning                                                             |
-| --------- | --------------- | ------------------------------------------------------------------- |
-| `name`    | `Slot`          | id of the placeholder (required)                                    |
-| `name`    | `Defer`         | id of the placeholder (auto-generated if omitted)                   |
-| `target`  | `Fill`          | target slot id to push content into                                 |
-| `fallback`| `Defer`         | placeholder content shown in the shell while deferred content loads |
-| `merge`   | `Defer`, `Fill` | how content applies to its target (default `"replace"`) — see below |
-| `timeout` | `Defer`, `Fill` | per-fragment render timeout in ms                                   |
-| `onError` | `Defer`, `Fill` | per-fragment error handler, overriding the renderer's `onError`     |
-| `src`     | `ClientFetch`   | URL the browser fetches for the fragment content                    |
+| Prop       | Applies to      | Meaning                                                             |
+| ---------- | --------------- | ------------------------------------------------------------------- |
+| `name`     | `Slot`          | id of the placeholder (required)                                    |
+| `name`     | `Defer`         | id of the placeholder (auto-generated if omitted)                   |
+| `target`   | `Fill`          | target slot id to push content into                                 |
+| `fallback` | `Defer`         | placeholder content shown in the shell while deferred content loads |
+| `merge`    | `Defer`, `Fill` | how content applies to its target (default `"replace"`) — see below |
+| `timeout`  | `Defer`, `Fill` | per-fragment render timeout in ms                                   |
+| `onError`  | `Defer`, `Fill` | per-fragment error handler, overriding the renderer's `onError`     |
+| `src`      | `ClientFetch`   | URL the browser fetches for the fragment content                    |
 
 ### Merge types
 
@@ -356,12 +354,12 @@ const MyAdapter = createAdapter({
 
 ### Components
 
-| Export        | Description                                                       |
-| ------------- | ----------------------------------------------------------------- |
+| Export        | Description                                                                  |
+| ------------- | ---------------------------------------------------------------------------- |
 | `Slot`        | Named insertion point with optional fallback children; renders a placeholder |
-| `Fill`        | Push content into a slot by target id; renders nothing            |
-| `Defer`       | Deferred content with a placeholder; fills when resolved          |
-| `ClientFetch` | Client-side fetch placeholder — no server deferral                |
+| `Fill`        | Push content into a slot by target id; renders nothing                       |
+| `Defer`       | Deferred content with a placeholder; fills when resolved                     |
+| `ClientFetch` | Client-side fetch placeholder — no server deferral                           |
 
 ### Renderers
 
@@ -402,7 +400,7 @@ const MyAdapter = createAdapter({
 | `StreamingAdapter`    | An `Adapter` with `capabilities.streaming: true`                                       |
 | `AdapterCapabilities` | `{ streaming: boolean; merges: readonly MergeType[] }`                                 |
 | `MergeType`           | `"replace" \| "append" \| "prepend" \| "before" \| "after"`                            |
-| `DeferContent`        | `(signal: AbortSignal) => JSXNode`                                        |
+| `DeferContent`        | `(signal: AbortSignal) => JSXNode`                                                     |
 | `FlowEvent`           | `{ type: "shell" \| "fragment" \| "close", … }` — semantic streaming event             |
 | `Negotiation`         | `{ headers?, mode?, target?, failTarget? }`                                            |
 | `composeShell`        | Compose several `transformShell` (string→string) into one                              |

@@ -21,7 +21,7 @@ export type {
   Negotiation,
   StreamingAdapter,
 } from "./types.js";
-export type { Adapter } from "./adapters.js";
+export type { Adapter } from "./adapters/index.js";
 export {
   createAdapter,
   NativeAdapter,
@@ -31,7 +31,7 @@ export {
   EsiAdapter,
   NATIVE_POLYFILL,
   nativePolyfillHash,
-} from "./adapters.js";
+} from "./adapters/index.js";
 export {
   serve,
   negotiateHtmx,

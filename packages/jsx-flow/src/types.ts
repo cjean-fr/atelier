@@ -1,4 +1,4 @@
-import type { Adapter } from "./adapters.js";
+import type { Adapter } from "./adapters/index.js";
 import type { JSXNode } from "@cjean-fr/jsx-string";
 
 export type MergeType = "replace" | "append" | "prepend" | "before" | "after";

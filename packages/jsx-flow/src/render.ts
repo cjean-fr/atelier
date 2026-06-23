@@ -1,4 +1,4 @@
-import { NativeAdapter, type Adapter } from "./adapters.js";
+import { NativeAdapter, type Adapter } from "./adapters/index.js";
 import { withFlow } from "./context.js";
 import { createFlowStream } from "./create-flow-stream.js";
 import { streamFlow } from "./streamFlow.js";

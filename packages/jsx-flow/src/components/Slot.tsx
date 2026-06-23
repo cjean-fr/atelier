@@ -1,5 +1,4 @@
-import { assertFragmentId } from "../utils.js";
-import { useFlowContext } from "./shared.js";
+import { useFlowContext } from "../context.js";
 import type { JSXNode } from "@cjean-fr/jsx-string";
 import type { JSX } from "@cjean-fr/jsx-string";
 
@@ -11,8 +10,6 @@ export interface SlotProps {
 export function Slot(props: SlotProps): JSX.Element | null {
   const { adapter, config } = useFlowContext();
   const { name, children } = props;
-
-  assertFragmentId(name, "Slot");
 
   return adapter.Placeholder({
     id: name,

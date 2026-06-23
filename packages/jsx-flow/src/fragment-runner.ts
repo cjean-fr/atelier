@@ -2,10 +2,6 @@ import type { Pending } from "./context.js";
 import type { FlowEvent, FlowOptions } from "./types.js";
 import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 
-// ════════════════════════════════════════════════════════════════════════
-// Internal helpers
-// ════════════════════════════════════════════════════════════════════════
-
 const isAsyncIterable = (v: unknown): v is AsyncIterable<JSXNode> =>
   v != null && typeof (v as any)[Symbol.asyncIterator] === "function";
 
@@ -47,10 +43,6 @@ async function emitError(
     });
   }
 }
-
-// ════════════════════════════════════════════════════════════════════════
-// Public runner
-// ════════════════════════════════════════════════════════════════════════
 
 export type FragmentResult = { stream: boolean; done: Promise<void> };
 
@@ -134,10 +126,6 @@ export function runFragment(
     }
   }
 }
-
-// ════════════════════════════════════════════════════════════════════════
-// Stream runner
-// ════════════════════════════════════════════════════════════════════════
 
 async function runStream(
   id: string,

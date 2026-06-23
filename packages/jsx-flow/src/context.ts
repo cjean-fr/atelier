@@ -133,6 +133,17 @@ export function initFlow(config: FlowConfig): void {
   });
 }
 
+export function useFlowContext() {
+  const flow = useContext(Flow);
+  return {
+    config: flow.config,
+    pendingStore: flow.pendingStore,
+    adapter: flow.config.adapter,
+    nextId: flow.nextId,
+    defer: flow.defer,
+  };
+}
+
 export function withFlow<T>(
   handler: (ctx: FlowContext) => T,
   config: FlowConfig,

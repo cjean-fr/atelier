@@ -1,5 +1,5 @@
+import { useFlowContext } from "../context.js";
 import type { DeferContent, MergeType } from "../types.js";
-import { useFlowContext } from "./shared.js";
 
 export interface FillProps {
   target: string;

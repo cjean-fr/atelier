@@ -1,4 +1,4 @@
-import type { Adapter } from "./adapters.js";
+import type { Adapter } from "./adapters/index.js";
 import type { FlowContext } from "./context.js";
 import { withFlow } from "./context.js";
 import { streamFlow } from "./streamFlow.js";
