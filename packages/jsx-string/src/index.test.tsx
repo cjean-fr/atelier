@@ -7,7 +7,9 @@ import { describe, it, expect } from "bun:test";
 describe("Main Entry Point API Contract", () => {
   it("should export core rendering, fragments and trust markers", () => {
     expect(typeof Main.renderToString).toBe("function");
-    expect(Main.raw("test").toString()).toBe("test");
+    const r = Main.raw("<b>test</b>");
+    expect(r.toString()).toBe("<b>test</b>");
+    expect(r).toBeInstanceOf(Object);
     expect(Main.Fragment).toBeDefined();
   });
 

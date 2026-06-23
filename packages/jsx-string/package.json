@@ -42,8 +42,8 @@
       "default": "./dist/jsx-dev-runtime.js"
     },
     "./html": {
-      "types": "./dist/utils/html-primitives.d.ts",
-      "default": "./dist/utils/html-primitives.js"
+      "types": "./dist/utils/html.d.ts",
+      "default": "./dist/utils/html.js"
     }
   },
   "publishConfig": {
