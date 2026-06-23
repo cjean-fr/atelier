@@ -1,5 +1,5 @@
+import { useFlowContext } from "../context.js";
 import type { DeferContent, MergeType, OnError } from "../types.js";
-import { useFlowContext } from "./shared.js";
 import type { JSX, JSXNode } from "@cjean-fr/jsx-string";
 
 export interface DeferProps {

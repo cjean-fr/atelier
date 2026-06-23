@@ -1,4 +1,4 @@
-import { useFlowContext } from "./shared.js";
+import { useFlowContext } from "../context.js";
 import type { JSX } from "@cjean-fr/jsx-string";
 
 // ClientFetch fetches an HTML fragment, so its `src` is a strict whitelist:

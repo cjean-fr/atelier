@@ -1,4 +1,4 @@
-import { NativeAdapter } from "./adapters.js";
+import { NativeAdapter } from "./adapters/index.js";
 import { renderStream } from "./render.js";
 import type {
   FlowOptions,
