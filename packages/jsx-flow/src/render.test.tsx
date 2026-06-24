@@ -7,8 +7,13 @@ import {
 } from "./index.js";
 import { renderToFlowEvents, renderShell, orchestrateFlow } from "./render.js";
 import { collectEvents, collect, type FragmentEvent } from "./test-utils.js";
+import type { FlowContext } from "./context.js";
 import type { FlowEvent } from "./types.js";
 import { describe, it, expect } from "bun:test";
+
+// renderShell only reads ctx through adapter.transformShell; these unit tests
+// pass a stub with no pending fragments.
+const FAKE_CTX = { pendingStore: { size: 0 } } as unknown as FlowContext;
 
 describe("renderToFlowEvents", () => {
   it("emits shell + close when there is nothing deferred", async () => {
@@ -131,6 +136,7 @@ describe("renderShell", () => {
         </html>
       ),
       {},
+      FAKE_CTX,
     );
     expect(shellBody).not.toContain("</body>");
     expect(shellBody).not.toContain("</html>");
@@ -141,6 +147,7 @@ describe("renderShell", () => {
     const { shellBody, closingTag } = await renderShell(
       () => <p>no wrapping</p>,
       {},
+      FAKE_CTX,
     );
     expect(shellBody).toContain("<p>no wrapping</p>");
     expect(closingTag).toBe("");
@@ -154,6 +161,7 @@ describe("renderShell", () => {
         </html>
       ),
       { transformShell: (s: string) => s + "<!-- transformed -->" },
+      FAKE_CTX,
     );
     expect(shellBody).toContain("<!-- transformed -->");
   });
@@ -316,6 +324,7 @@ describe("edge cases — render pipeline", () => {
             <head></head>
             <body>
               <p>hi</p>
+              <Defer>{() => <span>d</span>}</Defer>
             </body>
           </html>
         ),

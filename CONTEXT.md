@@ -9,12 +9,12 @@
 | **Fragment** | JSX fragment (`<></>`), rendered as empty string (just children). |
 | **renderElement** | Builds an HTML element string from tag + props + children. Validates tag names, applies escaping. |
 | **renderAttributes** | Serializes JSX props to HTML attribute string. Handles event filtering, URL safety, style objects, boolean attrs. |
-| **renderChild** | Converts any JSXNode to its string representation. Coerces null/boolean/string/number/RawString/Array/Promise/Iterable. |
+| **renderChild** | The single coercion core for child content: converts any JSXNode to its string representation, escaping untrusted leaves, passing RawString verbatim, flattening arrays, and awaiting Promises/Iterables. Both the dynamic render path and the precompile `jsxEscape` funnel through it — escaping happens identically either way. |
 | **escapeContent** / **escapeAttr** | HTML escaping: `& < >` for content, plus `"` for attributes. Two-stage fast-path + manual loop. |
 | **context** / **setContext** / **useContext** / **withScope** | Async-scoped context API backed by `AsyncLocalStorage`. Used for per-request state without passing it through props. |
 | **withScope** | Creates an isolated AsyncLocalStorage scope. Each render call runs in its own scope. |
 | **snapshot** | Captures current scope state for seeding sub-scopes. |
-| **jsxTemplate** / **jsxAttr** / **jsxEscape** | Deno-style precompile runtime helpers. Tagged template for static HTML, `jsxAttr` for attributes, `jsxEscape` for dynamic children. |
+| **jsxTemplate** / **jsxAttr** / **jsxEscape** | Deno-style precompile runtime helpers. `jsxTemplate` is a tagged template that joins static HTML slices with already-coerced slot values (string or RawString); `jsxAttr` serializes attributes; `jsxEscape` is an alias of `renderChild` — the precompile and dynamic paths share one coercion core. |
 | **precompile** | Build-time transform that converts static JSX elements into `jsxTemplate` tagged template literals. Zero runtime overhead for static content. |
 | **secure mode** | Precompile mode that loads the runtime's `jsxAttr` at build time for build-time sanitization of static attributes. |
 
@@ -35,9 +35,9 @@
 | **adapter** | Wire format strategy. Each adapter implements `Placeholder`/`Patch`/`Frame` (JSX components) + `encode` (stream transform) + `capabilities`. |
 | **merge** | How fragment content applies to its target DOM element: `replace` (default), `append`, `prepend`, `before`, `after`. |
 | **capabilities** | What a wire format can express: `{ streaming: boolean, merges: MergeType[] }`. Gated at compile time and fail-fast at registration. |
-| **transformShell** | Post-processing function `(html: string) => string` applied to the shell before it enters the stream (e.g., inject `<title>`, polyfill). |
+| **transformShell** | Post-processing function `(html: string, ctx: FlowContext) => string` applied to the shell before it enters the stream (e.g., inject `<title>`, assets). Receives the flow context, so an adapter can decide from real state — e.g. inject a client runtime only when `ctx.pendingStore.size > 0` (fragments exist). |
 | **encode** | Adapter method that transforms a `ReadableStream<FlowEvent>` into `ReadableStream<string>` (the wire format). |
-| **NativeAdapter** | Default adapter. Uses WICG Declarative Partial Updates + a bundled ~550B MutationObserver polyfill. All merge types. |
+| **NativeAdapter** | Default adapter (including for `renderToStatic`). Uses WICG Declarative Partial Updates + a bundled ~550B MutationObserver polyfill, injected via `transformShell` only when fragments are pending (so pure-static pages stay polyfill-free). All merge types. |
 | **TurboAdapter** | Hotwire Turbo Streams wire format: `<turbo-frame>` placeholders, `<turbo-stream>` patches. |
 | **HtmxAdapter** | HTMX OOB swaps wire format: `<div hx-get>` placeholders, `<div hx-swap-oob>` patches. |
 | **EsiAdapter** | CDN-level ESI composition. Static only (`streaming: false`), `replace` only. |

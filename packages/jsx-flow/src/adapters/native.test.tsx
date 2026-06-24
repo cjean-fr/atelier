@@ -4,7 +4,11 @@ import {
   nativePolyfillHash,
 } from "../adapters/index.js";
 import { renderToString } from "@cjean-fr/jsx-string";
+import type { FlowContext } from "../context.js";
 import { describe, it, expect } from "bun:test";
+
+const ctxWith = (size: number) =>
+  ({ pendingStore: { size } }) as unknown as FlowContext;
 
 describe("NativeAdapter", () => {
   it("patches are declarative templates — never per-fragment scripts (CSP)", async () => {
@@ -45,20 +49,23 @@ describe("NativeAdapter", () => {
 
   it("exposes the polyfill source and a stable CSP hash for it", async () => {
     expect(NATIVE_POLYFILL).toContain("MutationObserver");
-    expect(NativeAdapter.transformShell!("<head></head>")).toContain(
-      `<script>${NATIVE_POLYFILL}</script>`,
-    );
     const hash = await nativePolyfillHash();
     expect(hash).toMatch(/^sha256-[A-Za-z0-9+/]+=*$/);
     expect(await nativePolyfillHash()).toBe(hash);
   });
 
-  it("transformShell injects the polyfill into <head>", () => {
+  it("transformShell injects the polyfill when fragments are pending", () => {
     const result = NativeAdapter.transformShell!(
       "<html><head></head><body></body></html>",
+      ctxWith(1),
     );
-    expect(result).toContain("MutationObserver");
+    expect(result).toContain(`<script>${NATIVE_POLYFILL}</script>`);
     expect(result.indexOf("<script>")).toBeLessThan(result.indexOf("</head>"));
+  });
+
+  it("transformShell injects nothing when there are no fragments", () => {
+    const shell = "<html><head></head><body></body></html>";
+    expect(NativeAdapter.transformShell!(shell, ctxWith(0))).toBe(shell);
   });
 
   it("Frame renders <template>", async () => {

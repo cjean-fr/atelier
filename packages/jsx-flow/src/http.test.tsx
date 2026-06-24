@@ -1,4 +1,4 @@
-import { serve, negotiateHtmx, negotiateUnpoly, Fill } from "./index.js";
+import { serve, negotiateHtmx, negotiateUnpoly, Fill, Defer } from "./index.js";
 import { NativeAdapter, HtmxAdapter } from "./index.js";
 import { describe, it, expect } from "bun:test";
 
@@ -109,6 +109,7 @@ describe("HTTP negotiation (decoupled from the adapter)", () => {
         <head></head>
         <body>
           <p>hi</p>
+          <Defer>{() => <span>x</span>}</Defer>
         </body>
       </html>
     ));
