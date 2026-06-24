@@ -36,8 +36,10 @@ export async function nativePolyfillHash(): Promise<string> {
 }
 
 export const NativeAdapter = createAdapter({
-  transformShell: (shell) =>
-    injectIntoHead(shell, `<script>${POLYFILL}</script>`),
+  transformShell: (shell, ctx) =>
+    ctx.pendingStore.size > 0
+      ? injectIntoHead(shell, `<script>${POLYFILL}</script>`)
+      : shell,
 
   Placeholder: function ({ id, src, children }) {
     const safeId = escapeAttr(id);

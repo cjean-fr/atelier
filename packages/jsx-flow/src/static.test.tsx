@@ -22,6 +22,8 @@ describe("renderToStatic", () => {
     });
     expect(result.html).toContain("<p>hi</p>");
     expect(result.count).toBe(0);
+    // pure-static (no fragments) → NativeAdapter default injects no polyfill
+    expect(result.html).not.toContain("<script>");
   });
 
   it("collects fragments without flushing them", async () => {
@@ -43,13 +45,15 @@ describe("renderToStatic", () => {
     expect(result.ids).toEqual(["fragment-1"]);
   });
 
-  it("applies adapter.transformShell to the rendered page", async () => {
+  it("applies adapter.transformShell — polyfill injected when fragments exist", async () => {
     const result = await renderToStatic(
       async (ctx) =>
         ctx.renderPage(() => (
           <html>
             <head></head>
-            <body />
+            <body>
+              <Defer>{() => <span>x</span>}</Defer>
+            </body>
           </html>
         )),
       { adapter: NativeAdapter },
@@ -100,12 +104,24 @@ describe("renderToStatic", () => {
       expect(urls).toEqual(["/f/fragment-1.html"]);
     });
 
-    it("throws without a configured adapter", async () => {
-      await expect(
-        renderToStatic(async (ctx) => {
-          await ctx.emitFragments(() => {});
-        }),
-      ).rejects.toThrow(/adapter/i);
+    it("defaults to NativeAdapter framing when none is configured", async () => {
+      const written: Array<{ id: string; html: string }> = [];
+      await renderToStatic(async (ctx) => {
+        await ctx.renderPage(() => (
+          <html>
+            <body>
+              <Defer>{() => <span>real</span>}</Defer>
+            </body>
+          </html>
+        ));
+        await ctx.emitFragments(
+          (id, _url, html) => void written.push({ id, html }),
+        );
+      });
+      expect(written).toHaveLength(1);
+      expect(written[0]!.id).toBe("fragment-1");
+      expect(written[0]!.html).toContain('<template for="fragment-1">');
+      expect(written[0]!.html).toContain("<span>real</span>");
     });
   });
 
@@ -130,17 +146,18 @@ describe("renderToStatic", () => {
     expect(files["/esi/fragment-1.html"]).toContain("<span>real</span>");
   });
 
-  it("<Defer> with content but no adapter throws a clear error", async () => {
-    await expect(
-      renderToStatic(async (ctx) =>
-        ctx.renderPage(() => (
-          <html>
-            <body>
-              <Defer>{() => <span>real</span>}</Defer>
-            </body>
-          </html>
-        )),
-      ),
-    ).rejects.toThrow(/adapter/i);
+  it("<Defer> with content defaults to NativeAdapter (no adapter required)", async () => {
+    const html = await renderToStatic(async (ctx) =>
+      ctx.renderPage(() => (
+        <html>
+          <head></head>
+          <body>
+            <Defer>{() => <span>real</span>}</Defer>
+          </body>
+        </html>
+      )),
+    );
+    expect(html).toContain('<?start name="fragment-1">'); // Native placeholder marker
+    expect(html).toContain("MutationObserver"); // polyfill injected — a fragment exists
   });
 });

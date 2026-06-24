@@ -1,5 +1,5 @@
 import { NativeAdapter, type Adapter } from "./adapters/index.js";
-import { withFlow } from "./context.js";
+import { withFlow, type FlowContext } from "./context.js";
 import { createFlowStream } from "./create-flow-stream.js";
 import { streamFlow } from "./streamFlow.js";
 import type { FlowEvent, FlowOptions, StreamingAdapter } from "./types.js";
@@ -19,14 +19,15 @@ import { renderToString, type JSXNode } from "@cjean-fr/jsx-string";
  */
 export async function renderShell(
   node: () => JSXNode,
-  adapter: { transformShell?: (html: string) => string },
+  adapter: { transformShell?: (html: string, ctx: FlowContext) => string },
+  ctx: FlowContext,
 ): Promise<{ shellBody: string; closingTag: string }> {
   const shell = await renderToString(node());
   const match = shell.match(/((?:<\/body>)?\s*<\/html>\s*)$/);
   const closingTag = match?.[1] ?? "";
   const body = closingTag ? shell.slice(0, -closingTag.length) : shell;
   const shellBody = adapter.transformShell
-    ? adapter.transformShell(body)
+    ? adapter.transformShell(body, ctx)
     : body;
   return { shellBody, closingTag };
 }
@@ -46,10 +47,11 @@ export async function orchestrateFlow(
   opts: FlowOptions & { mode?: "full" | "fragment" },
 ): Promise<void> {
   await withFlow(
-    async ({ pendingStore }) => {
+    async (ctx) => {
+      const { pendingStore } = ctx;
       try {
         if (signal.aborted) return;
-        const { shellBody, closingTag } = await renderShell(node, adapter);
+        const { shellBody, closingTag } = await renderShell(node, adapter, ctx);
         if (opts.mode !== "fragment") {
           await emit({ type: "shell", html: shellBody });
         }

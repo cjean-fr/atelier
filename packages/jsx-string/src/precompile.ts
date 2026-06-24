@@ -32,13 +32,13 @@ export function jsxAttr(
 /**
  * Prepare a dynamic child for embedding into a tagged template.
  *
- * Returns a value that `jsxTemplate` knows how to concatenate:
- * - `""` for nullish / boolean / empty string,
- * - the `RawString` itself (no re-escape),
- * - an escaped string for primitives,
- * - an array of escaped children (mirrors the JSX child-array shape),
- * - a `Promise` resolving to one of the above for async values — `jsxTemplate`
- *   detects it and awaits before concatenation.
+ * An alias of {@link renderChild}: the precompile escape path and the dynamic
+ * render path share one coercion core, so a child is escaped identically whether
+ * it reaches the runtime through `jsxTemplate` or through `renderToString`.
+ * Returns an escaped string, or a `Promise<string>` for async values —
+ * `jsxTemplate` detects the Promise and awaits before concatenation. A nested
+ * Promise inside a sub-array surfaces as a Promise here too (the array descent
+ * returns one), so it is awaited rather than stringified to "[object Promise]".
  *
  * @example
  * jsxEscape("<script>alert(1)</script>")
@@ -48,27 +48,8 @@ export function jsxAttr(
  * jsxEscape(null)
  * // => ""
  */
-export function jsxEscape(value: unknown): unknown {
-  if (value == null || value === false || value === true || value === "")
-    return "";
-  if (value instanceof RawString) return value;
-  if (value instanceof Promise) return value.then(jsxEscape);
-
-  if (Array.isArray(value)) {
-    // Escape each element first, then decide sync vs async from the *results*.
-    // A Promise nested inside a sub-array surfaces as a Promise here (the
-    // recursive call returns one), so it is awaited instead of being stringified
-    // to "[object Promise]" — which a top-level-only scan would miss.
-    const out: unknown[] = new Array(value.length);
-    let hasAsync = false;
-    for (let i = 0; i < value.length; i++) {
-      out[i] = jsxEscape(value[i]);
-      if (out[i] instanceof Promise) hasAsync = true;
-    }
-    return hasAsync ? Promise.all(out) : out;
-  }
-  return renderChild(value);
-}
+export const jsxEscape: (value: unknown) => string | Promise<string> =
+  renderChild;
 
 /**
  * Concatenate static template slices with dynamic expressions (each already
@@ -87,35 +68,34 @@ export function jsxTemplate(
   templates: ArrayLike<string>,
   ...values: unknown[]
 ): RenderResult {
-  let out = templates[0] ?? "";
   for (let i = 0; i < values.length; i++) {
-    const value = values[i];
-    if (value instanceof Promise) {
+    if (values[i] instanceof Promise) {
       return Promise.all(values).then(
-        (resolved) => new RawString(joinTemplate(templates, resolved)),
+        (resolved) => new RawString(assemble(templates, resolved)),
       );
     }
-    out += flattenExpr(value) + (templates[i + 1] ?? "");
   }
-  return new RawString(out);
+  return new RawString(assemble(templates, values));
 }
 
-function joinTemplate(templates: ArrayLike<string>, exprs: unknown[]): string {
+/**
+ * Concatenate static template slices with their already-coerced slot values.
+ *
+ * A slot is the output of `jsxAttr` / `jsxEscape` (a string) or of a nested
+ * `jsx()` / `jsxTemplate` (a `RawString`); any Promise has already been awaited
+ * by `jsxTemplate`. The JSXNode descent — escaping, array flattening, async —
+ * lives solely in `renderChild`; this is just the join.
+ */
+function assemble(
+  templates: ArrayLike<string>,
+  values: ArrayLike<unknown>,
+): string {
   let out = templates[0] ?? "";
-  for (let i = 0; i < exprs.length; i++) {
-    out += flattenExpr(exprs[i]) + (templates[i + 1] ?? "");
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    out +=
+      (typeof v === "string" ? v : (v as RawString).value) +
+      (templates[i + 1] ?? "");
   }
   return out;
-}
-
-function flattenExpr(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value == null || value === false || value === true) return "";
-  if (value instanceof RawString) return value.value;
-  if (Array.isArray(value)) {
-    let out = "";
-    for (let i = 0; i < value.length; i++) out += flattenExpr(value[i]);
-    return out;
-  }
-  return renderChild(value) as string;
 }

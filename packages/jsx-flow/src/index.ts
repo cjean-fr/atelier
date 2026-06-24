@@ -22,6 +22,7 @@ export type {
   StreamingAdapter,
 } from "./types.js";
 export type { Adapter } from "./adapters/index.js";
+export type { FlowContext } from "./context.js";
 export {
   createAdapter,
   NativeAdapter,

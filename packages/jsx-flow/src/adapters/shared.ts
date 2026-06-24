@@ -1,3 +1,4 @@
+import type { FlowContext } from "../context.js";
 import type { AdapterCapabilities, FlowEvent, MergeType } from "../types.js";
 import { raw, renderToString, type JSXNode } from "@cjean-fr/jsx-string";
 
@@ -10,7 +11,13 @@ export type Adapter = {
   Patch(props: { id: string; children: JSXNode; merge: MergeType }): JSXNode;
   Frame(props: { id: string; children: JSXNode }): JSXNode;
   capabilities: AdapterCapabilities;
-  transformShell?(shell: string): string;
+  /**
+   * Post-process the shell before it enters the stream. Receives the active
+   * `FlowContext`, so an adapter can decide based on the real flow state — e.g.
+   * inject a client runtime only when `ctx.pendingStore.size > 0` (fragments
+   * exist). Always called inside the flow scope, after the shell node renders.
+   */
+  transformShell?(shell: string, ctx: FlowContext): string;
   encode(): TransformStream<FlowEvent, string>;
 };
 

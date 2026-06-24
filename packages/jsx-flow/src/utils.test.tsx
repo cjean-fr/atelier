@@ -8,7 +8,11 @@ import {
   Defer,
 } from "./index.js";
 import { collect } from "./test-utils.js";
+import type { FlowContext } from "./context.js";
 import { describe, it, expect } from "bun:test";
+
+// These transforms ignore the ctx; pass a stub to satisfy the signature.
+const CTX = { pendingStore: { size: 0 } } as unknown as FlowContext;
 
 describe("composeShell", () => {
   it("applies transforms left-to-right", () => {
@@ -16,7 +20,7 @@ describe("composeShell", () => {
       (s) => s + "[a]",
       (s) => s + "[b]",
     );
-    expect(t("x")).toBe("x[a][b]");
+    expect(t("x", CTX)).toBe("x[a][b]");
   });
 
   it("skips falsy entries (e.g. an adapter with no transformShell)", () => {
@@ -27,7 +31,7 @@ describe("composeShell", () => {
       null,
       false,
     );
-    expect(t("<head></head>")).toBe("<head><title>ok</title></head>");
+    expect(t("<head></head>", CTX)).toBe("<head><title>ok</title></head>");
   });
 
   it("composes into an adapter and runs once in the streamed shell", async () => {
