@@ -1,4 +1,3 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
 import { CodeExample } from "../components/CodeExample.js";
 import type { PageMeta } from "../types.js";
 
