@@ -71,9 +71,47 @@ describe("SSG build", () => {
     );
   });
 
-  it("no canonical link when config.site is unset", async () => {
+  it("includes canonical link when config.site is set", async () => {
     const html = await readFile("dist/index.html", "utf-8");
-    expect(html).not.toContain('rel="canonical"');
+    expect(html).toContain('rel="canonical"');
+    expect(html).toContain("https://vincle.netlify.app/");
+  });
+
+  it("produces llms.txt", async () => {
+    const data = await readFile("dist/llms.txt", "utf-8");
+    expect(data).toContain("jsx-string");
+    expect(data).toContain("Quick Start");
+  });
+
+  it("produces security.txt", async () => {
+    const data = await readFile("dist/.well-known/security.txt", "utf-8");
+    expect(data).toContain("security");
+    expect(data).toContain("Contact");
+  });
+
+  it("produces manifest.json", async () => {
+    const data = await readFile("dist/manifest.json", "utf-8");
+    const manifest = JSON.parse(data);
+    expect(manifest.name).toBe("jsx-string");
+    expect(manifest.start_url).toBe("/");
+  });
+
+  it("produces 500.html", async () => {
+    const html = await readFile("dist/500.html", "utf-8");
+    expect(html).toContain("Server Error");
+    expect(html).toContain("500");
+  });
+
+  it("includes meta tags from specification.website", async () => {
+    const html = await readFile("dist/index.html", "utf-8");
+    expect(html).toContain('name="color-scheme"');
+    expect(html).toContain('name="theme-color"');
+    expect(html).toContain('name="referrer"');
+    expect(html).toContain('http-equiv="Content-Security-Policy"');
+    expect(html).toContain('http-equiv="Permissions-Policy"');
+    expect(html).toContain('type="application/ld+json"');
+    expect(html).toContain('translate="no"');
+    expect(html).toContain("inert");
   });
 });
 
