@@ -91,6 +91,67 @@
   margin-block: 2rem;
 }
 
+.docs-prose .docs-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-block: 1rem;
+}
+
+.docs-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.docs-prose thead {
+  background: #f9fafb;
+}
+
+.docs-prose th {
+  font-weight: 600;
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.docs-prose td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.docs-prose tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.docs-prose tbody tr:hover {
+  background: #f9fafb;
+}
+
+.docs-prose th code,
+.docs-prose td code {
+  font-size: 0.8125rem;
+}
+
+.dark .docs-prose thead {
+  background: #111827;
+}
+
+.dark .docs-prose th {
+  border-bottom-color: #1f2937;
+}
+
+.dark .docs-prose td {
+  border-bottom-color: #1f2937;
+}
+
+.dark .docs-prose tbody tr:hover {
+  background: #111827;
+}
+
 .dark .docs-prose p,
 .dark .docs-prose li {
   color: #9ca3af;

@@ -62,7 +62,13 @@ function notifyClients(): void {
 let rebuilding = false;
 
 async function onSourceChange(filePath: string): Promise<void> {
-  if (filePath.includes("node_modules") || filePath.includes("/dist/")) return;
+  if (
+    filePath.includes("node_modules") ||
+    filePath.includes("/dist/") ||
+    filePath.includes("/.git/") ||
+    filePath.includes(".compiled")
+  )
+    return;
   if (rebuilding) return;
 
   rebuilding = true;
@@ -76,7 +82,6 @@ async function onSourceChange(filePath: string): Promise<void> {
     if (isPageFile(filePath)) {
       const url = fileToUrl(filePath);
       if (url) {
-        // Check if it's a new page or existing
         const known = getAllPages().find((p) => p.url === url);
         if (known) {
           await rebuildPages([url]);
@@ -117,7 +122,10 @@ async function main(): Promise<void> {
   await initBuild();
   const initialOk = await rebuildAll()
     .then(() => true)
-    .catch(() => false);
+    .catch((e) => {
+      console.error("[dev] rebuildAll failed:", e);
+      return false;
+    });
   if (!initialOk) process.exit(1);
   console.log(`[dev] Serving http://localhost:${PORT}`);
 
