@@ -1,13 +1,14 @@
 import config from "../../docs.config.js";
 import { setDocs } from "../context.js";
 import { buildMinimatchIndex } from "../search/minimatch-build.js";
-import type { Page, ViteManifest, ResolvedDocsConfig } from "../types.js";
+import type { Page } from "../types.js";
 import { buildRobots } from "./build-robots.js";
 import { buildSitemap } from "./build-sitemap.js";
 import { discoverPages } from "./pages.js";
 import { renderDocument } from "./render-document.js";
 import { resolveSidebar, resolveNavigation } from "./sidebar.js";
 import { injectToc, renderTocHtml } from "./toc.js";
+import type { ViteManifest } from "@cjean-fr/jsx-vite";
 import { loadViteManifest, setVite } from "@cjean-fr/jsx-vite";
 import { existsSync } from "node:fs";
 import { writeFile, mkdir, rm, readdir, copyFile } from "node:fs/promises";
@@ -24,7 +25,7 @@ function mapConcurrent<T, R>(
   const worker = async () => {
     while (index < items.length) {
       const i = index++;
-      results[i] = await fn(items[i]);
+      results[i] = await fn(items[i]!);
     }
   };
   const pool = Math.min(concurrency, items.length) || 1;
@@ -33,7 +34,7 @@ function mapConcurrent<T, R>(
 
 function concurrency(): number {
   return Math.min(
-    Number(process.env.BUILD_CONCURRENCY) ||
+    Number(process.env["BUILD_CONCURRENCY"]) ||
       availableParallelism?.() ||
       cpus().length ||
       4,
