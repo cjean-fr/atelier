@@ -4,6 +4,14 @@ import { buildMinimatchIndex } from "../search/minimatch-build.js";
 import type { Page } from "../types.js";
 import { buildRobots } from "./build-robots.js";
 import { buildSitemap } from "./build-sitemap.js";
+import {
+  generateLlmsTxt,
+  generateLlmsFullTxt,
+  generateManifest,
+  generateSecurityTxt,
+  updateRobotsTxt,
+  extractPlainText,
+} from "./build-static-assets.js";
 import { discoverPages } from "./pages.js";
 import { renderDocument } from "./render-document.js";
 import { resolveSidebar, resolveNavigation } from "./sidebar.js";
@@ -159,17 +167,31 @@ async function postBuild(
     pageData,
     path.join(config.out, "search-index.json"),
   );
-  await buildRobots(config.site, config.out);
 
-  if (config.sitemap && config.site) {
+  const hasSitemap = config.sitemap && Boolean(config.site);
+  await updateRobotsTxt(config.out, hasSitemap, config.site);
+
+  if (hasSitemap) {
     await buildSitemap(
       pages.map((p) => ({ url: p.url, draft: p.meta.draft })),
-      config.site,
+      config.site!,
       config.out,
     );
   }
 
+  const textPages = rendered.map((r) => ({
+    url: r.url,
+    title: r.title,
+    html: r.html,
+    text: extractPlainText(r.html),
+  }));
+  await generateLlmsTxt(pageData, config, config.out);
+  await generateLlmsFullTxt(textPages, config, config.out);
+  await generateManifest(config, config.out);
+  await generateSecurityTxt(config, config.out);
+
   await render404();
+  await render500();
   await copyPublicAssets();
 }
 
@@ -209,6 +231,47 @@ async function render404(): Promise<void> {
   });
   await writeFile(
     path.join(config.out, "404.html"),
+    "<!DOCTYPE html>\n" + html,
+    "utf-8",
+  );
+}
+
+async function render500(): Promise<void> {
+  const serverErrorMeta = { title: "Server Error" };
+  const serverErrorSidebar = { groups: [] };
+  const html = await renderDocument(() => {
+    setVite(manifest!, { base: config.base });
+    setDocs({
+      config,
+      currentPage: "/500",
+      meta: serverErrorMeta,
+      sidebar: serverErrorSidebar,
+      lastUpdated: null,
+      editUrl: null,
+      prev: null,
+      next: null,
+    });
+    return config.layout({
+      children: (
+        <main class="docs-main mx-auto max-w-2xl py-16 text-center">
+          <h1 class="text-6xl font-bold text-gray-300 dark:text-gray-700">
+            500
+          </h1>
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
+            Server error. Something went wrong.
+          </p>
+          <a
+            href="/"
+            class="mt-6 inline-block text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+          >
+            ← Back to home
+          </a>
+        </main>
+      ),
+    });
+  });
+  await writeFile(
+    path.join(config.out, "500.html"),
     "<!DOCTYPE html>\n" + html,
     "utf-8",
   );

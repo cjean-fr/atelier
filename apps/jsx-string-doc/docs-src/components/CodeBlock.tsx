@@ -1,4 +1,3 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
 import { raw } from "@cjean-fr/jsx-string";
 
 export interface CodeBlockProps {
@@ -38,6 +37,7 @@ export async function CodeBlock({
         themes: { light: DEFAULT_LIGHT_THEME, dark: DEFAULT_DARK_THEME },
         defaultColor: false,
       });
+      body = body.replace("<pre ", '<pre translate="no" ');
     } catch {
       body = renderPlain(cleaned);
     }
@@ -46,7 +46,7 @@ export async function CodeBlock({
   }
 
   return (
-    <div class="docs-code-block group relative my-4">
+    <div class="docs-code-block group relative my-4" translate="no">
       {(label ?? language) !== "text" && (
         <span class="docs-code-lang absolute top-2 right-3 font-mono text-[10px] font-medium tracking-wide text-gray-500 uppercase select-none dark:text-gray-400">
           {label ?? language}

@@ -4,6 +4,7 @@ export interface PageMeta {
   image?: string;
   slug?: string;
   draft?: boolean;
+  csp?: string;
   sidebar?: {
     label?: string;
     order?: number;

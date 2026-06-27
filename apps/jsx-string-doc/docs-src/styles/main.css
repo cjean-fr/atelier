@@ -49,14 +49,44 @@ html {
     scroll-behavior: auto;
   }
 
-  .docs-body,
-  .docs-theme-toggle-icon,
-  .docs-nav,
-  .docs-nav-backdrop,
-  .docs-feature-card,
-  .docs-toc-marker {
-    transition: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* === Forced colours mode === */
+@media (forced-colors: active) {
+  .docs-nav-link-current {
+    outline: 2px solid ButtonText;
+    outline-offset: -2px;
+  }
+
+  .docs-code-block {
+    border: 1px solid ButtonText;
+  }
+
+  .docs-feature-card {
+    border: 1px solid ButtonText;
+  }
+
+  :focus-visible {
+    outline: 3px solid CanvasText;
+    outline-offset: 2px;
+  }
+
+  .docs-skip-link:focus {
+    outline: 3px solid CanvasText;
+  }
+}
+
+/* === Prevent layout shift from scrollbar === */
+html {
+  scrollbar-gutter: stable;
 }
 
 /* === Sidebar nav === */
