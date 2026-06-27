@@ -20,7 +20,7 @@ function onPointerEnter(e: Event) {
   if (link?.href) prefetch(link.href);
 }
 
-function onTouchStart(e: TouchEvent) {
+function onTouchStart(e: Event) {
   const link = getNavLink(e.target);
   if (link?.href) prefetch(link.href);
 }
