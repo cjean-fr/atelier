@@ -34,9 +34,33 @@ without it.
 
 ## Deno
 
-Configure `deno.json`:
+jsx-string works with Deno's built-in JSX transform. Configure the import
+source in `deno.json` so you don't need explicit imports in every file:
 
 <CodeExample src="guide/installation/deno.json" />
+
+The same configuration applies to all `*.tsx` and `*.jsx` files in your
+project. No additional plugins or bundler configuration needed.
+
+## Vite plugin (precompile)
+
+The Vite plugin transforms JSX at build time into tagged template literals,
+eliminating runtime parsing overhead. The output is byte-identical to the
+dynamic path — you can toggle it on and off without changing anything.
+
+<CodeBlock
+  code={`import precompile from "@cjean-fr/vite-plugin-precompile";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [precompile()],
+});`}
+  language="ts"
+/>
+
+Use it for static sites, docs, or anything where the JSX tree is known at build
+time. Works alongside the dynamic path — you can precompile some files and
+runtime-render others.
 
 ## ESLint plugin
 

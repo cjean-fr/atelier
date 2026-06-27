@@ -12,31 +12,58 @@ Everything you need to start rendering JSX to HTML strings.
 ## Hello world
 
 `renderToString` always returns a `Promise<string>`, even for synchronous
-trees.
+trees. The simplest render outputs a complete HTML document.
 
 <CodeExample src="guide/quick-start/hello-world.tsx" />
 
+The returned string is ready to send over HTTP, write to a file, or embed in
+any response pipeline.
+
 ## Components
 
-Components are plain functions. Props are typed. Children are passed via the
-`children` prop or as JSX children.
+Components are plain functions — no classes, no hooks, no lifecycle. Props are
+typed with standard TypeScript interfaces. Children are passed via the
+`children` prop or as JSX children, giving you the same composition model as
+React but without the overhead.
 
 <CodeExample src="guide/quick-start/component.tsx" />
 
+Because there is no state or re-rendering, components are fully deterministic:
+same props, same output. This makes them trivially testable and cacheable.
+
 ## Async components
 
-Any component can be an async function. Data fetching happens naturally.
+Any component can be an `async` function. `renderToString` walks the tree
+depth-first, awaiting every async component it encounters. This means the
+component that needs data is the component that fetches it — no prop-drilling
+from a top-level loader.
 
 <CodeExample src="guide/quick-start/async-component.tsx" />
 
+Sibling async subtrees are evaluated concurrently. The result is a single
+`Promise<string>` that resolves when every branch of the document is ready.
+
 ## Security: escaping and raw HTML
 
-All string values embedded in JSX are HTML-escaped. Use `raw()` only for
-trusted HTML.
+**Every** value embedded in JSX — text content, attribute values, style
+properties — is HTML-escaped before it reaches the output. There is no
+escape-by-default opt-out. This covers `&`, `<`, `>`, and `"` across all
+rendering surfaces.
 
 <CodeExample src="guide/quick-start/escaping.tsx" />
 
+The only way to inject unescaped HTML is `raw()`, an explicit opt-in wrapper
+for trusted content like Markdown renderer output. Never pass user input to
+`raw()`. See [Security](/guide/security) for the complete model.
+
 ## Fragments
 
+JSX fragments (`<></>`) render as empty strings — only their children appear
+in the output. Useful for returning multiple elements from a component without
+wrapping them in a `<div>`.
+
 <CodeExample src="guide/quick-start/fragment.tsx" />
+
+Fragments are transparent: no extra DOM node, no wrapper, no whitespace
+artifacts.
 

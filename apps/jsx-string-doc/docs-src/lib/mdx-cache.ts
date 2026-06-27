@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { mdxToJs, defineHastPlugin } from "satteri";
 import type { MdxCompileOptions } from "satteri";
+import { wrapTables } from "./hast-plugins.js";
 
 export interface CompiledMdx {
   Component: (props: object) => import("@cjean-fr/jsx-string").JSXNode;
@@ -32,7 +33,7 @@ const compileOptions: MdxCompileOptions = {
   providerImportSource: pathToFileURL(
     path.resolve("docs-src/mdx-components.jsx"),
   ).href,
-  hastPlugins: [headingIds],
+  hastPlugins: [headingIds, wrapTables],
 };
 
 export class MdxCache {

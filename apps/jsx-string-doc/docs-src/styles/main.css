@@ -53,7 +53,8 @@ html {
   .docs-theme-toggle-icon,
   .docs-nav,
   .docs-nav-backdrop,
-  .docs-feature-card {
+  .docs-feature-card,
+  .docs-toc-marker {
     transition: none !important;
   }
 }
@@ -98,10 +99,42 @@ html {
 }
 
 /* === Table of contents === */
+.docs-toc-track {
+  position: relative;
+}
+
+.docs-toc-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  background: var(--docs-color-accent);
+  border-radius: 1px;
+  pointer-events: none;
+  transition: top var(--docs-transition-normal);
+  z-index: 1;
+}
+
+.docs-toc-track.is-animating .docs-toc-marker {
+  transition: none;
+}
+
 .docs-toc-link.is-active {
-  border-left-color: var(--docs-color-accent);
   color: var(--docs-color-accent);
-  font-weight: 500;
+}
+
+.docs-toc-sublist {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height var(--docs-transition-normal),
+    opacity var(--docs-transition-normal);
+}
+
+.docs-toc-entry:has(.is-active) > .docs-toc-sublist {
+  max-height: 1000px;
+  opacity: 1;
 }
 
 /* === Theme toggle === */

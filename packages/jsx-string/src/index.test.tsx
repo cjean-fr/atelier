@@ -1,4 +1,3 @@
-// @jsxImportSource @cjean-fr/jsx-string
 import type { JSXNode } from "./core/types.js";
 import * as Main from "./index.js";
 import { renderToString } from "./index.js";

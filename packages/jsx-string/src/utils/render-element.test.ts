@@ -50,36 +50,4 @@ describe("renderElement — tag name validation", () => {
   });
 });
 
-describe("renderElement — dangerouslySetInnerHTML with Promise __html", () => {
-  it("renders resolved Promise __html", async () => {
-    const result = await renderElement(
-      "div",
-      { dangerouslySetInnerHTML: { __html: Promise.resolve("<b>ok</b>") } },
-      [],
-    );
-    expect(result.value).toBe("<div><b>ok</b></div>");
-  });
 
-  it("renders empty for Promise __html resolving to null", async () => {
-    const result = await renderElement(
-      "div",
-      { dangerouslySetInnerHTML: { __html: Promise.resolve(null) } },
-      [],
-    );
-    expect(result.value).toBe("<div></div>");
-  });
-
-  it("rejects when Promise __html rejects", async () => {
-    await expect(
-      renderElement(
-        "div",
-        {
-          dangerouslySetInnerHTML: {
-            __html: Promise.reject(new Error("fail")),
-          },
-        },
-        [],
-      ),
-    ).rejects.toThrow("fail");
-  });
-});

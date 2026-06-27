@@ -1,5 +1,3 @@
-import { minimatch } from "minimatch";
-
 interface SearchDocument {
   url: string;
   title: string;
@@ -222,17 +220,10 @@ function scoreDocument(document: SearchDocument, terms: string[]): number {
   let score = 0;
 
   for (const term of terms) {
-    const pattern = toContainsPattern(term);
     let matchedTerm = false;
 
     for (const field of fields) {
-      if (
-        minimatch(field.value, pattern, {
-          nocase: true,
-          nocomment: true,
-          nonegate: true,
-        })
-      ) {
+      if (field.value.toLowerCase().includes(term.toLowerCase())) {
         score += field.weight;
         matchedTerm = true;
       }
@@ -242,14 +233,6 @@ function scoreDocument(document: SearchDocument, terms: string[]): number {
   }
 
   return score;
-}
-
-function toContainsPattern(term: string): string {
-  return `*${escapeGlob(term)}*`;
-}
-
-function escapeGlob(value: string): string {
-  return value.replace(/[?*[\]{}()!+@#,\\]/g, "\\$&");
 }
 
 function createResultItem(data: {
