@@ -63,10 +63,10 @@ export async function initBuild(): Promise<void> {
 
 export async function rebuildAll(): Promise<void> {
   if (!manifest) await initBuild();
+  await cleanupCompiled();
   allPages = await discoverPages(config);
   const rendered = await renderPages(allPages);
   await postBuild(allPages, rendered);
-  await cleanupCompiled();
   console.log(`Built ${allPages.length} pages.`);
 }
 
@@ -189,21 +189,23 @@ async function postBuild(
   await generateManifest(config, config.out);
   await generateSecurityTxt(config, config.out);
 
-  await render404();
-  await render500();
+  await renderError(404, "Page Not Found", "Page not found.");
+  await renderError(500, "Server Error", "Server error. Something went wrong.");
   await copyPublicAssets();
 }
 
-async function render404(): Promise<void> {
-  const notFoundMeta = { title: "Page Not Found" };
-  const notFoundSidebar = { groups: [] };
+async function renderError(
+  status: number,
+  title: string,
+  message: string,
+): Promise<void> {
   const html = await renderDocument(() => {
     setVite(manifest!, { base: config.base });
     setDocs({
       config,
-      currentPage: "/404",
-      meta: notFoundMeta,
-      sidebar: notFoundSidebar,
+      currentPage: `/${status}`,
+      meta: { title },
+      sidebar: { groups: [] },
       lastUpdated: null,
       editUrl: null,
       prev: null,
@@ -213,11 +215,9 @@ async function render404(): Promise<void> {
       children: (
         <main class="docs-main mx-auto max-w-2xl py-16 text-center">
           <h1 class="text-6xl font-bold text-gray-300 dark:text-gray-700">
-            404
+            {status}
           </h1>
-          <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
-            Page not found.
-          </p>
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{message}</p>
           <a
             href="/"
             class="mt-6 inline-block text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
@@ -229,48 +229,7 @@ async function render404(): Promise<void> {
     });
   });
   await writeFile(
-    path.join(config.out, "404.html"),
-    "<!DOCTYPE html>\n" + html,
-    "utf-8",
-  );
-}
-
-async function render500(): Promise<void> {
-  const serverErrorMeta = { title: "Server Error" };
-  const serverErrorSidebar = { groups: [] };
-  const html = await renderDocument(() => {
-    setVite(manifest!, { base: config.base });
-    setDocs({
-      config,
-      currentPage: "/500",
-      meta: serverErrorMeta,
-      sidebar: serverErrorSidebar,
-      lastUpdated: null,
-      editUrl: null,
-      prev: null,
-      next: null,
-    });
-    return config.layout({
-      children: (
-        <main class="docs-main mx-auto max-w-2xl py-16 text-center">
-          <h1 class="text-6xl font-bold text-gray-300 dark:text-gray-700">
-            500
-          </h1>
-          <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
-            Server error. Something went wrong.
-          </p>
-          <a
-            href="/"
-            class="mt-6 inline-block text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
-          >
-            ← Back to home
-          </a>
-        </main>
-      ),
-    });
-  });
-  await writeFile(
-    path.join(config.out, "500.html"),
+    path.join(config.out, `${status}.html`),
     "<!DOCTYPE html>\n" + html,
     "utf-8",
   );

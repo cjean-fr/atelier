@@ -133,7 +133,6 @@ const tx = createTranslator<Spec, ReactNode>(
   { welcome: "Hello {name}!" },
   {
     interpolate: (template, params) =>
-      // split on {placeholders}; odd indices are the captured keys
       template
         .split(/\{(\w+)\}/)
         .map((part, i) => (i % 2 === 0 ? part : params[part])),

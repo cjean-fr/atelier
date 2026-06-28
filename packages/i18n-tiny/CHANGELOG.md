@@ -21,6 +21,25 @@
 - **SKILL.md updated**: Reflects new `createTranslationBuilder` API and
   spec-first workflow guidance.
 
+## 1.3.0
+
+### Added
+
+- **`onMissingKey` callback** in `TranslatorConfig` — intercept missing keys
+  at runtime to log, report to Sentry, or return a fallback string. The
+  existing fallback-to-key behaviour remains the default.
+- **Date formatting** in `interpolate()` — `Date` values are now formatted via
+  `toLocaleString()` instead of `String()`.
+
+### Changed
+
+- **`InterpolateFn` params type tightened** from `Record<string, any>` to
+  `Record<string, unknown>`. Custom interpolators now benefit from type-safe
+  param access — access without narrowing is preserved, but the value type is
+  `unknown` instead of `any`.
+- **`CleanKey` now filters the ICU sigil `#`** so `ExtractParams` no
+  longer produces spurious param name `"#"` from ICU plurals.
+
 ## 1.1.0
 
 ### Minor Changes
