@@ -3,8 +3,8 @@ import {
   NATIVE_POLYFILL,
   nativePolyfillHash,
 } from "../adapters/index.js";
-import { renderToString } from "@cjean-fr/jsx-string";
 import type { FlowContext } from "../context.js";
+import { renderToString } from "@cjean-fr/jsx-string";
 import { describe, it, expect } from "bun:test";
 
 const ctxWith = (size: number) =>

@@ -49,5 +49,3 @@ describe("renderElement — tag name validation", () => {
     ).toBe("<div><span></span></div>");
   });
 });
-
-

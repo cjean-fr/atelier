@@ -1,4 +1,3 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
 import { useDocs } from "../context.js";
 import { CodeBlock } from "./CodeBlock.js";
 import { readFile } from "node:fs/promises";

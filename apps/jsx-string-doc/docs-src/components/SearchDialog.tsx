@@ -1,4 +1,3 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
 export function SearchDialog() {
   return (
     <search>

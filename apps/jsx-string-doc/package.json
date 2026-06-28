@@ -10,7 +10,8 @@
     "build:ssg": "bun docs-src/build.tsx",
     "preview": "vite preview --outDir dist",
     "test": "bun test",
-    "test:build": "bun test test/build.test.tsx"
+    "test:build": "bun test test/build.test.tsx",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@cjean-fr/jsx-flow": "workspace:*",

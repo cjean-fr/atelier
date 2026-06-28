@@ -1,3 +1,4 @@
+import type { FlowContext } from "./context.js";
 import {
   renderStream,
   Defer,
@@ -7,7 +8,6 @@ import {
 } from "./index.js";
 import { renderToFlowEvents, renderShell, orchestrateFlow } from "./render.js";
 import { collectEvents, collect, type FragmentEvent } from "./test-utils.js";
-import type { FlowContext } from "./context.js";
 import type { FlowEvent } from "./types.js";
 import { describe, it, expect } from "bun:test";
 
