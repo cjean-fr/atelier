@@ -1,4 +1,3 @@
-/** @jsxImportSource @cjean-fr/jsx-string */
 import { useDocs } from "../context.js";
 import { SearchDialog } from "./SearchDialog.js";
 import { ThemeToggle } from "./ThemeToggle.js";

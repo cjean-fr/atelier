@@ -1,3 +1,4 @@
+import type { FlowContext } from "./context.js";
 import {
   composeShell,
   injectIntoHead,
@@ -8,7 +9,6 @@ import {
   Defer,
 } from "./index.js";
 import { collect } from "./test-utils.js";
-import type { FlowContext } from "./context.js";
 import { describe, it, expect } from "bun:test";
 
 // These transforms ignore the ctx; pass a stub to satisfy the signature.

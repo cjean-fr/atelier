@@ -2,7 +2,6 @@ import config from "../../docs.config.js";
 import { setDocs } from "../context.js";
 import { buildMinimatchIndex } from "../search/minimatch-build.js";
 import type { Page } from "../types.js";
-import { buildRobots } from "./build-robots.js";
 import { buildSitemap } from "./build-sitemap.js";
 import {
   generateLlmsTxt,

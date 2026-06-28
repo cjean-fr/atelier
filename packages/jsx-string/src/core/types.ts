@@ -113,14 +113,12 @@ export type StringEventHandlers = {
  * Works standalone — does not require @types/react.
  */
 export type ToStatic<T = {}> = {
-  [K in keyof T as K extends
-    | `on${string}`
-    | "children"
-    | "style"
-    | "class"
-    | "className"
-    ? never
-    : K]: T[K];
+  [
+    K in keyof T as K extends
+      `on${string}` | "children" | "style" | "class" | "className"
+      ? never
+      : K
+  ]: T[K];
 } & {
   class?: string;
   className?: string;
