@@ -68,11 +68,11 @@ describe("translation system", () => {
   });
 
   it("should pass context to custom interpolator", () => {
-    let capturedContext: any;
+    let capturedContext: { locale?: string; key: string } = { key: "" };
     const customInterpolate = (
       _template: string,
-      _params: any,
-      context: any,
+      _params: Record<string, unknown>,
+      context: { locale?: string; key: string },
     ) => {
       capturedContext = context;
       return "dummy";
@@ -198,9 +198,6 @@ describe("translation system", () => {
 
   describe("extensibility", () => {
     it("supports JSX-style node return types without casts (README example)", () => {
-      // Mirrors the "Custom Result Types" README snippet so it can't rot: a
-      // node-typed translator whose interpolator interleaves param nodes
-      // between the static text. No `as any` anywhere.
       type Spec = { welcome: readonly ["name"] };
       type El = { tag: string; child: string };
       type Node = string | El | Node[];
@@ -211,7 +208,7 @@ describe("translation system", () => {
           interpolate: (template, params) =>
             template
               .split(/\{(\w+)\}/)
-              .map((part, i) => (i % 2 === 0 ? part : params[part])),
+              .map((part, i) => (i % 2 === 0 ? part : params[part])) as Node,
         },
       );
 
@@ -227,8 +224,8 @@ describe("translation system", () => {
           return template.replace(
             /\{(\w+), plural, one \{(.+?)\} other \{(.+?)\}\}/g,
             (_, key, one, other) => {
-              const val = params[key];
-              return val === 1 ? one : other.replace("#", val);
+              const val = Number(params[key]);
+              return val === 1 ? one : other.replace("#", String(val));
             },
           );
         },

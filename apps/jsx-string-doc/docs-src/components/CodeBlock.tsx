@@ -1,3 +1,4 @@
+import { escapeHtml } from "../lib/escape.js";
 import { raw } from "@cjean-fr/jsx-string";
 
 export interface CodeBlockProps {
@@ -59,12 +60,4 @@ export async function CodeBlock({
 
 function renderPlain(code: string): string {
   return `<pre class="docs-code-pre overflow-x-auto rounded-lg bg-gray-950 dark:bg-gray-900 border border-gray-800 p-4 text-sm font-mono leading-relaxed text-gray-100"><code>${escapeHtml(code)}</code></pre>`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

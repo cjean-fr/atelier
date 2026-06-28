@@ -32,7 +32,9 @@ export type ValidTranslations<T extends TranslationSpec> = {
 
 type CleanKey<K extends string> = K extends `${infer Name}${"," | " "}${string}`
   ? Name
-  : K;
+  : K extends "#"
+    ? never
+    : K;
 
 /**
  * Recursively extracts parameter names (e.g. {name}) from a string.
@@ -89,6 +91,7 @@ export type InterpolateFn<T = string> = (
 export type TranslatorConfig<T = string> = {
   locale?: string;
   interpolate?: InterpolateFn<T>;
+  onMissingKey?: (key: string, locale?: string) => string;
 };
 
 /**
@@ -115,10 +118,11 @@ export type Translator<S extends TranslationSpec, T = string> = {
  */
 export function interpolate(
   template: string,
-  params: Record<string, any> = {},
+  params: Record<string, unknown> = {},
 ): string {
   return template.replace(/\{([\w-]+?)\}/g, (match, paramName) => {
     const value = params[paramName];
+    if (value instanceof Date) return value.toLocaleString();
     return value !== undefined ? String(value) : match;
   });
 }
@@ -146,15 +150,18 @@ export function createTranslator<
   config?: TranslatorConfig<T>,
 ): Translator<S, T> {
   return (key, ...args) => {
-    const template = translations[key as string] ?? (key as string);
-    const params = (args[0] as Record<string, any>) || {};
+    const rawTemplate = translations[key as string];
+    const template =
+      rawTemplate ??
+      config?.onMissingKey?.(key as string, config?.locale) ??
+      (key as string);
+    const params = (args[0] as Record<string, unknown>) || {};
     const context = { locale: config?.locale, key: key as string };
 
     if (config?.interpolate) {
       return config.interpolate(template, params, context);
     }
 
-    // If no parameters are passed, return the raw template (casted to T)
     if (args.length === 0) {
       return template as unknown as T;
     }

@@ -1,3 +1,5 @@
+import { escapeHtml } from "./escape.js";
+
 const PLACEHOLDER_RE = /<aside\s+data-toc-placeholder\s*><\/aside>/i;
 
 export interface TocEntry {
@@ -61,13 +63,23 @@ function groupEntries(entries: TocEntry[]): GroupedEntry[] {
 
   for (const entry of entries) {
     if (entry.level === 2) {
-      current = { id: entry.id, text: entry.text, level: entry.level, children: [] };
+      current = {
+        id: entry.id,
+        text: entry.text,
+        level: entry.level,
+        children: [],
+      };
       result.push(current);
     } else if (entry.level === 3) {
       if (current) {
         current.children.push(entry);
       } else {
-        result.push({ id: entry.id, text: entry.text, level: entry.level, children: [] });
+        result.push({
+          id: entry.id,
+          text: entry.text,
+          level: entry.level,
+          children: [],
+        });
       }
     }
   }
@@ -107,12 +119,4 @@ export function renderTocHtml(entries: TocEntry[]): string {
     `</div>` +
     `</aside>`
   );
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
