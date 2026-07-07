@@ -71,6 +71,10 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
           )}
           <meta name="referrer" content="no-referrer" />
           <meta
+            name="format-detection"
+            content="telephone=no, date=no, address=no, email=no, url=no"
+          />
+          <meta
             httpEquiv="Permissions-Policy"
             content={getPermissionsPolicy()}
           />
@@ -125,12 +129,14 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
             className="relative z-10 container mx-auto max-w-5xl rounded bg-white p-4 shadow-md backdrop-blur-3xl md:p-6 dark:bg-slate-900/95 dark:text-slate-200 dark:shadow-2xl dark:ring-1 dark:ring-white/10 print:rounded-none print:shadow-none [&_a]:underline"
             tabIndex={-1}
           >
-            <article>
+            <div>
               <Banner name={basics.name} label={basics.label} />
 
-              <nav aria-label={t("contact_info")}>
-                <Links basics={basics} list={meta.themeConfig.ui.links} />
-              </nav>
+              <address>
+                <nav aria-label={t("contact_info")}>
+                  <Links basics={basics} list={meta.themeConfig.ui.links} />
+                </nav>
+              </address>
 
               {(basics.image || basics.summary) && (
                 <div className="flex break-inside-avoid flex-wrap justify-center gap-4 sm:flex-nowrap">
@@ -155,10 +161,10 @@ export default async ({ resume, css, ...props }: LayoutProps) => {
               )}
 
               <WorkExperience works={works} showLogos={ui.showLogos} />
-              <Projects projects={projects} showLogos={ui.showLogos} />
+              <Projects projects={projects} />
               <Education education={education} certificates={certificates} />
               <Skills skills={skills} />
-            </article>
+            </div>
           </main>
           <Footer meta={meta} bgTiles={bgTiles} />
           {ui.cta && (

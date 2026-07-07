@@ -16,7 +16,7 @@ export default function WorkExperience({
   if (!works || works.length === 0) return null;
 
   return (
-    <Section name={t("work_experience")}>
+    <Section sectionId="work" name={t("work_experience")}>
       <ol className="timeline" reversed>
         {works.map((work) => (
           <li className="timeline-item" key={work.name + work.startDate}>
@@ -27,7 +27,7 @@ export default function WorkExperience({
                     {work.logo ? (
                       <img
                         src={work.logo}
-                        alt={work.name}
+                        alt=""
                         width="48"
                         height="48"
                         className="h-12 w-12 rounded-lg object-contain"

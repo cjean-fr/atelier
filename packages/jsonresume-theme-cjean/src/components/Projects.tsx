@@ -12,7 +12,7 @@ export default function Projects({ projects }: ProjectsProps) {
   if (!projects || projects.length === 0) return null;
 
   return (
-    <Section name={t("projects")}>
+    <Section sectionId="projects" name={t("projects")}>
       <ol className="timeline" reversed>
         {projects.map((project) => (
           <li

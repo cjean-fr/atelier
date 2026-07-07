@@ -2,12 +2,20 @@ import type { HTMLAttributes } from "@cjean-fr/jsx-string";
 
 interface SectionProps extends HTMLAttributes {
   name?: string;
+  sectionId?: string;
 }
 
-export default function Section({ name, children, ...props }: SectionProps) {
-  const sectionId = name
-    ? `section-${name.toLowerCase().replace(/\s+/g, "-")}`
-    : undefined;
+export default function Section({
+  name,
+  sectionId: stableId,
+  children,
+  ...props
+}: SectionProps) {
+  const sectionId = stableId
+    ? `section-${stableId}`
+    : name
+      ? `section-${name.toLowerCase().replace(/\s+/g, "-")}`
+      : undefined;
 
   return (
     <section

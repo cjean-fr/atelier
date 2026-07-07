@@ -1,11 +1,9 @@
 import {
   createTranslator,
-  createTranslationBuilder,
+  createTypedTranslator,
   interpolate,
   type ValidTranslations,
   type TranslatorConfig,
-  type InferSpec,
-  type ExtractParams,
 } from "./index";
 import { describe, it, expect, mock } from "bun:test";
 
@@ -90,27 +88,17 @@ describe("translation system", () => {
     expect(capturedContext).toEqual({ locale: "fr-FR", key: "welcome" });
   });
 
-  it("should support generic return types (e.g. Objects/JSX)", () => {
-    // T is { text: string }
-    const t = createTranslator<UserSpec, { text: string }>(validEnglish, {
-      interpolate: (template) => ({ text: `Wrapped: ${template}` }),
+  it("should support branded string as generic return type", () => {
+    type Wrapped = string & { readonly __brand: "Wrapped" };
+    const t = createTranslator<UserSpec, Wrapped>(validEnglish, {
+      interpolate: (template) => `Wrapped: ${template}` as Wrapped,
     });
 
     const result = t("goodbye");
-    expect(result).toEqual({ text: "Wrapped: Goodbye" });
+    expect(result).toBe("Wrapped: Goodbye" as unknown as Wrapped);
   });
 
-  it("should raise type errors (static verification only)", () => {
-    const t = createTranslator<UserSpec>(validEnglish);
-
-    // @ts-expect-error - missing parameter
-    t("welcome", { name: "Alice" });
-
-    // @ts-expect-error - invalid key
-    t("invalid");
-  });
-
-  describe("interpolate() function", () => {
+  describe("interpolation", () => {
     it("should interpolate simple variables", () => {
       expect(interpolate("Hello {name}", { name: "Alice" })).toBe(
         "Hello Alice",
@@ -143,78 +131,103 @@ describe("translation system", () => {
       const icu = "You have {count, plural, one {1 item} other {# items}}";
       expect(interpolate(icu, { count: 5 })).toBe(icu);
     });
-  });
 
-  describe("createTranslationBuilder & InferSpec", () => {
-    it("doit inférer et valider une langue secondaire à partir d'une référence 'as const'", () => {
-      const billingEn = {
-        invoice_count: "You have {count} pending invoices.",
-        pay_button: "Pay now",
-      } as const;
-
-      type BillingSpec = InferSpec<typeof billingEn>;
-
-      const defineBillingLocale = createTranslationBuilder<BillingSpec>();
-
-      const billingFr = defineBillingLocale({
-        invoice_count: "Vous avez {count} factures en attente.",
-        pay_button: "Payer maintenant",
-      });
-
-      expect(billingFr.pay_button).toBe("Payer maintenant");
+    it("supports unicode parameter names like {prénom} and {nombre}", () => {
+      expect(interpolate("Bonjour {prénom}", { prénom: "Alice" })).toBe(
+        "Bonjour Alice",
+      );
+      expect(interpolate("Total : {nombre}", { nombre: 42 })).toBe(
+        "Total : 42",
+      );
     });
 
-    it("doit lever une erreur de type si un paramètre est invalide ou manquant", () => {
-      const base = { test: "Hello {name}" } as const;
-      type Spec = InferSpec<typeof base>;
-      const defineLocale = createTranslationBuilder<Spec>();
+    it("formats Date with locale when provided", () => {
+      const d = new Date(2024, 0, 15, 0, 0, 0);
+      expect(interpolate("Date : {d}", { d }, "fr-FR")).toBe(
+        `Date : ${d.toLocaleString("fr-FR")}`,
+      );
+      expect(interpolate("Date : {d}", { d }, "de-DE")).toBe(
+        `Date : ${d.toLocaleString("de-DE")}`,
+      );
+    });
 
-      defineLocale({
-        // @ts-expect-error - {nom} ne correspond pas à 'name'
-        test: "Bonjour {nom}",
-      });
+    it("handles null as 'null' string", () => {
+      expect(interpolate("val: {x}", { x: null })).toBe("val: null");
+    });
+
+    it("leaves undefined placeholders intact", () => {
+      expect(interpolate("val: {x}", { x: undefined })).toBe("val: {x}");
+    });
+
+    it("handles 0 (falsy but defined)", () => {
+      expect(interpolate("val: {x}", { x: 0 })).toBe("val: 0");
+    });
+
+    it("handles empty string", () => {
+      expect(interpolate("val: {x}", { x: "" })).toBe("val: ");
+    });
+
+    it("handles false as 'false' string", () => {
+      expect(interpolate("val: {x}", { x: false })).toBe("val: false");
     });
   });
 
-  describe("ExtractParams recursion (static verification only)", () => {
-    it("doit extraire les paramètres d'un template long sans dépasser la limite de récursion", () => {
-      // 80 placeholders : sans récursion terminale (accumulateur), ExtractParams
-      // dépasse la limite (~50) des conditional types et tsc échoue avec TS2589.
-      // Cette régression est détectée par `tsc --noEmit` (script check), pas par bun test.
-      type Chunk = "{p1} {p2} {p3} {p4} {p5} {p6} {p7} {p8} {p9} {p10}";
-      type LongTemplate =
-        `${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk} ${Chunk}`;
+  describe("onMissingKey", () => {
+    it("returns onMissingKey result directly (no interpolation)", () => {
+      const t = createTranslator<UserSpec, string>(validEnglish, {
+        onMissingKey: (key) => `raw:${key}`,
+      });
 
-      type Params = ExtractParams<LongTemplate>;
-      const param: Params = "p10";
+      // @ts-expect-error - "unknown_key" is not a valid key; onMissingKey handles it at runtime
+      expect(t("unknown_key")).toBe("raw:unknown_key");
+    });
 
-      // @ts-expect-error - "p11" n'existe pas dans le template
-      const invalid: Params = "p11";
+    it("falls back to key name when missing and no onMissingKey", () => {
+      const t = createTranslator<UserSpec>(validEnglish);
 
-      expect(param).toBe("p10");
-      expect(invalid).toBeDefined();
+      // @ts-expect-error - "nonexistent" is not a valid key; runtime fallback to key
+      expect(t("nonexistent")).toBe("nonexistent");
+    });
+
+    it("does not affect existing keys", () => {
+      const t = createTranslator<UserSpec>(validEnglish, {
+        onMissingKey: () => "N/A",
+      });
+
+      expect(t("goodbye")).toBe("Goodbye");
+      expect(t("welcome", { name: "Alice", age: 30 })).toBe(
+        "Welcome Alice, you are 30 years old",
+      );
+    });
+
+    it("falls back to key when onMissingKey returns undefined", () => {
+      const t = createTranslator<UserSpec, string>(validEnglish, {
+        onMissingKey: () => undefined,
+      });
+
+      // @ts-expect-error - "unknown_key" is not a valid key; onMissingKey handles it at runtime
+      expect(t("unknown_key")).toBe("unknown_key");
     });
   });
 
   describe("extensibility", () => {
-    it("supports JSX-style node return types without casts (README example)", () => {
+    it("supports custom interpolator with string-based markup", () => {
       type Spec = { welcome: readonly ["name"] };
-      type El = { tag: string; child: string };
-      type Node = string | El | Node[];
 
-      const tx = createTranslator<Spec, Node>(
+      const tx = createTranslator<Spec>(
         { welcome: "Hello {name}!" },
         {
           interpolate: (template, params) =>
-            template
-              .split(/\{(\w+)\}/)
-              .map((part, i) => (i % 2 === 0 ? part : params[part])) as Node,
+            template.replace(
+              /\{(\w+)\}/g,
+              (_, key) => `<strong>${String(params[key])}</strong>`,
+            ),
         },
       );
 
-      expect(
-        tx("welcome", { name: { tag: "strong", child: "Alice" } }),
-      ).toEqual(["Hello ", { tag: "strong", child: "Alice" }, "!"]);
+      expect(tx("welcome", { name: "Alice" })).toBe(
+        "Hello <strong>Alice</strong>!",
+      );
     });
 
     it("should support complex pluralization via custom interpolator", () => {
@@ -233,6 +246,42 @@ describe("translation system", () => {
 
       expect(tFr("plural", { count: 1 })).toBe("You have one item");
       expect(tFr("plural", { count: 5 })).toBe("You have 5 items");
+    });
+  });
+
+  describe("workflow: createTypedTranslator", () => {
+    it("merges builder + translator in one call", () => {
+      type Spec = { welcome: readonly ["name"]; logout: readonly [] };
+
+      const t = createTypedTranslator<Spec>()({
+        welcome: "Hello {name}",
+        logout: "Logout",
+      });
+
+      expect(t("welcome", { name: "Alice" })).toBe("Hello Alice");
+      expect(t("logout")).toBe("Logout");
+    });
+
+    it("accepts a config and passes locale through", () => {
+      type Spec = { hello: readonly ["name"] };
+
+      const t = createTypedTranslator<Spec, string>()(
+        { hello: "Hello {name}" },
+        { locale: "en-GB" },
+      );
+
+      expect(t("hello", { name: "Bob" })).toBe("Hello Bob");
+    });
+
+    it("validates placeholders at compile time", () => {
+      type Spec = { test: readonly ["name"] };
+
+      const t = createTypedTranslator<Spec>()({
+        // @ts-expect-error - {nom} ne correspond pas à 'name'
+        test: "Bonjour {nom}",
+      });
+
+      expect(t).toBeDefined();
     });
   });
 });

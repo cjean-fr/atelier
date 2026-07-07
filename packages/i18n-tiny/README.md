@@ -4,111 +4,124 @@
 [![npm version](https://img.shields.io/npm/v/@cjean-fr/i18n-tiny)](https://www.npmjs.com/package/@cjean-fr/i18n-tiny)
 [![gzip size](https://img.badgesize.io/https://unpkg.com/@cjean-fr/i18n-tiny/dist/index.js?compression=gzip&label=gzip)](https://unpkg.com/@cjean-fr/i18n-tiny/dist/index.js)
 
-**Zero-dependency, type-safe, minimalist internationalization library.**
+**Zero-dependency, type-safe, minimalist internationalization for TypeScript.**
 
-Provides a simple way to manage translations with **strict TypeScript inference**, ensuring you never miss a translation key or a required parameter.
+Define your translation contract once. Get autocomplete for keys and a compile-time error when a placeholder is misspelled.
 
-## Features
+```typescript
+import { createTypedTranslator } from "@cjean-fr/i18n-tiny";
 
-- 📦 **Tiny**: Minimal footprint, zero external dependencies.
-- 🔒 **Type-Safe**: Autocompletion for keys and validation for required parameters.
-- 🚀 **Fast**: Simple string interpolation.
-- 🛠 **Flexible**: "Define Spec First" approach.
-- 🤖 **AI-Friendly**: Built-in [skill](./skills/i18n-tiny/SKILL.md) for agentic adoption.
+type AppSpec = {
+  welcome: readonly ["name"];
+  logout: readonly [];
+};
+
+const t = createTypedTranslator<AppSpec>()({
+  welcome: "Welcome back, {name}!",
+  logout: "Log out",
+}, { locale: "en" });
+
+t("welcome", { name: "Alice" }); // "Welcome back, Alice!"
+t("logout");                     // "Log out"
+
+// ❌ Typo in placeholder → TypeScript error at compile time
+// const t2 = createTypedTranslator<AppSpec>()({
+//   welcome: "Bienvenue {nom} !", // Error: Type '"nom"' is not assignable to '"name"'
+//   logout: "Déconnexion",
+// });
+```
 
 ## Installation
 
 ```bash
-bun add @cjean-fr/i18n-tiny
-# or
 npm install @cjean-fr/i18n-tiny
+# or
+bun add @cjean-fr/i18n-tiny
 ```
+
+## Features
+
+- **Zero-dependency**: ~350 bytes gzip — see badge above.
+- **Type-safe**: Autocomplete keys, validate every `{placeholder}` at compile time.
+- **Spec-First**: Define your translation contract once. Guarantee every locale implements it.
 
 ## Usage
 
-### 1. Define your Translation Specification
+Pick the method that fits your workflow:
 
-Define the structure of your translations (Keys -> List of required params). It's recommended to define a `type` with `readonly` arrays.
+| Method | Best for |
+|---|---|
+| `createTypedTranslator` | Single locale, translations co-located. Catches typos in one shot. |
+| `createTranslator` | Multi-locale. Separate files per language, cross-validated against the same spec. |
+| `InferSpec` | Prototyping / migrating existing JSON. Derives the spec automatically. |
+
+### Spec-First with `createTypedTranslator`
+
+Define the spec as a type. Pass translations inline — TypeScript validates every `{placeholder}` against it.
 
 ```typescript
-import {
-  createTranslator,
-  createTranslationBuilder,
-} from "@cjean-fr/i18n-tiny";
+import { createTypedTranslator } from "@cjean-fr/i18n-tiny";
 
-export type AppTranslationSpec = {
-  welcome: readonly ["name"]; // Requires 'name'
-  notifications: readonly ["count"]; // Requires 'count'
-  logout: readonly []; // No parameters
-  "user-profile": readonly ["id"]; // Supports dashes in keys
+type AppTranslationSpec = {
+  welcome: readonly ["name"];
+  notifications: readonly ["count"];
+  logout: readonly [];
+  "user-profile": readonly ["id"];
 };
-```
 
-### 2. Implement Languages
-
-Create a domain-specific builder with `createTranslationBuilder`, then use it to enforce keys AND inline placeholders. This is the **most bulletproof** way to catch typos like `{nom}` instead of `{name}` at compile time.
-
-```typescript
-const defineAppLocale = createTranslationBuilder<AppTranslationSpec>();
-
-export const en = defineAppLocale({
+const t = createTypedTranslator<AppTranslationSpec>()({
   welcome: "Welcome back, {name}!",
   notifications: "You have {count} new messages.",
   logout: "Log out",
   "user-profile": "User profile #{id}",
-});
+}, { locale: "en" });
 
-// A typo in a placeholder will trigger a TypeScript error!
-// export const fr = defineAppLocale({
-//   welcome: "Bienvenue {nom} !", // ❌ Error: Type '"Bienvenue {nom} !"' is not assignable...
-//   ...
-// });
+t("welcome", { name: "Alice" }); // "Welcome back, Alice!"
+t("logout");                     // "Log out"
 ```
 
-### 3. Create the Translator
+### Multi-Locale with `createTranslator`
+
+Keep translations in separate files. Validate each locale against the same spec with `satisfies ValidTranslations`.
 
 ```typescript
-const t = createTranslator<AppTranslationSpec>(en);
+import { createTranslator, type ValidTranslations } from "@cjean-fr/i18n-tiny";
 
-// ✅ Correct usage
-console.log(t("welcome", { name: "Alice" })); // "Welcome back, Alice!"
-console.log(t("logout")); // "Log out"
+const en = {
+  welcome: "Welcome back, {name}!",
+  notifications: "You have {count} new messages.",
+  logout: "Log out",
+  "user-profile": "User profile #{id}",
+} satisfies ValidTranslations<AppTranslationSpec>;
+
+const t = createTranslator<AppTranslationSpec>(en);
 ```
 
-### Alternative: Auto-Infer The Specification
+### Prototyping with `InferSpec`
 
-If you prefer to write your translations first, you can use `InferSpec` to automatically generate the specification from a base language.
+Derive the spec automatically from your source translation. Great for rapid prototyping or migrating existing JSON. Promote to an explicit `type Spec` once stable.
 
 ```typescript
 import {
   type InferSpec,
-  createTranslationBuilder,
-  createTranslator,
+  createTypedTranslator,
 } from "@cjean-fr/i18n-tiny";
 
-// 1. Define base language (must use `as const`)
 const baseEn = {
   welcome: "Welcome {name}",
   logout: "Log out",
 } as const;
 
-// 2. Infer the Spec automatically
 type AppSpec = InferSpec<typeof baseEn>;
 
-// 3. Create a domain builder and keep other languages strictly typed
-const defineAppLocale = createTranslationBuilder<AppSpec>();
-
-const fr = defineAppLocale({
-  welcome: "Bienvenue {name}",
-  logout: "Se déconnecter",
-});
-
-const t = createTranslator<AppSpec>(baseEn);
+const t = createTypedTranslator<AppSpec>()(baseEn);
 ```
+
+> **Note**: `InferSpec` validates placeholders against the inferred spec but cannot catch a missing placeholder in the source language itself. The explicit Spec-First approach is safer for production.
 
 ### Interpolation
 
-The library uses a regex-based interpolation. Supported placeholders: `{variable}`, `{user_name}`, `{my-variable}`.
+Simple string replacement for `{variable}`, `{user_name}`, `{my-variable}` placeholders.
 
 ```typescript
 import { interpolate } from "@cjean-fr/i18n-tiny";
@@ -116,11 +129,11 @@ import { interpolate } from "@cjean-fr/i18n-tiny";
 interpolate("Hello {name}", { name: "Bob" }); // "Hello Bob"
 ```
 
-> ⚠️ The default interpolator **only** replaces simple `{name}` placeholders. Richer ICU constructs such as `{count, plural, ...}` are **passed through unchanged** — wire up a [custom interpolator](#advanced-custom-interpolator-icu-etc) to handle them. A missing parameter leaves its `{placeholder}` in place.
+## Advanced
 
-## Advanced: Custom Result Types (JSX, etc.)
+### Custom Result Types (JSX, etc.)
 
-By default, the translator returns a `string`. Pass the return type as the second type argument to `createTranslator` to integrate with UI libraries like React — you then also accept that type as a parameter. Supply an `interpolate` that knows how to weave the nodes together (the default one stringifies, which would turn a JSX element into `"[object Object]"`).
+Pass a generic return type and supply a custom `interpolate` function that returns nodes instead of strings.
 
 ```tsx
 import { createTranslator } from "@cjean-fr/i18n-tiny";
@@ -128,7 +141,6 @@ import type { ReactNode } from "react";
 
 type Spec = { welcome: readonly ["name"] };
 
-// Return ReactNode, and accept ReactNode params — no casts needed.
 const tx = createTranslator<Spec, ReactNode>(
   { welcome: "Hello {name}!" },
   {
@@ -139,13 +151,12 @@ const tx = createTranslator<Spec, ReactNode>(
   },
 );
 
-// Now you can pass JSX elements as parameters!
 const element = tx("welcome", { name: <strong>Alice</strong> });
 ```
 
-## Advanced: Custom Interpolator (ICU, etc.)
+### Custom Interpolator (ICU, etc.)
 
-By default, the library uses simple regex string replacement, which **does not understand ICU syntax** — `{count, plural, ...}` would be emitted verbatim. To get plurals, gender, etc., plug in a real interpolator like **ICU MessageFormat** by passing an `interpolate` function in the config. The types accept ICU placeholders, so this wiring is required, not optional, when you use them.
+The default interpolator does not understand ICU syntax. Pass your own `interpolate` function to handle it.
 
 ```typescript
 import { createTranslator } from "@cjean-fr/i18n-tiny";
@@ -155,9 +166,7 @@ const translations = {
   cart: "{count, plural, =0 {No items} one {1 item} other {{count} items}} in your cart.",
 } as const;
 
-type Spec = {
-  cart: readonly ["count"];
-};
+type Spec = { cart: readonly ["count"] };
 
 const t = createTranslator<Spec>(translations, {
   locale: "en-US",
@@ -166,32 +175,23 @@ const t = createTranslator<Spec>(translations, {
   },
 });
 
-console.log(t("cart", { count: 1 })); // "1 item in your cart."
+t("cart", { count: 1 }); // "1 item in your cart."
 ```
+
+## Gotchas
+
+- **ICU is not built in.** The default interpolator handles `{name}` only. ICU constructs like `{count, plural, ...}` pass through unchanged — wire up a [custom interpolator](#custom-interpolator-icu-etc).
+- **Missing parameters** leave their `{placeholder}` in the output rather than throwing.
 
 ## AI-Friendly
 
-`@cjean-fr/i18n-tiny` is designed with AI-first development in mind. The strict Type-safety and **Spec-First** approach make it easy for AI agents to write correct translations.
-
-It includes a dedicated **Skill** that agents can consume to learn how to use the library optimally.
-
-```bash
-npx skills add cjean-fr/atelier --skill i18n-tiny
-```
+Includes a [skill](./skills/i18n-tiny/SKILL.md) for agentic adoption.
+`npx skills add cjean-fr/atelier --skill i18n-tiny`
 
 ## Security
 
-⚠️ **This library does NOT sanitize inputs.**
-
-The `interpolate` function performs simple string replacement. This is deliberate: the output is type-agnostic (plain `string` or a UI node), so escaping belongs to whoever renders it, not here.
-
-- ✅ **With [`@cjean-fr/jsx-string`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-string)**, translator output passed as a JSX child is HTML-escaped automatically — the safe default. No extra work.
-- ⚠️ **Do not** feed the output to `innerHTML` / `dangerouslySetInnerHTML` / `raw()` when parameters contain user-generated content — those bypass escaping. Escape it yourself first (or pass it through jsx-string).
+This library does not sanitize inputs. The interpolator performs string replacement only — escaping belongs to the render layer.
 
 ## License
 
 MIT © Christophe Jean
-
----
-
-<p align="center">Made with ❤️ in Paris</p>
