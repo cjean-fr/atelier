@@ -1,5 +1,11 @@
 # jsonresume-theme-cjean
 
+## 1.3.5
+
+### Changed
+
+- **Internal**: Replaced `createTranslationBuilder` by `satisfies ValidTranslations` (following `@cjean-fr/i18n-tiny` v2.0.0 API changes).
+
 ## 1.3.4
 
 ### New features

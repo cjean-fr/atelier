@@ -16,7 +16,7 @@ export default function Education({ education, certificates }: EducationProps) {
   if (!hasEducation && !hasCertificates) return null;
 
   return (
-    <Section name={t("education")}>
+    <Section sectionId="education" name={t("education")}>
       <ol className="timeline">
         {education?.map((edu, index) => (
           <li className="timeline-item" key={`edu-${index}`}>

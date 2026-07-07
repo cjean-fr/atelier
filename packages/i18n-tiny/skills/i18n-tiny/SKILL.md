@@ -13,7 +13,7 @@ The `@cjean-fr/i18n-tiny` library relies heavily on TypeScript's type system to 
 
 1.  **Specification (`TranslationSpec`)**: A type or object where keys map to an array of the exact parameter names they require.
 2.  **Translations**: An object containing the localized strings. Must satisfy the spec (correct keys). If a locale object is missing a required key or contains a key not declared in the spec, stop and report the exact key names instead of inventing a fallback value. Do not generate a partial translation.
-3.  **Translator (`createTranslator`)**: A strongly-typed function that takes a translation key and enforces passing of its required parameters.
+3.  **Translator (`createTranslator` / `createTypedTranslator`)**: A strongly-typed function that takes a translation key and enforces passing of its required parameters.
 
 ## Workflows
 
@@ -34,46 +34,45 @@ export type AppTranslationSpec = {
 };
 ```
 
-#### 2. Implement Languages
+#### 2. Create the Translator
 
-Create a domain-specific builder with `createTranslationBuilder`, then use it to enforce keys AND inline placeholders. It catches mismatches immediately.
+Use `createTypedTranslator` to enforce keys AND inline placeholders in a single call. It catches typos like `{nom}` instead of `{name}` at compile time.
 
 ```typescript
-// locales/en.ts
+// i18n.ts
+import { createTypedTranslator } from "@cjean-fr/i18n-tiny";
 import type { AppTranslationSpec } from "../types/i18n";
-import { createTranslationBuilder } from "@cjean-fr/i18n-tiny";
 
-const defineAppLocale = createTranslationBuilder<AppTranslationSpec>();
-
-export const en = defineAppLocale({
+export const t = createTypedTranslator<AppTranslationSpec>()({
   welcome: "Welcome back, {name}!",
   "items-count": "You have {count} items.",
   logout: "Sign Out",
 });
 
-export const fr = defineAppLocale({
-  welcome: "Bienvenue, {name} !",
-  "items-count": "Vous avez {count} articles.",
-  logout: "Se déconnecter",
-  // ⚠️ If you typed "Bienvenue, {nom} !", TypeScript would throw an error
-  // because `{nom}` does not match the `["name"]` spec!
-});
-```
-
-#### 3. Create the Translator
-
-Use `createTranslator<Spec>(translations)` to create your `t` function.
-
-```typescript
-import { en } from "./locales/en";
-import type { AppTranslationSpec } from "./types/i18n";
-import { createTranslator } from "@cjean-fr/i18n-tiny";
-
-const t = createTranslator<AppTranslationSpec>(en);
-
 // Type-safe usage:
 t("welcome", { name: "Alice" }); // "Welcome back, Alice!"
 t("logout"); // "Sign Out"
+
+// ⚠️ If you typed "Bienvenue, {nom} !", TypeScript would throw an error
+// because `{nom}` does not match the `["name"]` spec!
+```
+
+#### 3. Multi-locale with Separate Translation Objects
+
+If you prefer to keep translations in separate files (one per locale), use `createTranslator`:
+
+```typescript
+// locales/en.ts
+import { createTranslator, type ValidTranslations } from "@cjean-fr/i18n-tiny";
+import type { AppTranslationSpec } from "../types/i18n";
+
+const en = {
+  welcome: "Welcome back, {name}!",
+  "items-count": "You have {count} items.",
+  logout: "Sign Out",
+} satisfies ValidTranslations<AppTranslationSpec>;
+
+export const t = createTranslator<AppTranslationSpec>(en);
 ```
 
 ### Workflow B: Translation-First (Auto-inference)
@@ -81,11 +80,7 @@ t("logout"); // "Sign Out"
 If you prefer writing your base localization first and automatically inferring the Spec, use `InferSpec`:
 
 ```typescript
-import {
-  createTranslator,
-  type InferSpec,
-  createTranslationBuilder,
-} from "@cjean-fr/i18n-tiny";
+import { createTypedTranslator, type InferSpec } from "@cjean-fr/i18n-tiny";
 
 // 1. Define base language with `as const`
 export const enBase = {
@@ -96,16 +91,8 @@ export const enBase = {
 // 2. Automatically infer the Specification!
 export type AppSpec = InferSpec<typeof enBase>;
 
-// 3. Create a domain builder and keep other languages strictly typed
-const defineAppLocale = createTranslationBuilder<AppSpec>();
-
-export const fr = defineAppLocale({
-  welcome: "Bienvenue {name}",
-  logout: "Se déconnecter",
-});
-
-// 4. Create your translator
-const t = createTranslator<AppSpec>(enBase);
+// 3. Create the translator directly — placeholders are validated
+export const t = createTypedTranslator<AppSpec>()(enBase);
 ```
 
 ## Advanced Usage
@@ -151,6 +138,6 @@ t("items-count", { count: 1 }); // "1 item"
 ## Guidelines for AI Agents
 
 - **Types Over Constants**: Defining the spec as a `type Spec = { key: readonly ["param"] }` is currently preferred over creating a runtime object for the spec.
-- **Under Spec-First, use `createTranslationBuilder<Spec>()`** to create a domain builder, then call it directly (e.g. `defineLocale({...})`). This is critical because `satisfies ValidTranslations<Spec>` only validates keys uniformly across languages, while `createTranslationBuilder` natively catches inline placeholder typo errors (`{nom}` vs expected `{name}`) without double invocation.
+- **Under Spec-First, use `createTypedTranslator<Spec>()`** to create a translator directly that validates keys and placeholders at compile time. This catches inline placeholder typo errors (`{nom}` vs expected `{name}`) — `satisfies ValidTranslations<Spec>` only validates keys, not placeholders.
 - **Adding Keys**: If the project uses a `TranslationSpec` type, you **must** add any new key directly to the spec type before adding it to localized objects.
 - **Interpolators**: `@cjean-fr/i18n-tiny` default string interpolation is basic (`{variable}`). If any translation string contains ICU syntax such as `{count, plural,...}` or `{gender, select,...}`, create the translator with a custom `interpolate` function using `intl-messageformat`, and install `intl-messageformat` if it is not already present in the project. If ICU syntax is present but no compatible interpolator is configured, fail safely and explain that ICU formatting cannot be verified.

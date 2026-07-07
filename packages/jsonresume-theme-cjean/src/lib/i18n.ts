@@ -1,12 +1,9 @@
 import {
   createTranslator,
-  createTranslationBuilder,
   type ValidTranslations,
   type Translator,
 } from "@cjean-fr/i18n-tiny";
 import { raw, type JSXNode } from "@cjean-fr/jsx-string";
-
-const defineThemeLocale = createTranslationBuilder<ThemeSpec>();
 
 export type ThemeSpec = {
   work_experience: readonly [];
@@ -25,7 +22,7 @@ export type ThemeSpec = {
   skip_to_content: readonly [];
 };
 
-const en = defineThemeLocale({
+const en = {
   work_experience: "Work Experience",
   projects: "Projects",
   education: "Education",
@@ -40,9 +37,9 @@ const en = defineThemeLocale({
   profile_page_name: "{name}'s resume - {label}",
   theme_credit: "Theme made with love by {link}",
   skip_to_content: "Skip to main content",
-});
+} satisfies ValidTranslations<ThemeSpec>;
 
-const fr = defineThemeLocale({
+const fr = {
   work_experience: "Expériences professionnelles",
   projects: "Projets",
   education: "Formations",
@@ -57,7 +54,7 @@ const fr = defineThemeLocale({
   profile_page_name: "CV de {name} - {label}",
   theme_credit: "Thème proposé avec amour par {link}",
   skip_to_content: "Aller au contenu principal",
-});
+} satisfies ValidTranslations<ThemeSpec>;
 
 const resources = {
   en,

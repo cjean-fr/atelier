@@ -2,6 +2,9 @@ import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 
 function getProfilePageJsonLd(resume: Resume) {
+  const currentJob = resume.work.find((job) => !job.endDate);
+  const pastJobs = resume.work.filter((job) => job.endDate);
+
   return {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
@@ -30,23 +33,35 @@ function getProfilePageJsonLd(resume: Resume) {
         postalCode: resume.basics.location?.postalCode,
         addressCountry: resume.basics.location?.countryCode,
       },
-      alumniOf: resume.education.map((edu) => ({
-        "@type": "EducationalOrganization",
-        name: edu.institution,
-        url: edu.url,
-      })),
-      worksFor: resume.work.map((job) => {
-        return {
+      alumniOf: [
+        ...resume.education.map((edu) => ({
+          "@type": "EducationalOrganization",
+          name: edu.institution,
+          url: edu.url,
+        })),
+        ...pastJobs.map((job) => ({
           "@type": "Organization",
           name: job.name,
           location: job.location,
+          url: job.url,
           member: {
             "@type": "OrganizationRole",
             roleName: job.position,
           },
-          url: job.url,
-        };
-      }),
+        })),
+      ],
+      worksFor: currentJob
+        ? {
+            "@type": "Organization",
+            name: currentJob.name,
+            location: currentJob.location,
+            url: currentJob.url,
+            member: {
+              "@type": "OrganizationRole",
+              roleName: currentJob.position,
+            },
+          }
+        : undefined,
       sameAs: resume.basics.profiles?.map((p) => p.url).filter(Boolean),
       knowsAbout: resume.skills.flatMap((s) => s.keywords || []),
     },

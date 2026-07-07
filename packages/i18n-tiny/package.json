@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/i18n-tiny",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Zero-dependency, type-safe, minimalist internationalization library.",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -40,14 +40,16 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bunup --minify",
+    "build": "pkgroll --minify",
     "check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "test": "bun test"
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "ci": "bun run check && bun run build && bun run test:coverage"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "bunup": "catalog:",
+    "pkgroll": "catalog:",
     "typescript": "catalog:"
   },
   "files": [
