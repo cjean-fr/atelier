@@ -83,5 +83,5 @@ export function createTypedTranslator<
     },
     config?: RequiresInterpolate<T>,
   ): Translator<S, T> =>
-    createTranslator(translations, config) as unknown as Translator<S, T>;
+    createTranslator<S, T, V>(translations, config);
 }

@@ -40,8 +40,8 @@ Use `createTypedTranslator` to enforce keys AND inline placeholders in a single 
 
 ```typescript
 // i18n.ts
-import { createTypedTranslator } from "@cjean-fr/i18n-tiny";
 import type { AppTranslationSpec } from "../types/i18n";
+import { createTypedTranslator } from "@cjean-fr/i18n-tiny";
 
 export const t = createTypedTranslator<AppTranslationSpec>()({
   welcome: "Welcome back, {name}!",
@@ -63,8 +63,8 @@ If you prefer to keep translations in separate files (one per locale), use `crea
 
 ```typescript
 // locales/en.ts
-import { createTranslator, type ValidTranslations } from "@cjean-fr/i18n-tiny";
 import type { AppTranslationSpec } from "../types/i18n";
+import { createTranslator, type ValidTranslations } from "@cjean-fr/i18n-tiny";
 
 const en = {
   welcome: "Welcome back, {name}!",
