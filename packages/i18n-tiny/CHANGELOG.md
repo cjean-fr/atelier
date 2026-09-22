@@ -1,5 +1,17 @@
 # @cjean-fr/i18n-tiny
 
+## Unreleased
+
+### Fixed
+
+- **`ExtractParams` is now ICU-aware**: a brace-depth walk replaces naive
+  `{…}` pairing. `{count, plural, one {one item} other {# items}}` extracts
+  `count` only — branch text (`{# items}`, single-word selectors) and `#` are
+  never treated as placeholders, while `{name}` nested inside a branch body
+  counts. Name termination (whitespace, `#`) now matches the runtime
+  interpolator. This makes `CheckParams` validation meaningful for ICU
+  messages through `createTypedTranslator`.
+
 ## 2.0.0
 
 ### Added
@@ -10,7 +22,7 @@
 - **Unicode support in `interpolate()`**: Regex now uses `\p{L}\p{N}` with the
   `u` flag, supporting accented parameter names like `{prénom}` and `{nombre}`.
 - **Locale propagation for Date formatting**: `interpolate()` accepts an
-   optional `locale` parameter, and `createTranslator` / `createTypedTranslator`
+  optional `locale` parameter, and `createTranslator` / `createTypedTranslator`
   pass `config.locale` through — `Date` values are now formatted in the correct
   locale instead of the OS default.
 - **Edge case tests for `interpolate()`**: Covers `null`, `undefined`, `0`,
@@ -21,7 +33,7 @@
 
 - **`createTranslator` generic `T` constrained to `string`**: The return type
   parameter `T` now requires `T extends string`, eliminating unsafe `as unknown
-  as T` casts in the default interpolation path. Custom return types must extend
+as T` casts in the default interpolation path. Custom return types must extend
   `string` (use a branded string type). Non-string return types still work via
   `config.interpolate`.
 - **`KeyParams` type narrowed**: Removed `boolean` from accepted placeholder
@@ -43,8 +55,8 @@
 ### Removed
 
 - **`createTranslationBuilder` removed**: Replaced by `createTypedTranslator`.
-   Migration: replace `const b = createTranslationBuilder<Spec>(); b({...})` with
-   `createTypedTranslator<Spec>()({...})`.
+  Migration: replace `const b = createTranslationBuilder<Spec>(); b({...})` with
+  `createTypedTranslator<Spec>()({...})`.
 
 ## 1.3.0
 

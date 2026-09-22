@@ -16,13 +16,16 @@ type AppSpec = {
   logout: readonly [];
 };
 
-const t = createTypedTranslator<AppSpec>()({
-  welcome: "Welcome back, {name}!",
-  logout: "Log out",
-}, { locale: "en" });
+const t = createTypedTranslator<AppSpec>()(
+  {
+    welcome: "Welcome back, {name}!",
+    logout: "Log out",
+  },
+  { locale: "en" },
+);
 
 t("welcome", { name: "Alice" }); // "Welcome back, Alice!"
-t("logout");                     // "Log out"
+t("logout"); // "Log out"
 
 // ❌ Typo in placeholder → TypeScript error at compile time
 // const t2 = createTypedTranslator<AppSpec>()({
@@ -44,16 +47,17 @@ bun add @cjean-fr/i18n-tiny
 - **Zero-dependency**: ~350 bytes gzip — see badge above.
 - **Type-safe**: Autocomplete keys, validate every `{placeholder}` at compile time.
 - **Spec-First**: Define your translation contract once. Guarantee every locale implements it.
+- **ICU-aware validation**: `{count, plural, …}` messages check their argument against the Spec — branch text and `#` are not mistaken for placeholders.
 
 ## Usage
 
 Pick the method that fits your workflow:
 
-| Method | Best for |
-|---|---|
-| `createTypedTranslator` | Single locale, translations co-located. Catches typos in one shot. |
-| `createTranslator` | Multi-locale. Separate files per language, cross-validated against the same spec. |
-| `InferSpec` | Prototyping / migrating existing JSON. Derives the spec automatically. |
+| Method                  | Best for                                                                          |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `createTypedTranslator` | Single locale, translations co-located. Catches typos in one shot.                |
+| `createTranslator`      | Multi-locale. Separate files per language, cross-validated against the same spec. |
+| `InferSpec`             | Prototyping / migrating existing JSON. Derives the spec automatically.            |
 
 ### Spec-First with `createTypedTranslator`
 
@@ -69,15 +73,18 @@ type AppTranslationSpec = {
   "user-profile": readonly ["id"];
 };
 
-const t = createTypedTranslator<AppTranslationSpec>()({
-  welcome: "Welcome back, {name}!",
-  notifications: "You have {count} new messages.",
-  logout: "Log out",
-  "user-profile": "User profile #{id}",
-}, { locale: "en" });
+const t = createTypedTranslator<AppTranslationSpec>()(
+  {
+    welcome: "Welcome back, {name}!",
+    notifications: "You have {count} new messages.",
+    logout: "Log out",
+    "user-profile": "User profile #{id}",
+  },
+  { locale: "en" },
+);
 
 t("welcome", { name: "Alice" }); // "Welcome back, Alice!"
-t("logout");                     // "Log out"
+t("logout"); // "Log out"
 ```
 
 ### Multi-Locale with `createTranslator`
@@ -102,10 +109,7 @@ const t = createTranslator<AppTranslationSpec>(en);
 Derive the spec automatically from your source translation. Great for rapid prototyping or migrating existing JSON. Promote to an explicit `type Spec` once stable.
 
 ```typescript
-import {
-  type InferSpec,
-  createTypedTranslator,
-} from "@cjean-fr/i18n-tiny";
+import { type InferSpec, createTypedTranslator } from "@cjean-fr/i18n-tiny";
 
 const baseEn = {
   welcome: "Welcome {name}",

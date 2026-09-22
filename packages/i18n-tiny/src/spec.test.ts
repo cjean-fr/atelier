@@ -72,6 +72,80 @@ describe("ExtractParams recursion (static verification only)", () => {
   });
 });
 
+describe("ICU messages (depth-aware extraction)", () => {
+  it("extracts only the argument name from a plural message", () => {
+    type Params =
+      ExtractParams<"You have {count, plural, one {one item} other {# items}}">;
+    const param: Params = "count";
+
+    // @ts-expect-error - branch text is not a param
+    const branchText: Params = "# items";
+
+    expect(param).toBe("count");
+  });
+
+  it("ignores single-word branch literals", () => {
+    type Params =
+      ExtractParams<"You have {count, plural, one {item} other {items}}">;
+    const param: Params = "count";
+
+    // @ts-expect-error - {items} as a branch literal is not a param
+    const branchWord: Params = "items";
+
+    expect(param).toBe("count");
+  });
+
+  it("collects real params nested inside branches", () => {
+    type Params =
+      ExtractParams<"{count, plural, one {{name} got one} other {{name} got #}}">;
+    const count: "count" extends Params ? "count" : never = "count";
+    const name: "name" extends Params ? "name" : never = "name";
+    const exact: Params extends "count" | "name"
+      ? "count" | "name" extends Params
+        ? true
+        : false
+      : false = true;
+
+    expect(count).toBe("count");
+    expect(name).toBe("name");
+    expect(exact).toBe(true);
+  });
+
+  it("accepts ICU plural through createTypedTranslator", () => {
+    type Spec = { plural: readonly ["count"] };
+
+    const t = createTypedTranslator<Spec>()({
+      plural: "You have {count, plural, one {one item} other {# items}}",
+    });
+
+    expect(t("plural", { count: 5 })).toBe(
+      "You have {count, plural, one {one item} other {# items}}",
+    );
+  });
+
+  it("accepts an accented French plural through createTypedTranslator", () => {
+    type Spec = { factures: readonly ["count"] };
+
+    const t = createTypedTranslator<Spec>()({
+      factures:
+        "Vous avez {count, plural,=0 {aucune facture} one {# facture} other {# factures}}",
+    });
+
+    expect(t("factures", { count: 2 })).toContain("{count, plural");
+  });
+
+  it("rejects a wrong placeholder inside an ICU message", () => {
+    type Spec = { plural: readonly ["count"] };
+
+    const t = createTypedTranslator<Spec>()({
+      // @ts-expect-error - {nom} ne correspond pas à 'count'
+      plural: "Tu as {nom, plural, un {un élément} autre {# éléments}}",
+    });
+
+    expect(t).toBeDefined();
+  });
+});
+
 describe("workflow: InferSpec", () => {
   it("infers and validates a secondary locale via InferSpec", () => {
     const billingEn = {
@@ -96,6 +170,53 @@ describe("workflow: InferSpec", () => {
     const t = createTypedTranslator<Spec>()({
       // @ts-expect-error - {nom} ne correspond pas à 'name'
       test: "Bonjour {nom}",
+    });
+
+    expect(t).toBeDefined();
+  });
+});
+
+describe("createTypedTranslator contract validation", () => {
+  type Spec = {
+    welcome: readonly ["name", "company"];
+    logout: readonly [];
+  };
+
+  it("rejects a missing translation key", () => {
+    // @ts-expect-error - logout is required by Spec
+    const t = createTypedTranslator<Spec>()({
+      welcome: "Welcome {name} to {company}",
+    });
+
+    expect(t).toBeDefined();
+  });
+
+  it("rejects a missing placeholder", () => {
+    const t = createTypedTranslator<Spec>()({
+      // @ts-expect-error - company is required by Spec
+      welcome: "Welcome {name}",
+      logout: "Log out",
+    });
+
+    expect(t).toBeDefined();
+  });
+
+  it("rejects an unexpected placeholder", () => {
+    const t = createTypedTranslator<Spec>()({
+      // @ts-expect-error - role is not declared by Spec
+      welcome: "Welcome {name} to {company} as {role}",
+      logout: "Log out",
+    });
+
+    expect(t).toBeDefined();
+  });
+
+  it("rejects a missing ICU argument", () => {
+    type IcuSpec = { summary: readonly ["count", "name"] };
+
+    const t = createTypedTranslator<IcuSpec>()({
+      // @ts-expect-error - name is required by IcuSpec
+      summary: "{count, plural, one {one item} other {# items}}",
     });
 
     expect(t).toBeDefined();
