@@ -1,12 +1,13 @@
-import type { Plugin, ResolvedConfig } from "vite";
 import precompileTransform, {
   type PluginConfig,
   type RenderAttr,
 } from "./transformer.js";
 import { RUNTIME_SOURCE } from "@cjean-fr/precompile-core";
+import type { Plugin, ResolvedConfig } from "vite";
 
 export type { PluginConfig };
 
+/** @deprecated Use the Vite adapter from @vincle/precompile/vite instead. */
 export default function vitePrecompile(config?: PluginConfig): Plugin {
   let rs: string | null = null;
   let renderAttr: RenderAttr | null = null;
@@ -30,9 +31,12 @@ export default function vitePrecompile(config?: PluginConfig): Plugin {
       if (!esb) {
         warn?.(
           `esbuild.jsxImportSource is not set — non-precompiled JSX (components) will use ` +
-          `Vite's default ("react") while templates use "${rs}". Set esbuild.jsxImportSource.`,
+            `Vite's default ("react") while templates use "${rs}". Set esbuild.jsxImportSource.`,
         );
-      } else if (config?.runtimeSource && config.runtimeSource !== esb + "/jsx-runtime") {
+      } else if (
+        config?.runtimeSource &&
+        config.runtimeSource !== esb + "/jsx-runtime"
+      ) {
         warn?.(
           `runtimeSource ("${config.runtimeSource}") and esbuild.jsxImportSource ("${esb}") disagree — mixed runtimes.`,
         );
@@ -57,9 +61,7 @@ export default function vitePrecompile(config?: PluginConfig): Plugin {
           );
         }
       } catch (err) {
-        this.error(
-          `secure mode: failed to load "${source}" (${String(err)})`,
-        );
+        this.error(`secure mode: failed to load "${source}" (${String(err)})`);
       }
     },
 

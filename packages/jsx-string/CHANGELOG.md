@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.1 — 2026-10-02
+
+- Deprecate this package in favor of `@vincle/core`. Existing APIs remain available for migration.
+
 ## 2.1.0
 
 ### Added

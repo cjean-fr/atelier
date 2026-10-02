@@ -104,6 +104,7 @@ function walkChildren(
   return false;
 }
 
+/** @deprecated Use the transform from @vincle/precompile instead. */
 export default function precompileTransform(
   code: string,
   id: string,

@@ -1,5 +1,7 @@
 # @cjean-fr/jsx-string
 
+> **Deprecated:** This package has been superseded by [`@vincle/core`](https://vincle.cjean.fr). Use Vincle for new projects and migrate existing imports and configuration.
+
 [![CI](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml/badge.svg)](https://github.com/cjean-fr/atelier/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@cjean-fr/jsx-string)](https://www.npmjs.com/package/@cjean-fr/jsx-string)
 [![gzip size](https://img.badgesize.io/https://unpkg.com/@cjean-fr/jsx-string/dist/index.js?compression=gzip&label=gzip)](https://unpkg.com/@cjean-fr/jsx-string/dist/index.js)
@@ -289,7 +291,7 @@ const safeHtml = DOMPurify.sanitize(userInput);
 ## Performance
 
 Benchmarks ported from [preact-render-to-string](https://github.com/preactjs/preact-render-to-string/tree/main/benchmarks).
-Source: [`packages/jsx-string-bench/src/bench.ts`](../jsx-string-bench/src/bench.ts).
+These historical measurements were collected before the benchmark app was removed from this repository.
 
 | Runtime       | Scenario           | jsx-string | preact-render-to-string@6 | react-dom@18 |
 | ------------- | ------------------ | ---------- | ------------------------- | ------------ |
@@ -306,7 +308,7 @@ _Ryzen 7 PRO 8840HS, median of 3 runs._
 - On Bun (JSC): **30-40% faster than Preact** across all scenarios.
 - Against React: **8-14× faster** regardless of tree shape (structural advantage — no virtual DOM).
 
-> Numbers vary by machine. Re-run locally: `bun run bench` in `packages/jsx-string-bench`.
+> Numbers vary by machine; these results are historical, not a benchmark of the current release.
 
 ---
 
@@ -372,13 +374,6 @@ _Ryzen 7 PRO 8840HS, median of 3 runs._
 | Client-side rendering/hydration              | Use React, Preact, or Solid |
 | React ecosystem (MUI, Radix, Tanstack Query) | Requires React runtime      |
 | Next.js App Router / RSC                     | Use Next.js built-in RSC    |
-
-### For Streaming/DOM Patching
-
-Use [`@cjean-fr/jsx-flow`](https://github.com/cjean-fr/atelier/tree/main/packages/jsx-flow):
-
-- Adds `<Defer>` (deferred + streaming fragments), `<Slot>`/`<Fill>`, `<ClientFetch>`
-- Adapters for Native DOM updates, Turbo Streams, HTMX, ESI, and the Web Platform
 
 ---
 

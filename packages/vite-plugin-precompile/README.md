@@ -1,5 +1,7 @@
 # @cjean-fr/vite-plugin-precompile
 
+> **Deprecated:** This package has been superseded by [`@vincle/precompile/vite`](https://github.com/cjean-fr/vincle/tree/main/packages/precompile). Use Vincle for new projects and migrate existing imports and configuration.
+
 Vite plugin that precompiles lowercase (native HTML) JSX elements into Deno-style `jsxTemplate` tagged template literals.
 
 Wraps a TypeScript transformer that precompiles lowercase (native HTML) JSX elements into Deno-style `jsxTemplate` tagged template literals. The transformer is also exposed as `@cjean-fr/vite-plugin-precompile/transformer` for programmatic use.
@@ -50,7 +52,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   esbuild: { jsxImportSource: "preact" },
   plugins: [
-    precompile(),  // auto-detected → "preact/jsx-runtime"
+    precompile(), // auto-detected → "preact/jsx-runtime"
     preact(),
   ],
 });
@@ -80,7 +82,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [
-    precompile(),  // auto-detected from tsconfig → "preact/jsx-runtime"
+    precompile(), // auto-detected from tsconfig → "preact/jsx-runtime"
     preact(),
   ],
 });
@@ -89,7 +91,7 @@ export default defineConfig({
 ### With any runtime (explicit)
 
 ```ts
-precompile({ runtimeSource: "custom/jsx-runtime" })
+precompile({ runtimeSource: "custom/jsx-runtime" });
 // explicit — overrides both jsxImportSource and default
 ```
 
@@ -99,14 +101,14 @@ precompile({ runtimeSource: "custom/jsx-runtime" })
 
 ```ts
 interface PluginConfig {
-  runtimeSource?: string;  // default: auto-detected from esbuild.jsxImportSource + "/jsx-runtime"
+  runtimeSource?: string; // default: auto-detected from esbuild.jsxImportSource + "/jsx-runtime"
 }
 ```
 
 ### Default export
 
 ```ts
-function vitePrecompile(config?: PluginConfig): Plugin
+function vitePrecompile(config?: PluginConfig): Plugin;
 ```
 
 Returns a Vite plugin with `enforce: "pre"` — runs before esbuild/Vite's own transforms.
@@ -115,7 +117,7 @@ Returns a Vite plugin with `enforce: "pre"` — runs before esbuild/Vite's own t
 
 ```ts
 interface PluginConfig {
-  runtimeSource?: string;  // default: "@cjean-fr/jsx-string/jsx-runtime"
+  runtimeSource?: string; // default: "@cjean-fr/jsx-string/jsx-runtime"
 }
 ```
 

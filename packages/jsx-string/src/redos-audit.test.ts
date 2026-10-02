@@ -8,7 +8,6 @@
  *   2. Behavioral contract — the regex matches/rejects expected inputs.
  *
  * If a regex is added, removed, or its pattern changed, this test catches it.
- * See apps/jsx-string-doc/docs-src/pages/safety/index.mdx for the full matrix.
  */
 import { describe, it, expect } from "bun:test";
 

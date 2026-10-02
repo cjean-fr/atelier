@@ -1,5 +1,7 @@
 # @cjean-fr/eslint-plugin-jsx-string
 
+> **Deprecated:** This package has been superseded by [`@vincle/eslint-plugin`](https://github.com/cjean-fr/vincle/tree/main/packages/eslint-plugin). Use Vincle for new projects and migrate existing imports and configuration.
+
 ESLint plugin for `@cjean-fr/jsx-string` to ensure compatibility with static rendering.
 
 ## Installation

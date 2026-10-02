@@ -28,6 +28,8 @@ export {
 /**
  * Render a JSX tree to an HTML string.
  *
+ * @deprecated Use renderToString from @vincle/core instead.
+ *
  * Always returns `Promise<string>` — even when the tree contains no async
  * work — because any component can return a Promise. Output is HTML-safe by
  * default (see the README "Security model" section for what is and isn't

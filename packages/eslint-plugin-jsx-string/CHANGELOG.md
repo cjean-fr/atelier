@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 2026-10-02
+
+- Deprecate this package in favor of `@vincle/eslint-plugin`. Existing APIs remain available for migration.
+
 ## 0.1.1
 
 ### Fixed

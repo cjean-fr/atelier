@@ -10,7 +10,6 @@ on:
         options:
           - eslint-plugin-jsx-string
           - jsx-string
-          - jsx-flow
           - jsx-vite
           - i18n-tiny
           - jsonresume-theme-cjean
