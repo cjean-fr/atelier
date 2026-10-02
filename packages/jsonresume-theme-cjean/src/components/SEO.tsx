@@ -1,5 +1,4 @@
 import type { Resume } from "../schema.js";
-import { getIcon } from "./Icons.js";
 
 export default async function SEO({ resume }: { resume: Resume }) {
   const { basics, meta } = resume;
@@ -59,20 +58,18 @@ export async function Base({
   robots?: string;
   favicon?: string;
 }) {
+  const faviconUrl =
+    favicon && /^[a-z0-9-]+:[a-z0-9-]+$/.test(favicon)
+      ? `https://api.iconify.design/${favicon}.svg`
+      : undefined;
+
   return (
     <>
       <title>{title}</title>
       {description && <meta name="description" content={description} />}
       <meta name="robots" content={robots || "index, follow"} />
       {canonical && <link rel="canonical" href={canonical} />}
-      {favicon && (
-        <link
-          rel="icon"
-          href={`data:image/svg+xml;base64,${btoa(
-            (await getIcon(favicon)).toString(),
-          )}`}
-        />
-      )}
+      {faviconUrl && <link rel="icon" href={faviconUrl} />}
     </>
   );
 }

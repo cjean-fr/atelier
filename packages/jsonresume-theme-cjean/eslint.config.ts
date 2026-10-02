@@ -1,6 +1,6 @@
-import jsxString from "@cjean-fr/eslint-plugin-jsx-string";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
+import vincle from "@vincle/eslint-plugin";
 
 export default [
   {
@@ -15,10 +15,10 @@ export default [
     },
     plugins: {
       "@typescript-eslint": tseslint,
-      "@cjean-fr/jsx-string": jsxString,
+      "@vincle": vincle,
     },
     rules: {
-      ...jsxString.configs.recommended.rules,
+      ...vincle.configs.recommended.rules,
     },
   },
 ];

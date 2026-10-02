@@ -1,8 +1,10 @@
 import Layout from "./components/Layout.js";
+import ResumeBody from "./components/ResumeBody.js";
 import { init } from "./lib/i18n.js";
 import { getLogoFromUrl, getPictureFromEmail } from "./lib/image.js";
+import { compileStyles } from "./lib/styles.js";
 import { ResumeSchema } from "./schema.js";
-import css from "./styles/tailwind.input.css?inline";
+import { raw, renderToString } from "@vincle/core";
 
 /**
  *
@@ -31,5 +33,8 @@ export async function render(resumeData: unknown): Promise<string> {
     resume.basics.image = await getPictureFromEmail(resume.basics.email);
   }
 
-  return (await (<Layout resume={resume} css={css} />)).toString();
+  const body = await renderToString(<ResumeBody resume={resume} />);
+  const css = await compileStyles(body);
+
+  return renderToString(<Layout resume={resume} css={css} body={raw(body)} />);
 }

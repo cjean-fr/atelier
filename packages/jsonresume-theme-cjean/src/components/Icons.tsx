@@ -1,4 +1,4 @@
-import { raw } from "@cjean-fr/jsx-string";
+import { raw } from "@vincle/core";
 
 type IconifyIconName = `${string}:${string}`;
 type IconifyAPIOptions = {

@@ -1,8 +1,8 @@
 import { t } from "../lib/i18n.js";
 import DateTime, { type DateTimeProps } from "./DateTime.js";
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import type { JSX } from "@vincle/core";
 
-interface PeriodProps extends HTMLAttributes {
+interface PeriodProps extends JSX.HTMLAttributes {
   startDate?: string | Date;
   endDate?: string | Date;
   format?: DateTimeProps["format"];

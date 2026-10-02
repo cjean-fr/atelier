@@ -10,7 +10,7 @@ import { generateWSRVUrl } from "./wsrv.js";
  */
 export async function getLogoFromUrl(
   url?: string,
-  size: number = 64,
+  size: number = 48,
 ): Promise<string | undefined> {
   if (!url) return undefined;
 

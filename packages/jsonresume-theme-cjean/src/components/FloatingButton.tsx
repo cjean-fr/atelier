@@ -1,7 +1,7 @@
 import { getIcon } from "./Icons.js";
-import { type HTMLAttributes } from "@cjean-fr/jsx-string";
+import { type JSX } from "@vincle/core";
 
-interface FloatingButtonProps extends HTMLAttributes {
+interface FloatingButtonProps extends JSX.HTMLAttributes {
   text: string;
   url: string;
   icon?: Parameters<typeof getIcon>[0];
@@ -40,7 +40,7 @@ export default ({
         rel="noopener noreferrer"
         id={id}
         aria-label={text}
-        className="fab fab--extended fab-open:pr-6 fixed right-8 bottom-8 z-20 inline-flex items-center overflow-hidden rounded-full bg-black/80 px-4 py-4 text-lg text-white shadow-md backdrop-blur-sm transition-[background-color,padding-right] [transition-duration:150ms,300ms] ease-in-out hover:bg-black dark:bg-gray-700 dark:text-white print:hidden"
+        className="fab fab--extended fab-open:pr-6 fixed right-8 bottom-8 z-20 inline-flex items-center overflow-hidden rounded-full bg-black/80 px-4 py-4 text-lg text-white shadow-md backdrop-blur-sm transition-[background-color,padding-right] [transition-duration:150ms,300ms] ease-in-out hover:bg-black print:hidden"
         {...props}
       >
         <span className="shrink-0">{getIcon(icon)}</span>

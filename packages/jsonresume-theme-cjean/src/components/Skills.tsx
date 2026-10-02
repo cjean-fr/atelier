@@ -1,9 +1,9 @@
 import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import Section from "./Section.js";
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import type { JSX } from "@vincle/core";
 
-interface SkillsProps extends HTMLAttributes {
+interface SkillsProps extends JSX.HTMLAttributes {
   skills: Resume["skills"];
 }
 
@@ -15,7 +15,7 @@ export default function Skills({ skills, ...props }: SkillsProps) {
       <dl>
         {skills.map((skill) => (
           <div className="mb-4 break-inside-avoid" key={skill.name}>
-            <dt className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <dt className="text-xl font-bold tracking-tight text-gray-900">
               {skill.name}
             </dt>
             <dd>

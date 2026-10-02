@@ -1,7 +1,7 @@
 import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import { getIcon } from "./Icons.js";
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import type { JSX } from "@vincle/core";
 
 function buildMapsUri(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -15,7 +15,7 @@ async function getProfileIcon(network: string) {
   }
 }
 
-const BasicsItem = ({ children, ...props }: HTMLAttributes) => (
+const BasicsItem = ({ children, ...props }: JSX.HTMLAttributes) => (
   <li className="inline-flex items-center gap-x-1" {...props}>
     {children}
   </li>
@@ -133,7 +133,7 @@ export default function Links({
   };
 
   return (
-    <ul className="my-3 inline-flex flex-wrap gap-x-[2ch] gap-y-2">
+    <ul className="resume-links my-5 inline-flex flex-wrap gap-x-6 gap-y-3">
       {list.map(renderLink)}
     </ul>
   );
