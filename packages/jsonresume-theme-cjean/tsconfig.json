@@ -1,7 +1,9 @@
 {
-  "extends": "../../packages/typescript-config/react.json",
+  "extends": "../../packages/typescript-config/base.json",
   "compilerOptions": {
-    "types": ["vite/client", "react"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "@vincle/core",
+    "types": ["node"],
     "outDir": "./dist",
     "rootDir": "./src"
   },

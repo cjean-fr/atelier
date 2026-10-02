@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/jsonresume-theme-cjean)](https://www.npmjs.com/package/jsonresume-theme-cjean)
 
-A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Tailwind CSS and TypeScript.
+A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Tailwind CSS, TypeScript, and [Vincle](https://github.com/cjean-fr/vincle).
 
 ![Theme Preview](https://i.imgur.com/lWBFRBK.png)
 
@@ -13,7 +13,8 @@ A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Ta
 - **SEO Ready**: Full support for Meta tags, OpenGraph, Twitter Cards, and JSON-LD.
 - **Customizable Aesthetics**: Easy branding via granular `ui` configuration and geometric patterns.
 - **Multi-locale Support**: Comes with `fr` and `en`. Locales are managed in a single file (`i18n.ts`) — feel free to contribute yours!
-- **Modern Tech Stack**: Built with Bun, TypeScript, and JSX components.
+- **Modern Tech Stack**: Built with Bun, TypeScript, and `@vincle/core` for server-rendered JSX.
+- **CSS per Resume**: Tailwind utilities are generated from the rendered HTML, so optional sections only add their utilities when present.
 - **CLI**: Built-in CLI to render your resume to an HTML file.
 
 ## Usage
@@ -48,6 +49,18 @@ bunx jsonresume-theme-cjean resume.json -o resume.html
 
 ## Configuration
 
+### CSS generation
+
+`render()` renders `ResumeBody` once with Vincle, scans the resulting HTML with `@tailwindcss/oxide`, and runs Tailwind's `compile()` / `build(candidates)` through `@tailwindcss/node`. `Layout` then receives the rendered body and minified CSS as properties and composes the final document, with its stylesheet in the head. The browser receives a standalone document with no Tailwind runtime.
+
+The compiler and scanner are fresh for each resume, so classes from earlier renders do not accumulate. Base styles and custom component rules remain shared; utility classes are selected per document, including responsive, print, and floating-button variants. The resume uses a single light appearance on screen and in print.
+
+CSS compilation runs on the server during each render. `@tailwindcss/node`, `@tailwindcss/oxide` (with its platform-specific scanner binary), and `tailwindcss` are runtime dependencies and must be installed with the theme. The Node library is built with `tsdown` in ESM and CommonJS formats. The CSS source is copied into `dist/tailwind.input.css` and read relative to the installed module; Vite is not involved.
+
+Run `bun run test` to build and check CSS selection and CommonJS rendering.
+
+### Resume settings
+
 You can customize the theme by adding a `meta` object to your `resume.json`.
 
 ```json
@@ -74,6 +87,24 @@ You can customize the theme by adding a `meta` object to your `resume.json`.
     }
   },
   "basics": { ... }
+}
+```
+
+### Projects
+
+The `projects` array in a JSON Resume is displayed as its own section. For example, a Vincle project entry can be added like this (replace the date and description with your own):
+
+```json
+{
+  "projects": [
+    {
+      "name": "Vincle",
+      "url": "https://github.com/cjean-fr/vincle",
+      "startDate": "YYYY-MM-DD",
+      "description": "A JSX renderer for HTML strings.",
+      "highlights": ["TypeScript", "Server-side rendering"]
+    }
+  ]
 }
 ```
 

@@ -1,6 +1,6 @@
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import type { JSX } from "@vincle/core";
 
-interface SectionProps extends HTMLAttributes {
+interface SectionProps extends JSX.HTMLAttributes {
   name?: string;
   sectionId?: string;
 }
@@ -26,7 +26,7 @@ export default function Section({
       {name && (
         <h2
           id={sectionId}
-          className="before:bg-primary relative mt-8 mb-4 break-after-avoid text-2xl tracking-tight text-gray-900 before:absolute before:-bottom-1 before:left-0 before:h-1 before:w-[3ch] before:rounded-[0_0.25rem_0.25rem_0] dark:text-white before:print:[print-color-adjust:exact]"
+          className="before:bg-primary relative mt-10 mb-5 break-after-avoid border-b border-gray-200 pb-2 text-2xl font-semibold tracking-tight text-gray-900 before:absolute before:-bottom-px before:left-0 before:h-0.5 before:w-10 before:print:[print-color-adjust:exact]"
         >
           {name}
         </h2>

@@ -3,7 +3,7 @@ import {
   type ValidTranslations,
   type Translator,
 } from "@cjean-fr/i18n-tiny";
-import { raw, type JSXNode } from "@cjean-fr/jsx-string";
+import type { Renderable } from "@vincle/core";
 
 export type ThemeSpec = {
   work_experience: readonly [];
@@ -20,6 +20,7 @@ export type ThemeSpec = {
   profile_page_name: readonly ["name", "label"];
   theme_credit: readonly ["link"];
   skip_to_content: readonly [];
+  resume: readonly [];
 };
 
 const en = {
@@ -37,6 +38,7 @@ const en = {
   profile_page_name: "{name}'s resume - {label}",
   theme_credit: "Theme made with love by {link}",
   skip_to_content: "Skip to main content",
+  resume: "Resume",
 } satisfies ValidTranslations<ThemeSpec>;
 
 const fr = {
@@ -54,6 +56,7 @@ const fr = {
   profile_page_name: "CV de {name} - {label}",
   theme_credit: "Thème proposé avec amour par {link}",
   skip_to_content: "Aller au contenu principal",
+  resume: "Curriculum vitae",
 } satisfies ValidTranslations<ThemeSpec>;
 
 const resources = {
@@ -83,13 +86,27 @@ export const t: Translator<ThemeSpec> = (key, ...args) => {
 };
 
 /**
- * Translate a key to the current locale and return a RawString.
+ * Translate a key while preserving JSX interpolation as renderable children.
  * @param key The key to translate.
  * @param args The arguments to pass to the translator.
- * @returns The translated string as a RawString.
+ * @returns Text and interpolated children in translation order.
  */
-export const tx: Translator<ThemeSpec, JSXNode> = (key, ...args) => {
-  return raw(t(key, ...(args as any)));
+export const tx: Translator<ThemeSpec, Renderable> = (key, ...args) => {
+  const params = (args[0] ?? {}) as Record<string, Renderable | Date>;
+  const entries = Object.entries(params);
+  const markers = Object.fromEntries(
+    entries.map(([name], index) => [name, `\uE000${index}\uE001`]),
+  );
+  const translated = (
+    t as (key: string, params: Record<string, string>) => string
+  )(key, markers);
+
+  return translated.split(/(\uE000\d+\uE001)/g).map((part) => {
+    const match = /^\uE000(\d+)\uE001$/.exec(part);
+    if (!match) return part;
+    const value = entries[Number(match[1])]?.[1];
+    return value instanceof Date ? value.toLocaleString(currentLocale) : value;
+  });
 };
 
 /**

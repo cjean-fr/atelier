@@ -1,26 +1,22 @@
 import { dateFormatter, tx } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import DateTime from "./DateTime.js";
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import { type JSX } from "@vincle/core";
 
-interface FooterProps extends HTMLAttributes {
+interface FooterProps extends JSX.HTMLAttributes {
   meta: Resume["meta"];
-  bgTiles: string;
 }
 
-export default function Footer({ meta, bgTiles, ...props }: FooterProps) {
+export default function Footer({ meta, ...props }: FooterProps) {
   const dateStr = meta.lastModified;
 
   return (
     <footer
-      className="bg-angled-gradient from-footer-from to-footer-to relative isolate z-0 -mt-10 h-32 content-center pt-12 pb-2 text-center text-sm text-white dark:opacity-90 dark:contrast-125 dark:saturate-50 print:hidden"
+      className="resume-footer-gradient relative isolate z-0 -mt-10 h-32 content-center pt-12 pb-2 text-center text-sm text-white print:hidden"
       {...props}
     >
-      <img
-        src={bgTiles}
-        alt=""
-        loading="lazy"
-        className="absolute inset-0 -z-10 size-full object-cover object-center"
+      <div
+        className="resume-tiles absolute inset-0 -z-10 size-full"
         aria-hidden="true"
       />
       <div>

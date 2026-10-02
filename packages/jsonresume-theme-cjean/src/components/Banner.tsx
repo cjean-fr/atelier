@@ -1,6 +1,6 @@
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import type { JSX } from "@vincle/core";
 
-interface BannerProps extends HTMLAttributes {
+interface BannerProps extends JSX.HTMLAttributes {
   name: string;
   label?: string;
 }
@@ -12,15 +12,12 @@ export default function Banner({
   ...props
 }: BannerProps) {
   return (
-    <header
-      className="flex-1 grow border-b border-gray-100 pb-8 dark:border-white/5"
-      {...props}
-    >
-      <h1 className="text-primary kerning-normal inline-block text-5xl font-extrabold tracking-tight uppercase sm:text-6xl">
+    <header className="flex-1 grow border-b border-gray-200 pb-6" {...props}>
+      <h1 className="text-primary kerning-normal inline-block text-5xl font-bold tracking-[-0.055em] sm:text-6xl">
         {name}
       </h1>
       {label && (
-        <p className="mt-2 text-3xl font-light tracking-wide text-gray-500 dark:text-slate-400">
+        <p className="mt-2 text-xl font-medium tracking-tight text-gray-600 sm:text-2xl">
           {label}
         </p>
       )}

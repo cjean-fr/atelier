@@ -15,24 +15,16 @@ function getProfilePageJsonLd(resume: Resume) {
         })
       : resume.basics.name,
     description: resume.basics.summary,
+    inLanguage: resume.meta.lang,
+    url: resume.meta.themeConfig.seo.canonical,
     dateModified: resume.meta.lastModified,
     mainEntity: {
       "@type": "Person",
       name: resume.basics.name,
-      birthDate: resume.basics.birthDate,
       jobTitle: resume.basics.label,
       url: resume.basics.url,
       description: resume.basics.summary,
       image: resume.basics.image,
-      email: resume.basics.email,
-      telephone: resume.basics.phone,
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: resume.basics.location?.city,
-        addressRegion: resume.basics.location?.region,
-        postalCode: resume.basics.location?.postalCode,
-        addressCountry: resume.basics.location?.countryCode,
-      },
       alumniOf: [
         ...resume.education.map((edu) => ({
           "@type": "EducationalOrganization",
@@ -62,7 +54,9 @@ function getProfilePageJsonLd(resume: Resume) {
             },
           }
         : undefined,
-      sameAs: resume.basics.profiles?.map((p) => p.url).filter(Boolean),
+      sameAs: [
+        ...new Set(resume.basics.profiles?.map((p) => p.url).filter(Boolean)),
+      ],
       knowsAbout: resume.skills.flatMap((s) => s.keywords || []),
     },
   };
@@ -70,11 +64,8 @@ function getProfilePageJsonLd(resume: Resume) {
 
 export function ProfilePageJsonLd({ resume }: { resume: Resume }) {
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(getProfilePageJsonLd(resume)),
-      }}
-    />
+    <script type="application/ld+json">
+      {JSON.stringify(getProfilePageJsonLd(resume))}
+    </script>
   );
 }

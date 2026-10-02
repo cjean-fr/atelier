@@ -2,9 +2,9 @@ import { t } from "../lib/i18n.js";
 import type { Resume } from "../schema.js";
 import Period from "./Period.js";
 import Section from "./Section.js";
-import type { HTMLAttributes } from "@cjean-fr/jsx-string";
+import type { JSX } from "@vincle/core";
 
-interface EducationProps extends HTMLAttributes {
+interface EducationProps extends JSX.HTMLAttributes {
   education: Resume["education"];
   certificates: Resume["certificates"];
 }
@@ -17,34 +17,34 @@ export default function Education({ education, certificates }: EducationProps) {
 
   return (
     <Section sectionId="education" name={t("education")}>
-      <ol className="timeline">
+      <ol className="timeline" reversed>
         {education?.map((edu, index) => (
           <li className="timeline-item" key={`edu-${index}`}>
             <article className="group">
               <div className="min-w-0 flex-1">
-                <div className="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_auto]">
+                <div className="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_auto] print:grid-cols-[minmax(0,1fr)_auto]">
                   <div className="min-w-0">
                     <header>
-                      <h3 className="truncate text-xl font-bold tracking-tight text-gray-900 md:whitespace-normal dark:text-white">
+                      <h3 className="truncate text-xl font-bold tracking-tight text-gray-900 md:whitespace-normal print:whitespace-normal">
                         {edu.studyType}
                       </h3>
                     </header>
 
-                    <div className="mt-1 text-gray-600 dark:text-slate-300">
+                    <div className="mt-1 text-gray-600">
                       {edu.url ? (
                         <a
                           href={edu.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           translate="no"
-                          className="hover:text-primary font-medium text-gray-700 underline-offset-4 transition-colors hover:underline dark:text-slate-200"
+                          className="hover:text-primary font-medium text-gray-700 underline-offset-4 transition-colors hover:underline"
                         >
                           {edu.institution}
                         </a>
                       ) : (
                         <span
                           translate="no"
-                          className="font-medium text-gray-700 dark:text-slate-200"
+                          className="font-medium text-gray-700"
                         >
                           {edu.institution}
                         </span>
@@ -61,7 +61,7 @@ export default function Education({ education, certificates }: EducationProps) {
                     startDate={edu.startDate}
                     endDate={edu.endDate}
                     format="year"
-                    className="mt-1 flex shrink-0 text-sm text-gray-500 capitalize md:mt-1.5 md:items-start md:text-right dark:text-slate-400"
+                    className="mt-1 flex shrink-0 text-sm text-gray-500 capitalize md:mt-1.5 md:items-start md:text-right print:mt-1 print:justify-self-end print:text-right print:whitespace-nowrap"
                   />
                 </div>
               </div>
@@ -76,29 +76,29 @@ export default function Education({ education, certificates }: EducationProps) {
           >
             <article className="group">
               <div className="min-w-0 flex-1">
-                <div className="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_auto]">
+                <div className="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_auto] print:grid-cols-[minmax(0,1fr)_auto]">
                   <div className="min-w-0">
                     <header>
-                      <h3 className="truncate text-xl font-bold tracking-tight text-gray-900 md:whitespace-normal dark:text-white">
+                      <h3 className="truncate text-xl font-bold tracking-tight text-gray-900 md:whitespace-normal print:whitespace-normal">
                         {cert.name}
                       </h3>
                     </header>
 
-                    <div className="mt-1 text-gray-600 dark:text-slate-300">
+                    <div className="mt-1 text-gray-600">
                       {cert.url ? (
                         <a
                           href={cert.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           translate="no"
-                          className="hover:text-primary font-medium text-gray-700 underline-offset-4 transition-colors hover:underline dark:text-slate-200"
+                          className="hover:text-primary font-medium text-gray-700 underline-offset-4 transition-colors hover:underline"
                         >
                           {cert.issuer}
                         </a>
                       ) : (
                         <span
                           translate="no"
-                          className="font-medium text-gray-700 dark:text-slate-200"
+                          className="font-medium text-gray-700"
                         >
                           {cert.issuer}
                         </span>
@@ -109,7 +109,7 @@ export default function Education({ education, certificates }: EducationProps) {
                   <Period
                     endDate={cert.date}
                     format="year"
-                    className="mt-1 flex shrink-0 text-sm text-gray-500 capitalize md:mt-1.5 md:items-start md:text-right dark:text-slate-400"
+                    className="mt-1 flex shrink-0 text-sm text-gray-500 capitalize md:mt-1.5 md:items-start md:text-right print:mt-1 print:justify-self-end print:text-right print:whitespace-nowrap"
                   />
                 </div>
               </div>
