@@ -4,27 +4,24 @@ Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML 
 
 ## Packages
 
+`@cjean-fr/jsx-string`, `@cjean-fr/eslint-plugin-jsx-string`, and `@cjean-fr/vite-plugin-precompile` are deprecated in favor of [Vincle](https://github.com/cjean-fr/vincle). Their replacements are `@vincle/core`, `@vincle/eslint-plugin`, and `@vincle/precompile/vite`, respectively.
+
 ### `jsx-string` stack
 
-| Package | Description |
-| :--- | :--- |
-| [`@cjean-fr/jsx-string`](./packages/jsx-string) | JSX-to-HTML string renderer. Zero dependencies. |
-| [`@cjean-fr/jsx-flow`](./packages/jsx-flow) | Deferred fragments, streaming, and DOM patching — the `<Defer>` primitive + Turbo / HTMX / Native / ESI adapters. |
-| [`@cjean-fr/jsx-vite`](./packages/jsx-vite) | Vite asset integration — `<Asset>`, `assetUrl`, manifest resolution. |
+| Package                                         | Description                                                          |
+| :---------------------------------------------- | :------------------------------------------------------------------- |
+| [`@cjean-fr/jsx-string`](./packages/jsx-string) | JSX-to-HTML string renderer. Zero dependencies.                      |
+| [`@cjean-fr/jsx-vite`](./packages/jsx-vite)     | Vite asset integration — `<Asset>`, `assetUrl`, manifest resolution. |
 
 ### Other tools
 
-| Package | Description |
-| :--- | :--- |
-| [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for safe jsx-string usage. |
-| [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny) | Zero-dependency, type-safe minimalist i18n. |
-| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean) | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript + JSX). |
-
-### Apps (internal)
-
-| App | Description |
-| :--- | :--- |
-| [`jsx-string-doc`](./apps/jsx-string-doc) | Documentation site for `@cjean-fr/jsx-string` — end-to-end consumer of the stack. |
+| Package                                                                     | Description                                                             |
+| :-------------------------------------------------------------------------- | :---------------------------------------------------------------------- |
+| [`@cjean-fr/eslint-plugin-jsx-string`](./packages/eslint-plugin-jsx-string) | ESLint rules for safe jsx-string usage.                                 |
+| [`@cjean-fr/i18n-tiny`](./packages/i18n-tiny)                               | Zero-dependency, type-safe minimalist i18n.                             |
+| [`@cjean-fr/precompile-core`](./packages/precompile-core)                   | JSX precompilation shared by build integrations.                        |
+| [`@cjean-fr/vite-plugin-precompile`](./packages/vite-plugin-precompile)     | Vite plugin for JSX precompilation.                                     |
+| [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean)               | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript + JSX). |
 
 ## Development
 

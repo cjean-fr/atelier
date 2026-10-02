@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/eslint-plugin-jsx-string",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ESLint plugin for @cjean-fr/jsx-string to ensure static rendering compatibility",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -58,5 +58,6 @@
     "dist",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "deprecated": "This package is deprecated. Use @vincle/eslint-plugin instead. See https://github.com/cjean-fr/vincle/tree/main/packages/eslint-plugin."
 }

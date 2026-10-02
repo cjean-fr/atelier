@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/jsx-string",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "The small, safe way to render JSX into HTML strings. Zero dependencies. Fully typed.",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -77,5 +77,6 @@
   ],
   "browser": {
     "node:async_hooks": false
-  }
+  },
+  "deprecated": "This package is deprecated. Use @vincle/core instead. See https://vincle.cjean.fr."
 }

@@ -6,7 +6,6 @@
  * corresponds to one ASVS chapter; each `it` references a requirement ID.
  *
  * Target level: L3 (rigorous) for all applicable requirements.
- * See apps/jsx-string-doc/docs-src/pages/safety/index.mdx for the full matrix.
  */
 import { renderToString, raw } from "./index.js";
 import {

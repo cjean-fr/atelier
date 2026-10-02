@@ -7,6 +7,8 @@ compatibility: Node.js, Bun, Deno, Vite, esbuild, TypeScript
 
 # @cjean-fr/jsx-string
 
+> Deprecated: use `@vincle/core` for new projects. This document describes the legacy API for migration and maintenance.
+
 Async-first JSX-to-HTML renderer with built-in XSS protection and concurrent-safe context. Zero runtime dependencies.
 
 ## Install
@@ -48,7 +50,6 @@ If the request is unclear, ask one clarifying question.
 | HTML strings only                                     | `renderToString()`                                            |
 | Component itself must await data before returning JSX | async components                                              |
 | Shared state in the render tree                       | `context()` + `withScope()` + `setContext()` / `useContext()` |
-| DOM streaming, islands, or browser patching           | `@cjean-fr/jsx-flow`                                          |
 
 If the user wants browser DOM updates, hydration, hooks, event handlers, or client-side interactivity, do not use this package for that task; explain that `jsx-string` is for HTML-string generation and server-side rendering only.
 

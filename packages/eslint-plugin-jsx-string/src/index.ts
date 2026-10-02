@@ -14,6 +14,7 @@ const rules = {
   "no-refs": noRefs,
 };
 
+/** @deprecated Use the default plugin from @vincle/eslint-plugin instead. */
 const plugin: any = {
   rules,
 };

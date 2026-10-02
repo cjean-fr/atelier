@@ -1,6 +1,6 @@
 {
   "name": "@cjean-fr/vite-plugin-precompile",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vite plugin that precompiles JSX into tagged template literals (Deno-style precompile) for @cjean-fr/jsx-string",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -33,12 +33,15 @@
   "devDependencies": {
     "@cjean-fr/jsx-string": "workspace:*",
     "@jridgewell/trace-mapping": "^0.3.31",
-    "vite": "^8"
+    "vite": "^8",
+    "@oxc-project/types": "^0.135.0"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "deprecated": "This package is deprecated. Use @vincle/precompile/vite instead. See https://github.com/cjean-fr/vincle/tree/main/packages/precompile."
 }
