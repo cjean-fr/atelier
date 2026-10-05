@@ -189,3 +189,21 @@ test("resume text does not generate unrelated CSS utilities", async () => {
   assert.ok(!withText.includes(".p-96"));
   assert.ok(!withText.includes(".rotate-180"));
 });
+
+test("selects English and French independently across successive renders", async () => {
+  const resume = {
+    ...minimal,
+    skills: [{ name: "<script> & TypeScript", keywords: [] }],
+  };
+  for (const [lang, title] of [
+    ["en", "Skills"],
+    ["fr", "Compétences"],
+    ["en", "Skills"],
+  ]) {
+    const html = await render({ ...resume, meta: { ...minimal.meta, lang } });
+    assert.ok(html.includes(`lang="${lang}"`));
+    assert.ok(html.includes(title));
+    assert.ok(html.includes("&lt;script&gt; &amp; TypeScript"));
+    assert.ok(!html.includes("&amp;lt;script"));
+  }
+});

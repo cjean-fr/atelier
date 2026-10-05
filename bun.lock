@@ -49,7 +49,7 @@
     },
     "packages/jsonresume-theme-cjean": {
       "name": "jsonresume-theme-cjean",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "bin": {
         "jsonresume-theme-cjean": "./bin/jsonresume-theme-cjean.js",
       },

@@ -1,5 +1,17 @@
 # jsonresume-theme-cjean
 
+## 1.4.1 — 2026-10-05
+
+### Changed
+
+- Refresh the theme preview using Thomas Davis’s public JSON Resume.
+
+- Bundle i18n-tiny 2.0.1 and validate both English and French translation
+  dictionaries with `createTypedTranslator`, including required placeholders.
+- Create one translator per locale and pass the locale explicitly, ensuring
+  Date parameters use the selected language. Preserve JSX interpolation and
+  HTML escaping in the renderer.
+
 ## 1.4.0 — 2026-10-02
 
 A lighter CV with a consistent appearance, improved printing, and a modern rendering pipeline.

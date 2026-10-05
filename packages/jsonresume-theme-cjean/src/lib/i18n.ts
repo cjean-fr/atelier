@@ -1,5 +1,5 @@
 import {
-  createTranslator,
+  createTypedTranslator,
   type ValidTranslations,
   type Translator,
 } from "@cjean-fr/i18n-tiny";
@@ -39,7 +39,7 @@ const en = {
   theme_credit: "Theme made with love by {link}",
   skip_to_content: "Skip to main content",
   resume: "Resume",
-} satisfies ValidTranslations<ThemeSpec>;
+} as const satisfies ValidTranslations<ThemeSpec>;
 
 const fr = {
   work_experience: "Expériences professionnelles",
@@ -57,33 +57,18 @@ const fr = {
   theme_credit: "Thème proposé avec amour par {link}",
   skip_to_content: "Aller au contenu principal",
   resume: "Curriculum vitae",
-} satisfies ValidTranslations<ThemeSpec>;
+} as const satisfies ValidTranslations<ThemeSpec>;
 
-const resources = {
-  en,
-  fr,
+const translators = {
+  en: createTypedTranslator<ThemeSpec>()(en, { locale: "en" }),
+  fr: createTypedTranslator<ThemeSpec>()(fr, { locale: "fr" }),
 };
 
-type Locale = keyof typeof resources;
-
-let translator: Translator<ThemeSpec> | undefined = undefined;
-
+type Locale = keyof typeof translators;
 let currentLocale: Locale = "en";
 
-/**
- * Translate a key to the current locale.
- * @param key The key to translate.
- * @param args The arguments to pass to the translator.
- * @returns The translated string.
- */
-export const t: Translator<ThemeSpec> = (key, ...args) => {
-  if (!translator) {
-    translator = createTranslator<ThemeSpec>(
-      resources[currentLocale] satisfies ValidTranslations<ThemeSpec>,
-    );
-  }
-  return translator(key, ...args);
-};
+export const t: Translator<ThemeSpec> = (key, ...args) =>
+  translators[currentLocale](key, ...args);
 
 /**
  * Translate a key while preserving JSX interpolation as renderable children.
@@ -114,7 +99,6 @@ export const tx: Translator<ThemeSpec, Renderable> = (key, ...args) => {
  */
 export function init(locale: Locale) {
   currentLocale = locale;
-  translator = createTranslator(resources[locale]);
 }
 
 export type DateFormat = "year" | "month" | "date" | "iso";
