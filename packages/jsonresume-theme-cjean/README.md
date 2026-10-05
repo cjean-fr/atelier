@@ -4,7 +4,7 @@
 
 A clean, professional [JSON Resume](https://jsonresume.org/) theme built with Tailwind CSS, TypeScript, and [Vincle](https://github.com/cjean-fr/vincle).
 
-![Theme Preview](https://i.imgur.com/lWBFRBK.png)
+![Theme Preview](https://raw.githubusercontent.com/cjean-fr/atelier/main/packages/jsonresume-theme-cjean/assets/preview.png)
 
 ## Features
 
