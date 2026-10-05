@@ -222,3 +222,23 @@ describe("createTypedTranslator contract validation", () => {
     expect(t).toBeDefined();
   });
 });
+
+describe("long translation literals", () => {
+  it("validates placeholders after more than 1000 characters of prose", () => {
+    type Spec = { message: readonly ["name"] };
+    const t = createTypedTranslator<Spec>()({
+      message:
+        "A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. {name}",
+    });
+    expect(t("message", { name: "Alice" })).toEndWith("Alice");
+  });
+
+  it("still checks ICU placeholders after long prose", () => {
+    type Spec = { message: readonly ["count", "name"] };
+    const t = createTypedTranslator<Spec>()({
+      message:
+        "A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. A long translation. {count, plural, one {{name} has one item} other {{name} has # items}}",
+    });
+    expect(t).toBeDefined();
+  });
+});

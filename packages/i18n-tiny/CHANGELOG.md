@@ -1,6 +1,13 @@
 # @cjean-fr/i18n-tiny
 
-## Unreleased
+## 2.0.1
+
+### Fixed
+
+- Long translation literals no longer exhaust TypeScript’s recursion budget.
+  Parameter extraction skips literal text between braces.
+
+## 2.0.0
 
 ### Fixed
 
@@ -11,8 +18,6 @@
   counts. Name termination (whitespace, `#`) now matches the runtime
   interpolator. This makes `CheckParams` validation meaningful for ICU
   messages through `createTypedTranslator`.
-
-## 2.0.0
 
 ### Added
 
@@ -34,8 +39,8 @@
 - **`createTranslator` generic `T` constrained to `string`**: The return type
   parameter `T` now requires `T extends string`, eliminating unsafe `as unknown
 as T` casts in the default interpolation path. Custom return types must extend
-  `string` (use a branded string type). Non-string return types still work via
-  `config.interpolate`.
+  `string` (use a branded string type). Non-string return types are no longer
+  supported, including with `config.interpolate`.
 - **`KeyParams` type narrowed**: Removed `boolean` from accepted placeholder
   value types — YAGNI: no realistic translation requires a `boolean` literal as
   a placeholder.
