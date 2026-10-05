@@ -25,29 +25,25 @@ type Even<L extends 0[]> = L extends []
     ? Even<R>
     : false;
 
+/** Close groups before the next opening brace, skipping literal text in one step. */
+type CloseGroups<
+  S extends string,
+  Depth extends 0[],
+> = S extends `${string}}${infer Rest}`
+  ? CloseGroups<Rest, Depth extends [0, ...infer Tail] ? Tail : []>
+  : Depth;
+
 /**
- * Extract the runtime params of a message, following ICU structure with a
- * brace-depth walk instead of naive `{…}` pairing:
- *
- * - `{name}` opened at an even depth (top level or inside a branch body)
- *   is a real param;
- * - `{name, plural, …}` contributes its leading `name`, then opens a group;
- * - branch bodies (`{one item}`, `{# items}`) sit at odd depth → their
- *   content and `#` are never params; `{name}` nested in a body counts.
- *
- * Name characters match the runtime interpolator: whitespace and `#` end the
- * name. Recursion is tail-positional (TS limit: 1000 steps).
+ * Extract simple and ICU parameter names. Jump between opening braces so long
+ * prose does not consume TypeScript's recursion budget character by character.
+ * ICU branch bodies sit at odd depth; placeholders inside them sit at even depth.
  */
 export type ExtractParams<
   S extends string,
   Acc extends string = never,
   Depth extends 0[] = [],
-> = S extends `${infer C}${infer Rest}`
-  ? C extends "{"
-    ? FromGroup<Rest, Acc, Depth>
-    : C extends "}"
-      ? ExtractParams<Rest, Acc, Depth extends [0, ...infer R] ? R : []>
-      : ExtractParams<Rest, Acc, Depth>
+> = S extends `${infer Text}{${infer Rest}`
+  ? FromGroup<Rest, Acc, CloseGroups<Text, Depth>>
   : Acc;
 
 type FromGroup<S extends string, Acc extends string, Depth extends 0[]> =
