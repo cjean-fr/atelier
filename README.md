@@ -23,6 +23,12 @@ Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML 
 | [`@cjean-fr/vite-plugin-precompile`](./packages/vite-plugin-precompile)     | Vite plugin for JSX precompilation.                                     |
 | [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean)               | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript + JSX). |
 
+### Symfony
+
+| Package | Description |
+| :------ | :---------- |
+| [`cjean/static-site-bundle`](./packages/static-site-bundle) | Provider-driven static site generation for Symfony 8. |
+
 ## Development
 
 Managed with **Bun workspaces** and **Turbo**.
@@ -33,6 +39,11 @@ bun run build    # Build all packages
 bun run test     # Run all tests (unit + fuzz/property-based)
 bun run check    # Type-check everything
 ```
+
+The Symfony bundle requires PHP >= 8.4.1 and Composer. Install its dependencies
+with `composer install --working-dir=packages/static-site-bundle` before running
+the monorepo checks and tests. It is a Composer package; its private
+`package.json` only connects those commands to Turbo.
 
 Security-sensitive modules are reinforced with **property-based (fuzz) testing** via `fast-check` — thousands of adversarial inputs (control chars, astral codepoints, scheme obfuscations) are generated per run to verify XSS invariants hold for every possible input, not just hand-picked examples.
 

@@ -1,0 +1,67 @@
+{
+  "name": "cjean/static-site-bundle",
+  "description": "Explicit, provider-driven static site generation for Symfony 8.",
+  "type": "symfony-bundle",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.4.1",
+    "symfony/config": "^8.0",
+    "symfony/console": "^8.0",
+    "symfony/dependency-injection": "^8.0",
+    "symfony/filesystem": "^8.0",
+    "symfony/framework-bundle": "^8.0",
+    "symfony/http-foundation": "^8.0",
+    "symfony/http-kernel": "^8.0",
+    "symfony/routing": "^8.0",
+    "psr/container": "^2.0",
+    "symfony/service-contracts": "^3.0",
+    "symfony/reprise": "^1.3",
+    "symfony/twig-bundle": "^8.0",
+    "symfony/cache": "^8.0",
+    "symfony/cache-contracts": "^3.0",
+    "psr/cache": "^3.0"
+  },
+  "require-dev": {
+    "carthage-software/mago": "1.55.0",
+    "league/commonmark": "^2.7",
+    "phpunit/phpunit": "^12.0",
+    "symfony/web-profiler-bundle": "^8.0",
+    "symfony/yaml": "^8.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "CJean\\StaticSiteBundle\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "CJean\\StaticSiteBundle\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "test:fuzz": "phpunit --group fuzz",
+    "lint:php": "find src tests examples/src examples/public examples/bundle-docs/src examples/bundle-docs/tools examples/bundle-docs/public -path \"*/public/build\" -prune -o -name \"*.php\" -print0 | xargs -0 -n1 php -l",
+    "lint": [
+      "@lint:php",
+      "mago lint --minimum-report-level warning"
+    ],
+    "analyze": "mago analyze --minimum-report-level warning",
+    "format": "mago format",
+    "format:check": "mago format --check",
+    "check": [
+      "@format:check",
+      "@lint",
+      "@analyze",
+      "@test"
+    ]
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "homepage": "https://github.com/cjean-fr/atelier/tree/main/packages/static-site-bundle",
+  "support": {
+    "issues": "https://github.com/cjean-fr/atelier/issues",
+    "source": "https://github.com/cjean-fr/atelier/tree/main/packages/static-site-bundle"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@cjean-fr/static-site-bundle",
+  "private": true,
+  "scripts": {
+    "check": "composer validate --strict && composer format:check && composer lint && composer analyze",
+    "test": "composer test",
+    "format": "composer format"
+  }
+}

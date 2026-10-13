@@ -1,0 +1,64 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+{% block toolbar %}
+    {% set details = collector.details %}
+    {% set icon %}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h8"/></svg><span class="sf-toolbar-value">SSB</span>{% endset %}
+    {% set text %}<div class="sf-toolbar-info-piece"><b>Static export</b><span>{{ details.selected ? 'Selected' : 'Not selected' }}</span></div>{% if details.provider %}<div class="sf-toolbar-info-piece"><b>Provider</b><span>{{ _self.provider_link(details) }}</span></div>{% endif %}{% endset %}
+    {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', {link: profiler_url, status: details.selected ? 'green' : ''}) }}
+{% endblock %}
+{% block menu %}<span class="label"><span class="icon">SSB</span><strong>Static site</strong></span>{% endblock %}
+{% block panel %}
+    {% set details = collector.details %}
+    <h2>StaticSiteBundle</h2>
+    <p>{{ details.selected ? 'This route is selected for static export. This request is still SSR.' : 'This route is not selected for static export.' }}</p>
+    <table><tr><th>Provider</th><td>{% if details.provider %}{{ _self.provider_link(details) }}{% else %}None: fixed route{% endif %}</td></tr><tr><th>Output path</th><td>{{ details.file|default('Not determined') }}</td></tr></table>
+    {% if details.error %}<div class="status-error"><strong>Inspection error</strong><pre>{{ details.error }}</pre></div>{% endif %}
+    {% if details.selected %}
+        <h3>#[StaticPage] arguments</h3><pre>{{ details.attribute|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+        <h3>Current route parameters</h3><pre>{{ details.currentParameters }}</pre>
+        <details data-ssb-lazy="parameters" data-url="{{ path('_static_site_profiler_data', {token: token, section: 'parameters'}) }}">
+            <summary><strong>Provider output</strong></summary>
+            <p data-ssb-status>Open to read the parameter sets captured by the last published build. The provider is never executed here.</p>
+            <pre data-ssb-content hidden style="white-space:pre-wrap"></pre>
+        </details>
+        <details data-ssb-lazy="source" data-url="{{ path('_static_site_profiler_data', {token: token, section: 'source'}) }}">
+            <summary><strong>Last published source</strong></summary>
+            <p data-ssb-status>Open to read the last published file.</p>
+            <pre data-ssb-content hidden style="white-space:pre;overflow:auto"></pre>
+        </details>
+        <script>
+        document.querySelectorAll('details[data-ssb-lazy]').forEach(section => {
+            let loaded = false;
+            let loading = false;
+            section.addEventListener('toggle', async () => {
+                if (!section.open || loaded || loading) return;
+                loading = true;
+                const status = section.querySelector('[data-ssb-status]');
+                const content = section.querySelector('[data-ssb-content]');
+                status.textContent = 'Loading…';
+                try {
+                    const response = await fetch(section.dataset.url, { credentials: 'same-origin', cache: 'no-store' });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Unable to load build data.');
+                    if (!result.available) { status.textContent = result.message; loaded = true; return; }
+                    const data = result.data;
+                    if (section.dataset.ssbLazy === 'parameters') {
+                        status.textContent = 'Captured ' + new Date(data.generatedAt * 1000).toLocaleString() + '. ' + data.total + ' sets; showing ' + data.sets.length + '.';
+                        content.textContent = JSON.stringify(data.sets, null, 2);
+                    } else {
+                        status.textContent = 'Published ' + new Date(data.modified * 1000).toLocaleString() + (data.truncated ? '. Preview limited to 256 KiB.' : '.');
+                        content.textContent = data.source;
+                    }
+                    content.hidden = false;
+                    loaded = true;
+                } catch (error) { status.textContent = error.message + ' Close and reopen to retry.'; }
+                finally { loading = false; }
+            });
+        });
+        </script>
+    {% endif %}
+{% endblock %}
+
+{% macro provider_link(details) %}
+    {% set link = details.providerFile ? details.providerFile|file_link(details.providerLine) : null %}
+    {% if link %}<a href="{{ link }}" title="{{ details.providerClass }}::parameters()">{{ details.provider }}</a>{% else %}<span>{{ details.provider }}</span>{% endif %}
+{% endmacro %}

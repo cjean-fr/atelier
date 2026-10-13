@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+    <h1 class="text-4xl font-bold tracking-tight">Un site Symfony, servi en statique.</h1>
+    <p class="mt-4 text-lg text-slate-600">Twig et SSR en développement. HTML, Vite et Tailwind en production.</p>
+    <nav class="mt-8 flex flex-col gap-3">
+        <a class="text-indigo-700 underline" href="{{ path('article', {slug: 'bonjour-symfony'}) }}">Bonjour Symfony</a>
+        <a class="text-indigo-700 underline"
+           href="{{ path('article', {slug: 'mon-site-statique'}) }}">Mon site statique</a>
+    </nav>
+{% endblock %}

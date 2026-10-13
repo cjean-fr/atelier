@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@source "../templates";
+@source "../content";
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #17283d; background: #fafcff; }
+body { margin: 0; }
+a { color: #2452b8; text-underline-offset: .2em; }
+header { padding: 1rem 2rem; border-bottom: 1px solid #d9e1eb; background: white; }
+header nav { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+header strong { font-size: 1.4rem; }
+.shell { display: grid; grid-template-columns: 17rem minmax(0, 1fr); max-width: 85rem; margin: auto; }
+aside { padding: 2rem 1.25rem; border-right: 1px solid #d9e1eb; }
+aside a { display: block; padding: .3rem 0; font-size: .9rem; }
+aside [aria-current] { font-weight: bold; }
+aside h2 { text-transform: capitalize; margin: 1.5rem 0 .5rem; font-size: 1rem; }
+main { padding: 2rem clamp(1rem, 4vw, 4rem); min-width: 0; }
+article { max-width: 55rem; line-height: 1.75; }
+article h1 { font-size: 2rem; font-weight: bold; margin: 0 0 1.5rem; }
+article h2 { font-size: 1.5rem; font-weight: bold; margin: 2rem 0 1rem; }
+article h3 { font-size: 1.2rem; font-weight: bold; margin: 1.5rem 0 .75rem; }
+article p, article ul, article ol, article pre, article table { margin: 1rem 0; }
+article ul, article ol { padding-left: 1.5rem; list-style: revert; }
+pre { overflow-x: auto; padding: 1.25rem; background: #edf2f8; border: 1px solid #d4dfec; border-radius: .5rem; }
+code { font-family: ui-monospace, monospace; font-size: .9em; }
+:not(pre) > code { padding: .1em .3em; background: #edf2f8; border-radius: .2rem; }
+table { display: block; overflow-x: auto; border-collapse: collapse; }
+th, td { padding: .6rem; border: 1px solid #d4dfec; }
+blockquote { border-left: 3px solid #7ba1df; padding-left: 1rem; }
+footer { padding-top: 2rem; border-top: 1px solid #d9e1eb; margin-top: 2rem; }
+@media (max-width: 800px) { .shell { display: block; } aside { border-right: 0; } aside details:not([open]) > :not(summary) { display: none; } }

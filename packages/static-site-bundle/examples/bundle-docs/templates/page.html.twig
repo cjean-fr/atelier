@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.meta.title }} — StaticSiteBundle</title>
+    <meta name="description" content="{{ page.meta.description|default('Documentation du bundle Symfony StaticSiteBundle') }}">
+    <link rel="canonical" href="https://static-site.example{{ page.url }}">
+    <link rel="alternate" type="text/markdown" href="{{ page.url == '/' ? '/index.md' : page.url ~ '.md' }}">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    {{ reprise_entry_link_tags('app') }}
+    {{ reprise_entry_script_tags('app') }}
+    {{ reprise_entry_script_tags('highlight') }}
+</head>
+<body class="docs-body bg-[var(--docs-color-bg)] text-[var(--docs-color-text)] antialiased">
+<header class="docs-header"><div class="docs-header-inner">{% include '_header.html.twig' %}</div><details class="docs-mobile-navigation"><summary>Menu de documentation</summary><div>{% include '_navigation.html.twig' %}</div></details></header>
+<div class="docs-shell mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl px-4 md:px-6">
+    <aside class="docs-sidebar">{% include '_navigation.html.twig' %}</aside>
+    <main id="content" class="docs-main docs-article min-w-0 flex-1 px-4 py-10 md:px-8 lg:px-12">
+        <article class="docs-prose">{{ body|raw }}</article>
+        <nav class="docs-page-nav flex justify-between gap-4 my-8" aria-label="Page navigation">
+{% if previous %}<a href="{{ previous.url }}" rel="prev"><span class="block text-sm">← Précédente</span><strong>{{ previous.meta.title }}</strong></a>{% else %}<span></span>{% endif %}
+{% if next %}<a href="{{ next.url }}" rel="next" class="text-right"><span class="block text-sm">Suivante →</span><strong>{{ next.meta.title }}</strong></a>{% endif %}
+</nav>
+<footer class="docs-page-footer mt-8 border-t border-[var(--docs-color-border)] pt-6"><a href="{{ page.url == '/' ? '/index.md' : page.url ~ '.md' }}">Lire en Markdown</a> · <a href="/llms.txt">Index de documentation</a></footer>
+    </main>
+</div>
+</body>
+</html>
