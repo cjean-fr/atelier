@@ -1,0 +1,46 @@
+{
+  "guide/installation": {
+    "title": "Installer dans une application",
+    "order": 1
+  },
+  "guide/routes": {
+    "title": "Sélectionner les routes",
+    "order": 2
+  },
+  "guide/examples": {
+    "title": "Essayer l’exemple",
+    "order": 3
+  },
+  "integration/configuration": {
+    "title": "Configurer et exporter",
+    "order": 4
+  },
+  "integration/deployment": {
+    "title": "Contrat des pages et du déploiement",
+    "order": 5
+  },
+  "api/formats": {
+    "title": "Formats de sortie et extension",
+    "order": 6
+  },
+  "api/quality": {
+    "title": "Qualité et Symfony 8.2",
+    "order": 7
+  },
+  "guide/introduction": {
+    "title": "Introduction",
+    "order": 0
+  },
+  "api/architecture": {
+    "title": "Architecture",
+    "order": 20
+  },
+  "api/performance": {
+    "title": "Données et performances",
+    "order": 21
+  },
+  "index": {
+    "title": "StaticSiteBundle",
+    "order": 0
+  }
+}

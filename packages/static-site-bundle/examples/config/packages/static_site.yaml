@@ -1,0 +1,4 @@
+static_site:
+  base_url: 'https://example.com'
+  output_dir: '%kernel.project_dir%/var/static'
+  assets: [ 'build' ]

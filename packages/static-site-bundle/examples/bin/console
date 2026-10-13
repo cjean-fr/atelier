@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/bootstrap.php';
+
+use Demo\Kernel;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+
+$environment = $_SERVER['APP_ENV'] ?? 'dev';
+$debug = filter_var($_SERVER['APP_DEBUG'] ?? ($environment !== 'prod'), FILTER_VALIDATE_BOOL);
+exit((new Application(new Kernel($environment, $debug)))->run());

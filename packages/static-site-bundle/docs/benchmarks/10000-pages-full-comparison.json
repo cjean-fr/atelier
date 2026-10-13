@@ -1,0 +1,69 @@
+{
+  "vincle": {
+    "elapsed_seconds": 57.435,
+    "peak_tree_rss_mib": 5576.8,
+    "exit_code": 0,
+    "aborted": false,
+    "phases": {
+      "vite": {
+        "elapsed_seconds": 6.541,
+        "peak_tree_rss_mib": 335.28,
+        "exit_code": 0
+      },
+      "ssg": {
+        "elapsed_seconds": 50.894,
+        "peak_tree_rss_mib": 5576.8,
+        "exit_code": 0
+      }
+    },
+    "content_pages": 10035,
+    "ssg_phases_seconds": {
+      "discovery": 7.290063894,
+      "render": 6.173555632,
+      "postBuild": 15.190218612999999,
+      "publication": 21.531266096999996
+    },
+    "verified_lorem_pages": 10000,
+    "export_gib": 0.561
+  },
+  "symfony": {
+    "elapsed_seconds": 18.379,
+    "peak_tree_rss_mib": 677.61,
+    "exit_code": 0,
+    "aborted": false,
+    "phases": {
+      "vite": {
+        "elapsed_seconds": 6.634,
+        "peak_tree_rss_mib": 677.61,
+        "exit_code": 0
+      },
+      "ssg": {
+        "elapsed_seconds": 11.745,
+        "peak_tree_rss_mib": 200.23,
+        "exit_code": 0
+      }
+    },
+    "content_pages": 10035,
+    "verified_lorem_pages": 10000,
+    "export_gib": 0.269
+  },
+  "method": {
+    "date": "2026-10-12",
+    "cpu": "AMD Ryzen 7 PRO 8840HS",
+    "bun": "1.4.3",
+    "node": "24.21.0",
+    "php": "8.5.4",
+    "sources": "10000 byte-identical Lorem ipsum sources, plus each site original 35 pages",
+    "sampling_seconds": 0.1,
+    "memory": "Sampled total RSS of command and descendants, not PHP allocator memory",
+    "includes": "CLI startup, Vite, content generation, postprocessing and publication",
+    "cache": "New CLI processes, Symfony prod cache removed, Vincle compiled MDX cache removed by original builder; OS disk cache not cleared",
+    "runs": 1,
+    "differences": [
+      "Vincle original uses MDX, syntax highlighting, TOC, search index, llms-full and extra files; Symfony POC uses simplified Twig and CommonMark.",
+      "Vincle flat .html outputs; Symfony directory index.html outputs.",
+      "Isolated Vincle snapshot has no Git history; lastModified still invokes Git and falls back to null.",
+      "Publication replaces existing Symfony export; isolated Vincle dist starts empty except Vite assets."
+    ]
+  }
+}

@@ -115,6 +115,9 @@
         "@cjean-fr/jsx-string": "workspace:*",
       },
     },
+    "packages/static-site-bundle": {
+      "name": "@cjean-fr/static-site-bundle",
+    },
     "packages/vite-plugin-precompile": {
       "name": "@cjean-fr/vite-plugin-precompile",
       "version": "0.1.1",
@@ -191,6 +194,8 @@
     "@cjean-fr/jsx-vite": ["@cjean-fr/jsx-vite@workspace:packages/jsx-vite"],
 
     "@cjean-fr/precompile-core": ["@cjean-fr/precompile-core@workspace:packages/precompile-core"],
+
+    "@cjean-fr/static-site-bundle": ["@cjean-fr/static-site-bundle@workspace:packages/static-site-bundle"],
 
     "@cjean-fr/vite-plugin-precompile": ["@cjean-fr/vite-plugin-precompile@workspace:packages/vite-plugin-precompile"],
 

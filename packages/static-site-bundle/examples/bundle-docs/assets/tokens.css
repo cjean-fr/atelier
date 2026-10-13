@@ -1,0 +1,54 @@
+:root {
+  color-scheme: light;
+
+  --docs-color-bg: #fcfdff;
+  --docs-color-text: #152b47;
+  --docs-color-text-body: #465970;
+  --docs-color-text-secondary: #586a80;
+  --docs-color-code-inline-bg: #edf2f8;
+  --docs-color-accent: #245bd6;
+  --docs-color-accent-hover: #1945a8;
+  --docs-color-accent-soft: #eaf0fd;
+  --docs-color-border: #dce4ef;
+  --docs-color-surface: #f2f6fb;
+
+  --docs-code-bg: #030712;
+  --docs-code-text: #edf2f8;
+  --docs-code-border: #293b53;
+
+  --docs-font-body:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --docs-font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+
+  --docs-shell-max-width: 80rem;
+  --docs-sidebar-width: 16rem;
+  --docs-header-height: 4rem;
+  --docs-content-padding: 1.5rem;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --docs-transition-fast: 150ms var(--ease-out);
+  --docs-transition-normal: 200ms var(--ease-out);
+  --docs-transition-slow: 300ms var(--ease-out);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --docs-color-bg: #101b2b;
+  --docs-color-text: #edf2f8;
+  --docs-color-text-body: #a5b5ca;
+  --docs-color-text-secondary: #a5b5ca;
+  --docs-color-code-inline-bg: #293b53;
+  --docs-color-accent: #8db5ff;
+  --docs-color-accent-hover: #bad2ff;
+  --docs-color-accent-soft: #1b3357;
+  --docs-color-border: #293b53;
+  --docs-color-surface: #152b47;
+
+  --docs-code-bg: #152b47;
+  --docs-code-border: #293b53;
+}

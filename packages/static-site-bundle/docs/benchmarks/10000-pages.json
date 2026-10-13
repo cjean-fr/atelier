@@ -1,0 +1,12 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 233.04,
+  "peak_rss_mib": 198.58,
+  "php_peak_mib": 172.0,
+  "php_memory_limit": "-1",
+  "content_pages": 10035,
+  "expected_outputs": 20071,
+  "verified_html": 10035,
+  "verified_markdown": 10035,
+  "export_gib": 1.77
+}

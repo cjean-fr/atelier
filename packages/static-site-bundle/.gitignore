@@ -1,0 +1,14 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/var/
+/examples/node_modules/
+/examples/public/build/
+
+/examples/var/
+
+
+/examples/bundle-docs/node_modules/
+/examples/bundle-docs/var/
+/examples/bundle-docs/public/build/
+

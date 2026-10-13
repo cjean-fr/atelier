@@ -1,0 +1,16 @@
+{
+  "name": "static-site-bundle-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@symfony/reprise": "^1.3.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "highlight.js": "^11.12.0",
+    "tailwindcss": "^4.3.0",
+    "vite": "^8.2.0"
+  }
+}

@@ -1,0 +1,96 @@
+name: Static Site Bundle CI
+on: [ push, pull_request ]
+defaults:
+  run:
+    working-directory: packages/static-site-bundle
+permissions:
+  contents: read
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.4'
+            symfony: '8.0.*'
+            experimental: false
+          - php: '8.5'
+            symfony: '8.1.*'
+            experimental: false
+          - php: '8.5'
+            symfony: '8.2.x-dev'
+            experimental: true
+    continue-on-error: ${{ matrix.experimental }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, dom, xml, xmlwriter
+          coverage: none
+          tools: composer:v2
+      - name: Select Symfony version
+        env:
+          SYMFONY_VERSION: ${{ matrix.symfony }}
+        run: |
+          php -r '$file="composer.json"; $c=json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR); foreach (["require", "require-dev"] as $section) { foreach ($c[$section] as $name => $version) { if (str_starts_with($name, "symfony/") && !in_array($name, ["symfony/service-contracts", "symfony/cache-contracts", "symfony/reprise"], true)) { $c[$section][$name]=getenv("SYMFONY_VERSION"); } } } if (str_contains(getenv("SYMFONY_VERSION"), "dev")) { $c["minimum-stability"]="dev"; $c["prefer-stable"]=true; } file_put_contents($file, json_encode($c, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL);'
+      - run: composer update --prefer-dist --no-interaction
+      - run: composer validate --strict
+      - run: composer format:check
+      - run: composer lint
+      - run: composer analyze
+      - run: composer test
+  fuzz:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [20261012, 1, 2147483647]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, dom, xml, xmlwriter
+          coverage: none
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction
+      - run: composer test:fuzz
+        env:
+          SSG_FUZZ_SEED: ${{ matrix.seed }}
+          SSG_FUZZ_CASES: '5000'
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, dom, xml
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: packages/static-site-bundle/examples/package-lock.json
+      - run: composer install --prefer-dist --no-interaction
+      - run: npm ci --prefix examples
+      - run: npm run build --prefix examples
+      - run: php examples/bin/console ssg:build
+        env:
+          APP_ENV: prod
+          APP_DEBUG: '0'
+          APP_SECRET: ci-example-secret
+      - run: test -f examples/var/static/articles/bonjour-symfony/index.html
+      - run: npm ci --prefix examples/bundle-docs
+      - run: npm run build --prefix examples/bundle-docs
+      - run: php examples/bundle-docs/bin/console ssg:build
+        env:
+          APP_ENV: prod
+          APP_DEBUG: '0'
+          APP_SECRET: ci-bundle-docs-secret
+      - run: php examples/bundle-docs/tools/verify.php
+        env:
+          APP_ENV: prod
+          APP_SECRET: ci-bundle-docs-secret

@@ -1,0 +1,7 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ title }} — Symfony SSG{% endblock %}
+{% block body %}
+    <a class="text-indigo-700 underline" href="{{ path('home') }}">Accueil</a>
+    <h1 class="mt-6 text-4xl font-bold">{{ title }}</h1>
+    <p class="mt-4">Cette page utilise le même contrôleur en SSR et lors de l’export statique.</p>
+{% endblock %}

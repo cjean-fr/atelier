@@ -1,0 +1,36 @@
+version = "1.55.0"
+php-version = "8.4.1"
+
+[source]
+paths = ["src", "tests", "examples/src", "examples/public", "examples/bin", "examples/bundle-docs/src", "examples/bundle-docs/public/index.php", "examples/bundle-docs/bootstrap.php", "examples/bundle-docs/tools/verify.php"]
+includes = ["vendor"]
+
+[linter]
+integrations = ["symfony", "php-unit"]
+minimum-fail-level = "warning"
+
+[linter.rules]
+# Metrics remain visible as advice; do not split safety checks to satisfy a score.
+cyclomatic-complexity = { level = "help" }
+halstead = { level = "help" }
+kan-defect = { level = "help" }
+excessive-parameter-list = { threshold = 7 }
+# Symfony and PHPUnit idioms; the formatter owns presentation.
+assertion-style = { level = "help" }
+literal-named-argument = { level = "help" }
+single-class-per-file = { level = "help" }
+no-isset = { level = "help" }
+no-shorthand-ternary = { level = "help" }
+no-nested-ternary = { level = "help" }
+readable-literal = { level = "help" }
+
+[analyzer]
+# Test fixtures deliberately violate contracts to exercise failures.
+excludes = ["tests", "examples"]
+# Values from JSON and Symfony start as mixed and are narrowed at use sites.
+# Argument, array-access and return-type checks remain enabled.
+ignore = ["mixed-assignment"]
+minimum-fail-level = "warning"
+
+[formatter]
+print-width = 120
