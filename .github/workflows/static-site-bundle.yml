@@ -36,7 +36,13 @@ jobs:
         run: |
           php -r '$file="composer.json"; $c=json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR); foreach (["require", "require-dev"] as $section) { foreach ($c[$section] as $name => $version) { if (str_starts_with($name, "symfony/") && !in_array($name, ["symfony/service-contracts", "symfony/cache-contracts", "symfony/reprise"], true)) { $c[$section][$name]=getenv("SYMFONY_VERSION"); } } } if (str_contains(getenv("SYMFONY_VERSION"), "dev")) { $c["minimum-stability"]="dev"; $c["prefer-stable"]=true; } file_put_contents($file, json_encode($c, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL);'
       - run: composer update --prefer-dist --no-interaction
+      # --strict only on released versions: on the dev leg the step above has
+      # just written an exact constraint (8.2.x-dev) into composer.json, and
+      # --strict would reject that rewrite instead of the package.
       - run: composer validate --strict
+        if: ${{ !contains(matrix.symfony, 'dev') }}
+      - run: composer validate
+        if: ${{ contains(matrix.symfony, 'dev') }}
       - run: composer format:check
       - run: composer lint
       - run: composer analyze
