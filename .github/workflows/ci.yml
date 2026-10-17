@@ -30,7 +30,7 @@ jobs:
           php-version: '8.5'
           extensions: mbstring, dom, xml, xmlwriter
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.3
 
       - name: Install Symfony bundle dependencies
         run: composer install --working-dir=packages/static-site-bundle --prefer-dist --no-interaction
