@@ -1,0 +1,193 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+  "meta": {
+    "theme": "even",
+    "lang": "fr",
+    "lastModified": "2026-10-19T00:00:00.000Z",
+    "themeConfig": {
+      "ui": {
+        "primary": "#c80044",
+        "headerFrom": "#3281bc",
+        "headerTo": "#cf4a0f66",
+        "footerFrom": "#0271bf",
+        "footerTo": "#003d68",
+        "backgroundTilesSeed": 188,
+        "showLogos": false,
+        "links": ["phone", "email", "location", "profiles"],
+        "cta": {
+          "text": "Discutons de votre projet",
+          "url": "https://example.com/contact",
+          "icon": "tabler:calendar-clock"
+        }
+      },
+      "seo": {
+        "title": "Camille Exemple | Ingénieure logiciel",
+        "description": "Ingénieure logiciel spécialisée en architectures backend et rendu serveur.",
+        "canonical": "https://example.com",
+        "favicon": "tabler:user-square-rounded",
+        "robots": "index, follow",
+        "firstName": "Camille",
+        "lastName": "Exemple"
+      },
+      "modest": true
+    }
+  },
+  "basics": {
+    "name": "Camille Exemple",
+    "label": "Ingénieure logiciel",
+    "image": "https://example.com/portrait.png",
+    "email": "camille@example.com",
+    "phone": "+33123456789",
+    "birthDate": "1990-04-12",
+    "url": "https://example.com",
+    "summary": "Ingénieure logiciel depuis 2013, spécialisée dans les architectures backend et le rendu serveur. J'aime les outils réutilisables, les interfaces typées et les tests qui prouvent quelque chose.",
+    "location": {
+      "address": "1 rue de l'Exemple",
+      "postalCode": "75001",
+      "city": "Paris",
+      "countryCode": "FR",
+      "region": "Île-de-France"
+    },
+    "profiles": [
+      {
+        "network": "GitHub",
+        "username": "camille-exemple",
+        "url": "https://github.com/camille-exemple"
+      },
+      {
+        "network": "LinkedIn",
+        "username": "camille-exemple",
+        "url": "https://www.linkedin.com/in/camille-exemple"
+      }
+    ]
+  },
+  "work": [
+    {
+      "company": "Entreprise Actuelle",
+      "position": "Ingénieure principale",
+      "description": "Plateforme de logistique",
+      "url": "https://example.com/entreprise-actuelle",
+      "startDate": "2022-03",
+      "location": "Paris",
+      "summary": "Conception et maintenance d'un monolithe PHP et d'une bibliothèque de composants TypeScript.",
+      "highlights": [
+        "Réduction de 40 % du temps de rendu des pages critiques.",
+        "Migration progressive vers un moteur de rendu typé, sans régression fonctionnelle.",
+        "Accompagnement de trois développeurs sur l'architecture et les tests."
+      ],
+      "skills": ["PHP", "Symfony", "TypeScript", "Architecture"]
+    },
+    {
+      "company": "Entreprise Précédente",
+      "position": "Développeuse backend",
+      "description": "Logiciel de gestion",
+      "url": "https://example.com/entreprise-precedente",
+      "startDate": "2017-01",
+      "endDate": "2022-02",
+      "location": "Lyon",
+      "summary": "Développement d'API et de services de facturation sur une base MySQL.",
+      "highlights": [
+        "Conception d'un service de facturation traité en asynchrone.",
+        "Écriture de la suite de tests d'intégration de l'équipe."
+      ],
+      "skills": ["PHP", "MySQL", "Redis"]
+    },
+    {
+      "company": "Premier Employeur",
+      "position": "Développeuse junior",
+      "url": "https://example.com/premier-employeur",
+      "startDate": "2013-09",
+      "endDate": "2016-12",
+      "location": "Nantes",
+      "summary": "Maintenance d'applications web et premiers pas en architecture logicielle.",
+      "skills": ["PHP", "JavaScript"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Moteur de rendu",
+      "description": "Moteur de rendu JSX vers HTML en TypeScript, sans React ni JavaScript côté navigateur.",
+      "url": "https://example.com/moteur",
+      "startDate": "2025-09",
+      "highlights": [
+        "Sortie échappée et URL filtrées par défaut.",
+        "Suite de tests contrôlée par mutation.",
+        "Précompilation, plugin Vite et règles ESLint."
+      ]
+    },
+    {
+      "name": "Bibliothèque de traduction",
+      "description": "Traduction typée en TypeScript, sans dépendance.",
+      "url": "https://example.com/i18n",
+      "startDate": "2026-02",
+      "highlights": ["Inférence des clés à la compilation."]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Université de l'Exemple",
+      "url": "https://example.com/universite",
+      "area": "Génie logiciel",
+      "studyType": "Bac+5",
+      "startDate": "2011-09",
+      "endDate": "2013-06",
+      "score": "Mention bien",
+      "courses": [
+        "Architecture des systèmes d'information.",
+        "Conception et mise en œuvre de systèmes distribués.",
+        "Management de projets."
+      ]
+    },
+    {
+      "institution": "Institut Technique de l'Exemple",
+      "area": "Informatique de gestion",
+      "studyType": "Bac+2",
+      "startDate": "2009-09",
+      "endDate": "2011-06"
+    }
+  ],
+  "certificates": [
+    {
+      "name": "Certification Architecture Logicielle",
+      "date": "2023-05-01",
+      "issuer": "Organisme d'Exemple",
+      "url": "https://example.com/certificat"
+    },
+    {
+      "name": "Gestion de projet",
+      "date": "2021-02-01",
+      "issuer": "Organisme d'Exemple"
+    }
+  ],
+  "skills": [
+    {
+      "name": "Architecture et backend",
+      "level": "Confirmé",
+      "keywords": [
+        "PHP",
+        "Symfony",
+        "Architecture logicielle",
+        "Conception d'API",
+        "MySQL",
+        "Redis"
+      ]
+    },
+    {
+      "name": "Frontend et rendu",
+      "level": "Confirmé",
+      "keywords": ["TypeScript", "JSX", "SSR", "Tailwind CSS", "Vite"]
+    },
+    {
+      "name": "Qualité",
+      "keywords": [
+        "Tests d'intégration",
+        "Tests par propriétés",
+        "Revue de code"
+      ]
+    }
+  ],
+  "languages": [
+    { "language": "Français", "fluency": "Langue maternelle" },
+    { "language": "Anglais", "fluency": "Avancé" }
+  ]
+}
