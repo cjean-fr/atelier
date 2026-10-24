@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CJean\StaticSiteBundle\Generation;
 
 use CJean\StaticSiteBundle\Routing\OutputPath;
+use CJean\StaticSiteBundle\Routing\SiteUrl;
 use Symfony\Reprise\Asset\EntrypointsLookupInterface;
 
 /** @internal */
@@ -18,6 +19,7 @@ final readonly class AssetExporter
         private string $viteBuildDirectory,
         private ?EntrypointsLookupInterface $entrypointsLookup = null,
         private ?string $metadataDirectory = null,
+        private string $defaultUri = '',
     ) {}
 
     public function exportTo(StagingDirectory $staging): void
@@ -130,6 +132,10 @@ final readonly class AssetExporter
         if (!is_string($path) || $path === '') {
             throw new \RuntimeException('Invalid Vite asset path: ' . $reference);
         }
+        // Below a base path, Reprise may emit references with or without it; files stay relative to public/.
+        if ($this->basePath() !== '' && str_starts_with($path, $this->basePath() . '/')) {
+            $path = substr($path, strlen($this->basePath()));
+        }
         // Reprise emits public asset paths, with or without the leading slash.
         $file = rawurldecode(ltrim($path, '/'));
         OutputPath::validateFile($file);
@@ -157,5 +163,10 @@ final readonly class AssetExporter
             }
             $source = $parent;
         } while (true);
+    }
+
+    private function basePath(): string
+    {
+        return SiteUrl::basePathOf($this->defaultUri);
     }
 }

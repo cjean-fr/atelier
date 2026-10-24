@@ -10,7 +10,7 @@ final class JsonFormat extends BufferedTextFormat
 {
     public function __construct()
     {
-        parent::__construct('json', 'json', ['application/json']);
+        parent::__construct('json');
     }
 
     public function render(Response $response): string

@@ -18,7 +18,7 @@ final readonly class DirectoryPublisher
 
     /**
      * @param callable(StagingDirectory): int $write Receives an empty, write-once staging directory.
-     * @param (callable(string): void)|null $afterActivation Private diagnostics written under the lock; failure is a warning.
+     * @param (callable(string): void)|null $afterActivation Runs under the lock once active (listeners, diagnostics); failure is a warning.
      */
     public function publish(callable $write, ?callable $afterActivation = null): PublicationResult
     {
@@ -80,7 +80,7 @@ final readonly class DirectoryPublisher
                     $afterActivation($buildId);
                 }
             } catch (\Throwable $error) {
-                $cleanupErrors[] = 'Build diagnostics unavailable: ' . $error->getMessage();
+                $cleanupErrors[] = 'Post-publication step failed: ' . $error->getMessage();
             }
         } catch (\Throwable $error) {
             $failure = $error;

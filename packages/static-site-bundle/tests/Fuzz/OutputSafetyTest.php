@@ -118,17 +118,17 @@ final class OutputSafetyTest extends TestCase
                     public function __construct(
                         private readonly string $file,
                     ) {
-                        parent::__construct('custom', 'txt', ['text/x-custom']);
+                        parent::__construct('txt');
                     }
 
-                    public function outputPath(string $url): string
+                    public function outputPath(string $url, string $mediaType): string
                     {
                         return $this->file;
                     }
                 };
                 try {
                     $result = new FormatRegistry([$format])->export(new Response('overwrite', headers: [
-                        'Content-Type' => 'text/x-custom',
+                        'Content-Type' => 'text/plain',
                     ]), '/' . $corpus->token());
                     new StagingDirectory($fs, $root . '/stage')->write($result->file, $result->content);
                 } catch (\InvalidArgumentException) {

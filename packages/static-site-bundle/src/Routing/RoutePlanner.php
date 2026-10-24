@@ -29,13 +29,11 @@ final readonly class RoutePlanner
     public function pages(?\Symfony\Contracts\Cache\TagAwareCacheInterface $discoveryCache = null): array
     {
         $previous = $this->router->getContext();
-        $origin = parse_url($this->baseUrl);
-        if ($origin === false || !isset($origin['scheme'], $origin['host'])) {
-            throw new \LogicException('Invalid base_url origin.');
-        }
-        $origin['port'] ??= $origin['scheme'] === 'https' ? 443 : 80;
+        $site = SiteUrl::fromDefaultUri($this->baseUrl);
+        $basePath = $site->basePath;
+        $origin = ['scheme' => $site->scheme, 'host' => $site->host, 'port' => $site->port];
         try {
-            $this->router->setContext(new RequestContext()->fromUri($this->baseUrl));
+            $this->router->setContext(new RequestContext()->fromUri($site->url));
             $pages = [];
             $seen = [];
             foreach ($this->router->getRouteCollection() as $name => $route) {
@@ -80,10 +78,12 @@ final readonly class RoutePlanner
                                     return $captured;
                                 },
                             );
+                    } elseif ($page->parameters !== null) {
+                        $sets = $page->parameters;
                     } else {
                         if ($route->compile()->getVariables() !== []) {
                             throw new \LogicException(sprintf(
-                                'Dynamic SSG route "%s" needs a provider in #[StaticPage].',
+                                'Dynamic SSG route "%s" needs a provider or inline parameters in #[StaticPage].',
                                 $name,
                             ));
                         }
@@ -98,7 +98,7 @@ final readonly class RoutePlanner
                         /** @var mixed $parameters Provider contracts must also be checked at runtime. */
                         if (!is_array($parameters)) {
                             throw new \LogicException(sprintf(
-                                'Provider for "%s" must yield parameter arrays or RouteParameters.',
+                                'Parameter sets for "%s" must be arrays or RouteParameters.',
                                 $name,
                             ));
                         }
@@ -111,7 +111,10 @@ final readonly class RoutePlanner
                         $target['port'] ??= $target['scheme'] === 'https' ? 443 : 80;
                         foreach (['scheme', 'host', 'port'] as $key) {
                             if (($origin[$key] ?? null) !== ($target[$key] ?? null)) {
-                                throw new \LogicException(sprintf('Route "%s" points outside base_url.', $name));
+                                throw new \LogicException(sprintf(
+                                    'Route "%s" points outside framework.router.default_uri.',
+                                    $name,
+                                ));
                             }
                         }
                         $url = $target['path'] ?? '/';
@@ -119,7 +122,13 @@ final readonly class RoutePlanner
                             $url .= '?' . $target['query'];
                         }
                         OutputPath::decodeUrl($url);
-                        $matched = $this->router->match($url);
+                        if ($basePath !== '' && !str_starts_with($url, $basePath . '/')) {
+                            throw new \LogicException(sprintf(
+                                'Route "%s" points outside framework.router.default_uri.',
+                                $name,
+                            ));
+                        }
+                        $matched = $this->router->match(substr($url, strlen($basePath)));
                         if (($matched['_route'] ?? null) !== $name) {
                             throw new \LogicException(sprintf(
                                 'Route "%s" is shadowed by another route at "%s".',

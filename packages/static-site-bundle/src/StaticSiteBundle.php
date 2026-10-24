@@ -9,9 +9,7 @@ use CJean\StaticSiteBundle\DependencyInjection\ControllerMetadataPass;
 use CJean\StaticSiteBundle\Format\FormatRegistry;
 use CJean\StaticSiteBundle\Format\HtmlFormat;
 use CJean\StaticSiteBundle\Format\JsonFormat;
-use CJean\StaticSiteBundle\Format\MarkdownFormat;
 use CJean\StaticSiteBundle\Format\OutputFormatInterface;
-use CJean\StaticSiteBundle\Format\TextFormat;
 use CJean\StaticSiteBundle\Generation\AssetExporter;
 use CJean\StaticSiteBundle\Generation\DirectoryPublisher;
 use CJean\StaticSiteBundle\Generation\PageRenderer;
@@ -42,6 +40,7 @@ final class StaticSiteBundle extends AbstractBundle
     {
         parent::build($container);
         $container->addCompilerPass(new ControllerMetadataPass(), PassConfig::TYPE_BEFORE_REMOVING);
+        $container->addCompilerPass(new \CJean\StaticSiteBundle\DependencyInjection\RequestFormatsPass());
         $container->registerForAutoconfiguration(OutputFormatInterface::class)->addTag('static_site.format');
         $container->registerForAutoconfiguration(RouteProviderInterface::class)->addTag('static_site.provider');
     }
@@ -51,23 +50,6 @@ final class StaticSiteBundle extends AbstractBundle
         $definition
             ->rootNode()
             ->children()
-            ->scalarNode('base_url')
-            ->defaultValue('https://localhost')
-            ->validate()
-            ->ifTrue(
-                static fn($value) => (
-                    !is_string($value)
-                    || !filter_var($value, FILTER_VALIDATE_URL)
-                    || !in_array(parse_url($value, PHP_URL_SCHEME), ['http', 'https'], true)
-                    || (parse_url($value, PHP_URL_PATH) ?: '/') !== '/'
-                    || parse_url($value, PHP_URL_QUERY) !== null
-                    || parse_url($value, PHP_URL_FRAGMENT) !== null
-                    || parse_url($value, PHP_URL_USER) !== null
-                ),
-            )
-            ->thenInvalid('base_url must be an HTTP(S) origin without path, query, fragment or credentials.')
-            ->end()
-            ->end()
             ->scalarNode('output_dir')
             ->defaultValue('%kernel.project_dir%/var/static')
             ->end()
@@ -85,20 +67,30 @@ final class StaticSiteBundle extends AbstractBundle
             ->scalarNode('reprise_metadata_directory')
             ->defaultNull()
             ->end()
+            ->booleanNode('sitemap')
+            ->info('Generate sitemap.xml at build time and serve it in SSR.')
+            ->defaultTrue()
+            ->end()
             ->end();
     }
 
     public function loadExtension(array $config, ContainerConfigurator $configurator, ContainerBuilder $container): void
     {
-        /** @var array{base_url: string, output_dir: string, assets: list<string>, require_vite_build: bool, vite_build_directory: string, reprise_metadata_directory: ?string} $config Validated by configure(). */
+        /** @var array{ output_dir: string, assets: list<string>, require_vite_build: bool, vite_build_directory: string, reprise_metadata_directory: ?string, sitemap: bool} $config Validated by configure(). */
         $services = $configurator->services();
-        foreach ([HtmlFormat::class, JsonFormat::class, TextFormat::class, MarkdownFormat::class] as $format) {
+        // The public URL is Symfony's: framework.router.default_uri.
+        $defaultUri = '%router.request_context.base_url%';
+        foreach ([HtmlFormat::class, JsonFormat::class] as $format) {
             $services->set($format)->tag('static_site.format');
         }
         $services
             ->set(\CJean\StaticSiteBundle\Routing\VirtualSitemapLoader::class)
             ->decorate('routing.loader')
-            ->args([service(\CJean\StaticSiteBundle\Routing\VirtualSitemapLoader::class . '.inner'), '%kernel.debug%']);
+            ->args([
+                service(\CJean\StaticSiteBundle\Routing\VirtualSitemapLoader::class . '.inner'),
+                '%kernel.debug%',
+                $config['sitemap'],
+            ]);
         $services
             ->set(\CJean\StaticSiteBundle\Controller\SitemapController::class)
             ->args([service(\CJean\StaticSiteBundle\Generation\SitemapService::class)])
@@ -121,16 +113,18 @@ final class StaticSiteBundle extends AbstractBundle
             service('router'),
             tagged_locator('static_site.provider'),
             service(StaticPageResolver::class),
-            rtrim($config['base_url'], '/'),
+            $defaultUri,
         ]);
         $services->set(PageRenderer::class)->args([
             service('kernel'),
             service('router'),
             service(FormatRegistry::class),
             service('services_resetter')->nullOnInvalid(),
+            service('event_dispatcher'),
+            $defaultUri,
         ]);
         $services->set(Filesystem::class);
-        $services->set(\CJean\StaticSiteBundle\Generation\SitemapGenerator::class)->args([$config['base_url']]);
+        $services->set(\CJean\StaticSiteBundle\Generation\SitemapGenerator::class)->args([$defaultUri]);
         $services
             ->set('cache.static_site.sitemap.storage', \Symfony\Component\Cache\Adapter\FilesystemAdapter::class)
             ->args(['static_site_sitemap', 0, '%kernel.cache_dir%/static_site_sitemap'])
@@ -176,6 +170,7 @@ final class StaticSiteBundle extends AbstractBundle
             $config['vite_build_directory'],
             service(EntrypointsLookupInterface::class)->nullOnInvalid(),
             $config['reprise_metadata_directory'],
+            $defaultUri,
         ]);
         $services->set(SiteBuilder::class)->args([
             service(RoutePlanner::class),
@@ -183,9 +178,20 @@ final class StaticSiteBundle extends AbstractBundle
             service(DirectoryPublisher::class),
             service(AssetExporter::class),
             service(\CJean\StaticSiteBundle\Generation\BuildReportStore::class),
-            service(\CJean\StaticSiteBundle\Generation\SitemapGenerator::class),
-            service(\CJean\StaticSiteBundle\Generation\SitemapService::class),
+            service('event_dispatcher'),
         ]);
+        if ($config['sitemap']) {
+            $services->set(\CJean\StaticSiteBundle\EventListener\SitemapListener::class)->args([
+                service(\CJean\StaticSiteBundle\Generation\SitemapGenerator::class),
+                service(\CJean\StaticSiteBundle\Generation\SitemapService::class),
+            ])->tag('kernel.event_listener', [
+                'event' => \CJean\StaticSiteBundle\Event\SiteRenderedEvent::class,
+                'method' => 'onSiteRendered',
+            ])->tag('kernel.event_listener', [
+                'event' => \CJean\StaticSiteBundle\Event\SitePublishedEvent::class,
+                'method' => 'onSitePublished',
+            ]);
+        }
         $services
             ->set(BuildCommand::class)
             ->args([
