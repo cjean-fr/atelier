@@ -25,3 +25,9 @@ statique. Ses références à un CDN restent externes ; elles ne sont pas intég
 Activation d’un export validé à son emplacement de sortie. Les anciens fichiers
 cessent alors de représenter le site. Le nettoyage des fichiers temporaires est
 une opération ultérieure ; son échec ne change pas quel export est actif.
+
+## Chemin de base
+
+Préfixe d’URL sous lequel le site est servi (`/docs`), lu dans le chemin de
+`framework.router.default_uri`. Il appartient aux URL — liens, assets, sitemap —
+et jamais aux fichiers : l’export garde sa propre racine.

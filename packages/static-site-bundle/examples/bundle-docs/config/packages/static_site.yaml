@@ -1,3 +1,2 @@
 static_site:
-    base_url: 'https://static-site.example'
     assets: ['build', 'favicon.svg']

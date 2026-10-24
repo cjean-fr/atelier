@@ -5,17 +5,32 @@ title: "Configurer et exporter"
 # Configurer et exporter
 
 ```yaml
+# config/packages/framework.yaml
+framework:
+    router:
+        default_uri: 'https://mon-site.fr'
+```
+
+```yaml
 # config/packages/static_site.yaml
 static_site:
-    base_url: 'https://mon-site.fr'
     output_dir: '%kernel.project_dir%/var/static'
     assets: ['build', 'bundles', 'images', 'favicon.ico', 'robots.txt']
     require_vite_build: true
     vite_build_directory: build
+    sitemap: true
 ```
 
-`base_url` doit être une origine HTTP (S), sans préfixe de chemin. Le site est
-actuellement prévu pour un déploiement à la racine du domaine. Les fichiers
+L’URL publique du site est celle que Symfony utilise hors requête HTTP :
+`framework.router.default_uri`, qui peut venir d’une variable d’environnement.
+Elle est obligatoire pour le build et le sitemap, en HTTP(S), sans query ni
+fragment. Un chemin y place le site sous un préfixe : avec
+`default_uri: 'https://mon-site.fr/docs'`, les liens de `path()` et `url()`, les
+URL de `asset()` et des balises Reprise ainsi que le sitemap portent `/docs` ;
+les fichiers restent à la racine de `output_dir`, à publier sous `/docs`.
+Garder `publicPath: '/build/'` dans le plugin Reprise : les URL que Vite écrit
+lui-même dans les fichiers compilés (`url()` du CSS, imports dynamiques) ne
+portent pas le préfixe, à vérifier si l’application en contient. `sitemap: false` désactive le sitemap du build et la route SSR. Les fichiers
 publics absents de la liste sont ignorés ; les entrées optionnelles inexistantes
 sont ignorées. Le build Vite et ses métadonnées de production sont obligatoires
 par défaut. Pour un site sans assets Vite, désactiver `require_vite_build`. Les

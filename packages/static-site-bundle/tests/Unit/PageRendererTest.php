@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace CJean\StaticSiteBundle\Tests\Unit;
 
+use CJean\StaticSiteBundle\Event\PageRenderedEvent;
 use CJean\StaticSiteBundle\Format\FormatRegistry;
 use CJean\StaticSiteBundle\Format\HtmlFormat;
 use CJean\StaticSiteBundle\Format\JsonFormat;
-use CJean\StaticSiteBundle\Format\MarkdownFormat;
-use CJean\StaticSiteBundle\Format\TextFormat;
 use CJean\StaticSiteBundle\Generation\PageRenderer;
 use CJean\StaticSiteBundle\Routing\ExportPage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -77,7 +77,7 @@ final class PageRendererTest extends TestCase
         $router = $this->createMock(RouterInterface::class);
         $router->method('getContext')->willReturn(new RequestContext());
         $router->expects(self::once())->method('setContext');
-        $registry = new FormatRegistry([new HtmlFormat(), new JsonFormat(), new TextFormat(), new MarkdownFormat()]);
+        $registry = new FormatRegistry([new HtmlFormat(), new JsonFormat()], ['md' => 'text/markdown']);
         $result = new PageRenderer($kernel, $router, $registry)->render(new ExportPage(
             'data',
             'https://example.test/data',
@@ -91,7 +91,7 @@ final class PageRendererTest extends TestCase
     public static function failureScenarios(): iterable
     {
         yield ['handle', true, false];
-        yield ['terminate', true, true];
+        yield ['listener', true, true];
         yield ['format', true, false];
         yield [null, true, false];
         yield [null, false, true];
@@ -137,14 +137,14 @@ final class PageRendererTest extends TestCase
                     'Content-Type' => $phase === 'format' ? 'application/x-unknown' : 'text/html',
                 ]);
             });
-        $kernel
-            ->expects($phase === 'handle' ? self::never() : self::once())
-            ->method('terminate')
-            ->willReturnCallback(static function () use ($phase, $original): void {
-                if ($phase === 'terminate') {
-                    throw $original;
-                }
-            });
+        // kernel.terminate work (mails, Messenger, ...) must not run once per exported page.
+        $kernel->expects(self::never())->method('terminate');
+        $events = new EventDispatcher();
+        $events->addListener(PageRenderedEvent::class, static function () use ($phase, $original): void {
+            if ($phase === 'listener') {
+                throw $original;
+            }
+        });
         $resetter = $this->createMock(ResetInterface::class);
         $resetter
             ->expects(self::once())
@@ -160,11 +160,12 @@ final class PageRendererTest extends TestCase
                 $router,
                 new FormatRegistry([new HtmlFormat()]),
                 $resetter,
+                $events,
             )->render(new ExportPage('test', 'https://example.test/'));
             self::fail('Expected a render or cleanup failure.');
         } catch (\RuntimeException $failure) {
             if ($phase === 'format') {
-                self::assertStringContainsString('Unsupported or missing', $failure->getMessage());
+                self::assertStringContainsString('Declare it in framework.request.formats', $failure->getMessage());
             } else {
                 self::assertSame($phase !== null ? $original : ($resetFails ? $resetError : $restoreError), $failure);
             }

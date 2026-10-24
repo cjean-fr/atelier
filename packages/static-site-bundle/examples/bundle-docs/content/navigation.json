@@ -42,5 +42,9 @@
   "index": {
     "title": "StaticSiteBundle",
     "order": 0
+  },
+  "api/events": {
+    "title": "Événements",
+    "order": 8
   }
 }

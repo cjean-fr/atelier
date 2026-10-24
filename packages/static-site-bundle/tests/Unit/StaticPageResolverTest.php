@@ -69,6 +69,55 @@ final class StaticPageResolverTest extends TestCase
         $this->expectException(\LogicException::class);
         new StaticPageResolver()->resolve('article', $route);
     }
+
+    public function testRouteDefaultSelectsExcludesOrConfiguresAnyController(): void
+    {
+        $resolver = new StaticPageResolver();
+        $route = static fn(mixed $value) => new Route('/page', [
+            '_controller' => MetadataController::class . '::plain',
+            StaticPage::ROUTE_DEFAULT => $value,
+        ]);
+        self::assertInstanceOf(StaticPage::class, $resolver->resolve('page', $route(true)));
+        self::assertNull($resolver->resolve('page', $route(false)));
+        $page = $resolver->resolve('page', $route(['parameters' => [['slug' => 'a']], 'sitemap' => false]));
+        self::assertSame([['slug' => 'a']], $page?->parameters);
+        self::assertFalse($page?->sitemap);
+        // The default overrides the attribute of the action.
+        self::assertNull($resolver->resolve('page', new Route('/page', [
+            '_controller' => MetadataController::class . '::all',
+            StaticPage::ROUTE_DEFAULT => false,
+        ])));
+    }
+
+    public function testInvalidRouteDefaultsFail(): void
+    {
+        foreach (['yes', ['route' => 'other'], ['provider' => 1], ['provider' => 'a', 'parameters' => []]] as $value) {
+            try {
+                new StaticPageResolver()->resolve('page', new Route('/page', [StaticPage::ROUTE_DEFAULT => $value]));
+                self::fail('Expected an invalid default to fail: ' . json_encode($value));
+            } catch (\LogicException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testClassAttributeSelectsGetActionsWithoutTheirOwnAttribute(): void
+    {
+        $resolver = new StaticPageResolver();
+        $route = static fn(string $method, array $methods = []) => new Route(
+            '/page',
+            [
+                '_controller' => ClassMetadataController::class . '::' . $method,
+            ],
+            methods: $methods,
+        );
+        self::assertSame('pages', $resolver->resolve('page', $route('inherited'))?->provider);
+        self::assertSame('pages', $resolver->resolve('page', $route('inherited', ['GET', 'HEAD']))?->provider);
+        self::assertNull($resolver->resolve('page', $route('inherited', ['POST'])));
+        self::assertSame('own', $resolver->resolve('page', $route('own'))?->provider);
+        // An action with its own attributes ignores the class one, even when none selects this route.
+        self::assertNull($resolver->resolve('page', $route('elsewhere')));
+    }
 }
 
 final class MetadataController
@@ -96,4 +145,16 @@ final class InvokableMetadataController
 {
     #[StaticPage]
     public function __invoke(): void {}
+}
+
+#[StaticPage(provider: 'pages')]
+final class ClassMetadataController
+{
+    public function inherited(): void {}
+
+    #[StaticPage(provider: 'own')]
+    public function own(): void {}
+
+    #[StaticPage(route: 'other')]
+    public function elsewhere(): void {}
 }

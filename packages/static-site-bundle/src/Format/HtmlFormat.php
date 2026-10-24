@@ -10,7 +10,7 @@ final class HtmlFormat extends BufferedTextFormat
 {
     public function __construct()
     {
-        parent::__construct('html', 'html', ['text/html'], true);
+        parent::__construct('html', html: true);
     }
 
     public function render(Response $response): string

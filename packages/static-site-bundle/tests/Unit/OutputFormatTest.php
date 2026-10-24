@@ -8,9 +8,7 @@ use CJean\StaticSiteBundle\Format\BufferedTextFormat;
 use CJean\StaticSiteBundle\Format\FormatRegistry;
 use CJean\StaticSiteBundle\Format\HtmlFormat;
 use CJean\StaticSiteBundle\Format\JsonFormat;
-use CJean\StaticSiteBundle\Format\MarkdownFormat;
 use CJean\StaticSiteBundle\Format\OutputFormatInterface;
-use CJean\StaticSiteBundle\Format\TextFormat;
 use CJean\StaticSiteBundle\Routing\OutputPath;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -24,22 +22,31 @@ final class OutputFormatTest extends TestCase
         yield [new HtmlFormat(), '/hello/', 'hello/index.html', 'text/html; charset=UTF-8', '<p>Hello</p>', true];
         yield [new JsonFormat(), '/data.json', 'data.json', 'application/json', '{"n":12345678901234567890}', false];
         yield [new JsonFormat(), '/data', 'data.json', 'application/json', 'null', false];
-        yield [new TextFormat(), '/robots.txt', 'robots.txt', 'text/plain', '', false];
-        yield [new MarkdownFormat(), '/guide.md', 'guide.md', 'text/markdown', '# Hello', false];
-        yield [new MarkdownFormat(), '/guide', 'guide.md', 'text/markdown; charset=utf-8', '# Hello', false];
+        yield [null, '/robots.txt', 'robots.txt', 'text/plain', '', false];
+        yield [null, '/data.csv', 'data.csv', 'text/csv', "id\n1\n", false];
+        yield [null, '/feed.xml', 'feed.xml', 'application/rss+xml', '<rss/>', false];
+        yield [null, '/feed', 'feed.rss', 'application/rss+xml', '<rss/>', false];
+        yield [null, '/person.json', 'person.json', 'application/ld+json', '{}', false];
+        yield [null, '/guide.md', 'guide.md', 'text/markdown', '# Hello', false];
+        yield [null, '/guide', 'guide.md', 'text/markdown; charset=utf-8', '# Hello', false];
+        yield [null, '/page', 'page/index.html', 'application/xhtml+xml', '<html/>', true];
         yield [new JsonFormat(), '/', 'index.json', 'application/json', '[]', false];
     }
 
     #[DataProvider('formats')]
     public function testPathsAndBytes(
-        OutputFormatInterface $format,
+        ?OutputFormatInterface $format,
         string $url,
         string $file,
         string $mime,
         string $bytes,
         bool $sitemap,
     ): void {
-        $result = new FormatRegistry([$format])->export(new Response($bytes, 200, ['Content-Type' => $mime]), $url);
+        // Any Symfony request format exports without a class; Markdown comes from framework.request.formats.
+        $formats = $format === null ? [] : [$format];
+        $result = new FormatRegistry($formats, ['md' => 'text/markdown'])->export(new Response($bytes, 200, [
+            'Content-Type' => $mime,
+        ]), $url);
         self::assertSame($file, $result->file);
         self::assertSame($bytes, $result->content);
         self::assertSame($sitemap, $result->includeInSitemap);
@@ -51,16 +58,10 @@ final class OutputFormatTest extends TestCase
         new JsonFormat()->render(new Response('{broken}', 200, ['Content-Type' => 'application/json']));
     }
 
-    public function testWrongMediaTypeFails(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        new TextFormat()->render(new Response('<p>HTML</p>', 200, ['Content-Type' => 'text/html']));
-    }
-
     public function testWrongExtensionFails(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        new JsonFormat()->outputPath('/page.html');
+        new JsonFormat()->outputPath('/page.html', 'application/json');
     }
 
     public function testUnknownFormatFails(): void
@@ -88,55 +89,36 @@ final class OutputFormatTest extends TestCase
         self::assertSame('{}', $result->content);
     }
 
-    public function testAdapterDeclarationsAndResponsesUseTheSameMimeContract(): void
+    public function testApplicationFormatsNeedNoClass(): void
+    {
+        $registry = new FormatRegistry([], ['ndjson' => 'application/x-ndjson']);
+        $response = new Response("{}\n", 200, ['Content-Type' => 'Application/X-NDJSON; charset=UTF-8']);
+        self::assertSame('events.ndjson', $registry->export($response, '/events')->file);
+    }
+
+    public function testAClassAddsRulesToASymfonyFormat(): void
     {
         $csv = new class extends BufferedTextFormat {
             public function __construct()
             {
-                parent::__construct('csv', 'csv', [' Text/CSV ']);
+                parent::__construct('csv');
+            }
+
+            public function render(Response $response): string
+            {
+                return strtoupper(parent::render($response));
             }
         };
         $response = new Response('id,name', 200, ['Content-Type' => 'TEXT/CSV; charset=UTF-8']);
-        self::assertSame(['text/csv'], $csv->mediaTypes());
-        self::assertSame('id,name', $csv->render($response));
-        self::assertSame('data.csv', new FormatRegistry([$csv])->export($response, '/data')->file);
+        $result = new FormatRegistry([$csv])->export($response, '/data');
+        self::assertSame('data.csv', $result->file);
+        self::assertSame('ID,NAME', $result->content);
     }
 
-    public function testDuplicateDeclarationsAfterNormalizationFail(): void
-    {
-        $csv = new class extends BufferedTextFormat {
-            public function __construct()
-            {
-                parent::__construct('csv', 'csv', ['Text/CSV', ' text/csv ']);
-            }
-        };
-        $this->expectException(\LogicException::class);
-        new FormatRegistry([$csv]);
-    }
-
-    public function testDuplicateMediaTypesFail(): void
+    public function testDuplicateFormatsFail(): void
     {
         $this->expectException(\LogicException::class);
         new FormatRegistry([new HtmlFormat(), new HtmlFormat()]);
-    }
-
-    public static function mimeControls(): iterable
-    {
-        yield 'trailing NUL' => ["text/plain\0"];
-        yield 'trailing newline' => ["text/plain\n"];
-        yield 'leading CRLF' => ["\r\ntext/plain"];
-    }
-
-    #[DataProvider('mimeControls')]
-    public function testMimeControlBytesAreNotNormalizedAway(string $type): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        new class($type) extends BufferedTextFormat {
-            public function __construct(string $type)
-            {
-                parent::__construct('text', 'txt', [$type]);
-            }
-        };
     }
 
     public static function unsafeFiles(): iterable

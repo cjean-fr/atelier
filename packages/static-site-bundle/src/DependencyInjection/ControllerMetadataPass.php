@@ -28,7 +28,12 @@ final class ControllerMetadataPass implements CompilerPassInterface
                     $providerClasses[$id] = $class;
                 }
                 // Map only controller-like classes; avoid exposing unrelated container metadata.
-                foreach (new \ReflectionClass($class)->getMethods() as $method) {
+                $reflection = new \ReflectionClass($class);
+                if ($reflection->getAttributes(\CJean\StaticSiteBundle\Attribute\StaticPage::class) !== []) {
+                    $classes[$id] = $class;
+                    continue;
+                }
+                foreach ($reflection->getMethods() as $method) {
                     if ($method->getAttributes(\CJean\StaticSiteBundle\Attribute\StaticPage::class) === []) {
                         continue;
                     }

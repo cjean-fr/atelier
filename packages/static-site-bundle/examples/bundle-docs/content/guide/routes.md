@@ -5,8 +5,7 @@ title: "Sélectionner les routes"
 # Sélectionner les routes
 
 La génération est explicite. L’attribut PHP dédié `#[StaticPage]` se place sur
-l’action du contrôleur, à côté de `#[Route]`. Aucune option SSG n’est ajoutée aux
-routes Symfony. Une action fixe :
+l’action du contrôleur, à côté de `#[Route]`. Une action fixe :
 
 ```php
 use Symfony\Component\Routing\Attribute\Route;
@@ -54,6 +53,15 @@ contiennent les paramètres nécessaires à `UrlGeneratorInterface`. Tous les
 providers sont consommés et les URL sont validées avant le premier rendu :
 un provider n’est jamais suspendu pendant qu’un contrôleur s’exécute.
 
+Pour une courte liste fixe, les jeux de paramètres peuvent être écrits dans
+l’attribut, sans provider. `provider` et `parameters` sont exclusifs :
+
+```php
+#[Route('/langues/{code}', name: 'language', methods: ['GET'])]
+#[StaticPage(parameters: [['code' => 'fr'], ['code' => 'en']])]
+public function language(string $code): Response { /* ... */ }
+```
+
 ### Sitemap
 
 `sitemap.xml` liste les pages canoniques et indexables proposées aux moteurs de
@@ -95,6 +103,8 @@ public function parameters(string $routeName): iterable
 
 Le choix le plus précis l’emporte : `RouteParameters::$sitemap`, puis
 `#[StaticPage(sitemap: ...)]`, puis le format. `null` signifie « hériter ».
+Un listener de `PageRenderedEvent` peut encore exclure la page d’après son contenu
+rendu, par exemple une balise `noindex` (voir [Événements](/api/events)).
 Les pages hors sitemap sont exportées normalement ; `--dry-run` les signale avec
 `(not in sitemap)` quand leur exclusion est explicite. Le choix par défaut
 dépend du Content-Type et sera connu après le rendu.
@@ -111,8 +121,41 @@ route précise, utiliser `#[StaticPage(route: 'article', provider: ArticleProvid
 L’attribut est répétable pour associer des providers différents à des routes
 portées par une même action ; deux attributs sélectionnant la même route sont
 refusés. Pour une route localisée, `route` peut désigner son nom canonique (`article`) ou son nom concret
-(`article.fr`). L’attribut est réservé aux méthodes,
-y compris `__invoke`, et peut être porté par une méthode héritée.
+(`article.fr`). Sur une méthode, y compris `__invoke`, l’attribut peut être
+porté par une méthode héritée.
+
+Placé sur la classe, l’attribut sélectionne toutes ses actions qui acceptent GET ;
+celles réservées à d’autres méthodes HTTP, comme le traitement d’un formulaire,
+sont ignorées. Une action qui porte ses propres `#[StaticPage]` ignore celui de
+la classe, même si aucun ne sélectionne la route courante :
+
+```php
+#[StaticPage]
+final class PagesController
+{
+    #[Route('/a-propos', name: 'about', methods: ['GET'])]
+    public function about(): Response { /* exportée */ }
+
+    #[Route('/contact', name: 'contact_send', methods: ['POST'])]
+    public function send(): Response { /* ignorée : POST uniquement */ }
+}
+```
+
+Pour une route dont le contrôleur ne peut pas porter l’attribut, comme
+`TemplateController`, utiliser la clé `_static_page` de ses defaults. `true`
+sélectionne la route ; un tableau accepte `provider`, `sitemap` et `parameters` ;
+`false` exclut une route que sa classe sélectionnerait. La clé l’emporte sur
+les attributs de l’action :
+
+```yaml
+# config/routes.yaml
+legal:
+    path: /mentions-legales
+    controller: Symfony\Bundle\FrameworkBundle\Controller\TemplateController
+    defaults:
+        template: legal.html.twig
+        _static_page: true
+```
 
 Les contrôleurs peuvent être référencés par leur classe, un callable tableau ou
 un identifiant/alias du container Symfony. Les classes des contrôleurs déclarées

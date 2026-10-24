@@ -6,13 +6,17 @@ namespace CJean\StaticSiteBundle\Format;
 
 use Symfony\Component\HttpFoundation\Response;
 
-/** A format validates a response and returns its bytes; it does not write files. */
+/**
+ * Specific rules for one Symfony request format; a format without one is exported as is.
+ * A format validates a response and returns its bytes; it does not write files.
+ */
 interface OutputFormatInterface
 {
-    /** @return list<string> Exact media types, without charset parameters. */
-    public function mediaTypes(): array;
+    /** Symfony request format, e.g. "json": framework.request.formats maps it to its media types. */
+    public function name(): string;
 
-    public function outputPath(string $url): string;
+    /** @param string $mediaType The response media type, lowercase and without parameters. */
+    public function outputPath(string $url, string $mediaType): string;
 
     public function render(Response $response): string;
 

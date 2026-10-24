@@ -207,6 +207,13 @@ final class BuildTest extends TestCase
         self::assertStringNotContainsString('.md', $response->getContent());
     }
 
+    public function testMarkdownIsASymfonyRequestFormatInSsr(): void
+    {
+        $this->kernel = new TestKernel($this->directory, 'formats', 'dev');
+        $response = $this->kernel->handle(Request::create('https://example.test/notes.md'));
+        self::assertSame('text/markdown; charset=UTF-8', $response->headers->get('Content-Type'));
+    }
+
     public function testSsrStillWorksInDev(): void
     {
         $this->kernel = new TestKernel($this->directory, 'ok', 'dev');
@@ -250,7 +257,7 @@ final class BuildTest extends TestCase
     {
         $tester = $this->command('missing_provider');
         self::assertSame(1, $tester->execute([]));
-        self::assertStringContainsString('needs a provider in #[StaticPage]', $tester->getDisplay());
+        self::assertStringContainsString('needs a provider or inline parameters', $tester->getDisplay());
         self::assertDirectoryDoesNotExist($this->directory . '/var/static');
     }
 
@@ -304,6 +311,7 @@ final class BuildTest extends TestCase
         self::assertSame('{"hello":"world"}', file_get_contents($output . '/data.json'));
         self::assertSame("User-agent: *\n", file_get_contents($output . '/robots.txt'));
         self::assertSame('# Guide', file_get_contents($output . '/guide.md'));
+        self::assertSame('# Notes', file_get_contents($output . '/notes.md'));
         self::assertSame("id,name\n1,Hello\n", file_get_contents($output . '/data.csv'));
         self::assertSame('{"slug":"first"}', file_get_contents($output . '/data/first.json'));
         $sitemap = file_get_contents($output . '/sitemap.xml');
@@ -327,7 +335,7 @@ final class BuildTest extends TestCase
         $tester = $this->command('unknown_format');
         self::assertSame(0, $tester->execute(['--dry-run' => true]));
         self::assertSame(1, $tester->execute([]));
-        self::assertStringContainsString('Unsupported or missing response Content-Type', $tester->getDisplay());
+        self::assertStringContainsString('Declare it in framework.request.formats', $tester->getDisplay());
     }
 
     public function testNonHtmlSiteDoesNotGenerateEmptySitemap(): void
@@ -416,6 +424,105 @@ final class BuildTest extends TestCase
         self::assertSame(
             'previous',
             file_get_contents(glob($this->directory . '/var/static.backup-*')[0] . '/index.html'),
+        );
+    }
+
+    public function testBasePathPrefixesLinksAndSitemapButNotFiles(): void
+    {
+        // Reprise references assets with or without the base path; both map to public/build.
+        new Filesystem()->dumpFile(
+            $this->directory . '/public/build/manifest.json',
+            '{"build/app.js":"/build/app.js","build/prefixed.js":"/docs/build/app.js"}',
+        );
+        $tester = $this->command('base_path');
+        self::assertSame(0, $tester->execute([]), $tester->getDisplay());
+        self::assertSame(
+            '<a href="/docs/blog/first">first</a><link rel="canonical" href="https://example.test/docs/">',
+            file_get_contents($this->directory . '/var/static/index.html'),
+        );
+        self::assertFileExists($this->directory . '/var/static/blog/second/index.html');
+        self::assertFileExists($this->directory . '/var/static/build/app.js');
+        $sitemap = (string) file_get_contents($this->directory . '/var/static/sitemap.xml');
+        self::assertStringContainsString('<loc>https://example.test/docs/</loc>', $sitemap);
+        self::assertStringContainsString('<loc>https://example.test/docs/blog/first</loc>', $sitemap);
+    }
+
+    public function testThePublicUrlIsFrameworkRouterDefaultUri(): void
+    {
+        $tester = $this->command('no_default_uri');
+        self::assertSame(1, $tester->execute([]));
+        self::assertStringContainsString('framework.router.default_uri', $tester->getDisplay());
+    }
+
+    public function testDefaultUriMustBeAPlainSiteUrl(): void
+    {
+        $tester = $this->command('invalid_default_uri');
+        self::assertSame(1, $tester->execute([]));
+        self::assertStringContainsString('without query', $tester->getDisplay());
+    }
+
+    public function testSelectsTemplateRoutesClassActionsAndInlineParameters(): void
+    {
+        new Filesystem()->dumpFile(
+            $this->directory . '/templates/notice.html.twig',
+            '<html>{{ app.request.attributes.get("tag") ?? "notice" }}</html>',
+        );
+        $tester = $this->command('selection');
+        self::assertSame(0, $tester->execute([]), $tester->getDisplay());
+        $static = $this->directory . '/var/static';
+        self::assertSame('<html>notice</html>', file_get_contents($static . '/notice/index.html'));
+        self::assertSame('<html>php</html>', file_get_contents($static . '/tags/php/index.html'));
+        self::assertSame('<html>Class</html>', file_get_contents($static . '/class/index.html'));
+        self::assertFileDoesNotExist($static . '/class/form/index.html');
+        self::assertFileDoesNotExist($static . '/class/excluded/index.html');
+        self::assertSame('<html>two</html>', file_get_contents($static . '/inline/two/index.html'));
+        $sitemap = (string) file_get_contents($static . '/sitemap.xml');
+        self::assertStringContainsString('https://example.test/class', $sitemap);
+        self::assertStringNotContainsString('/tags/php', $sitemap);
+        self::assertStringNotContainsString('/inline/', $sitemap);
+    }
+
+    public function testListenersRewritePagesAddFilesAndDriveTheSitemap(): void
+    {
+        TestEventsListener::$published = [];
+        $tester = $this->command('events');
+        self::assertSame(0, $tester->execute([]), $tester->getDisplay());
+        $static = $this->directory . '/var/static';
+        self::assertSame('<html>Rewritten</html>', file_get_contents($static . '/index.html'));
+        self::assertSame(
+            "index.html\nblog/first/index.html\nblog/second/index.html",
+            file_get_contents($static . '/pages.txt'),
+        );
+        $sitemap = (string) file_get_contents($static . '/sitemap.xml');
+        self::assertStringContainsString('/blog/first', $sitemap);
+        self::assertStringNotContainsString('/blog/second', $sitemap);
+        self::assertCount(1, TestEventsListener::$published);
+        $this->kernel?->shutdown();
+        // The SSR sitemap applies the same listeners when it discovers pages on its own.
+        $this->kernel = new TestKernel($this->directory . '/fresh', 'events', 'dev');
+        $response = $this->kernel->handle(Request::create('https://example.test/sitemap.xml'));
+        self::assertSame($sitemap, $response->getContent());
+        new Filesystem()->remove($this->directory . '/fresh');
+    }
+
+    public function testApplicationRequestFormatsDriveCustomFormats(): void
+    {
+        $tester = $this->command('request_formats');
+        self::assertSame(0, $tester->execute([]), $tester->getDisplay());
+        self::assertSame("{\"a\":1}\n", file_get_contents($this->directory . '/var/static/events.ndjson'));
+    }
+
+    public function testSitemapCanBeDisabled(): void
+    {
+        $tester = $this->command('no_sitemap');
+        self::assertSame(0, $tester->execute([]), $tester->getDisplay());
+        self::assertFileExists($this->directory . '/var/static/index.html');
+        self::assertFileDoesNotExist($this->directory . '/var/static/sitemap.xml');
+        $this->kernel?->shutdown();
+        $this->kernel = new TestKernel($this->directory, 'no_sitemap', 'dev');
+        self::assertSame(
+            404,
+            $this->kernel->handle(Request::create('https://example.test/sitemap.xml'))->getStatusCode(),
         );
     }
 

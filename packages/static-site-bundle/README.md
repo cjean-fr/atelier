@@ -99,8 +99,7 @@ habituels de Symfony. Aucun listener SSG ne modifie les requêtes SSR.
 ## Sélectionner les routes
 
 La génération est explicite. L’attribut PHP dédié `#[StaticPage]` se place sur
-l’action du contrôleur, à côté de `#[Route]`. Aucune option SSG n’est ajoutée aux
-routes Symfony. Une action fixe :
+l’action du contrôleur, à côté de `#[Route]`. Une action fixe :
 
 ```php
 use Symfony\Component\Routing\Attribute\Route;
@@ -148,6 +147,15 @@ contiennent les paramètres nécessaires à `UrlGeneratorInterface`. Tous les
 providers sont consommés et les URL sont validées avant le premier rendu :
 un provider n’est jamais suspendu pendant qu’un contrôleur s’exécute.
 
+Pour une courte liste fixe, les jeux de paramètres peuvent être écrits dans
+l’attribut, sans provider. `provider` et `parameters` sont exclusifs :
+
+```php
+#[Route('/langues/{code}', name: 'language', methods: ['GET'])]
+#[StaticPage(parameters: [['code' => 'fr'], ['code' => 'en']])]
+public function language(string $code): Response { /* ... */ }
+```
+
 ### Sitemap
 
 `sitemap.xml` liste les pages canoniques et indexables proposées aux moteurs de
@@ -189,6 +197,8 @@ public function parameters(string $routeName): iterable
 
 Le choix le plus précis l’emporte : `RouteParameters::$sitemap`, puis
 `#[StaticPage(sitemap: ...)]`, puis le format. `null` signifie « hériter ».
+Un listener de `PageRenderedEvent` peut encore exclure la page d’après son contenu
+rendu, par exemple une balise `noindex` (voir [Événements](#événements)).
 Les pages hors sitemap sont exportées normalement ; `--dry-run` les signale avec
 `(not in sitemap)` quand leur exclusion est explicite. Le choix par défaut
 dépend du Content-Type et sera connu après le rendu.
@@ -205,8 +215,41 @@ route précise, utiliser `#[StaticPage(route: 'article', provider: ArticleProvid
 L’attribut est répétable pour associer des providers différents à des routes
 portées par une même action ; deux attributs sélectionnant la même route sont
 refusés. Pour une route localisée, `route` peut désigner son nom canonique (`article`) ou son nom concret
-(`article.fr`). L’attribut est réservé aux méthodes,
-y compris `__invoke`, et peut être porté par une méthode héritée.
+(`article.fr`). Sur une méthode, y compris `__invoke`, l’attribut peut être
+porté par une méthode héritée.
+
+Placé sur la classe, l’attribut sélectionne toutes ses actions qui acceptent GET ;
+celles réservées à d’autres méthodes HTTP, comme le traitement d’un formulaire,
+sont ignorées. Une action qui porte ses propres `#[StaticPage]` ignore celui de
+la classe, même si aucun ne sélectionne la route courante :
+
+```php
+#[StaticPage]
+final class PagesController
+{
+    #[Route('/a-propos', name: 'about', methods: ['GET'])]
+    public function about(): Response { /* exportée */ }
+
+    #[Route('/contact', name: 'contact_send', methods: ['POST'])]
+    public function send(): Response { /* ignorée : POST uniquement */ }
+}
+```
+
+Pour une route dont le contrôleur ne peut pas porter l’attribut, comme
+`TemplateController`, utiliser la clé `_static_page` de ses defaults. `true`
+sélectionne la route ; un tableau accepte `provider`, `sitemap` et `parameters` ;
+`false` exclut une route que sa classe sélectionnerait. La clé l’emporte sur
+les attributs de l’action :
+
+```yaml
+# config/routes.yaml
+legal:
+    path: /mentions-legales
+    controller: Symfony\Bundle\FrameworkBundle\Controller\TemplateController
+    defaults:
+        template: legal.html.twig
+        _static_page: true
+```
 
 Les contrôleurs peuvent être référencés par leur classe, un callable tableau ou
 un identifiant/alias du container Symfony. Les classes des contrôleurs déclarées
@@ -238,61 +281,85 @@ public function articles(): Response
     return new JsonResponse($this->articles->publishedData());
 }
 
-#[Route('/guides/{slug}.md', name: 'guide', methods: ['GET'])]
+// format: 'md' sets _format: Symfony derives Content-Type: text/markdown from it.
+#[Route('/guides/{slug}.md', name: 'guide', methods: ['GET'], format: 'md')]
 #[StaticPage(provider: GuideProvider::class)]
 public function guide(string $slug): Response
 {
-    return new Response($this->guides->markdown($slug), 200, [
-        'Content-Type' => 'text/markdown; charset=UTF-8',
-    ]);
+    return new Response($this->guides->markdown($slug));
 }
 ```
 
-| Format | Content-Type accepté | Sans extension dans l’URL | Avec extension | Sitemap |
-| --- | --- | --- | --- | --- |
-| `html` | `text/html` | `/page` → `page/index.html` | `.html`, `.htm` conservées | Oui |
-| `json` | `application/json` | `/data` → `data.json` | `.json` conservée | Non |
-| `txt` | `text/plain` | `/about` → `about.txt` | `.txt` conservée | Non |
-| `markdown` | `text/markdown` | `/guide` → `guide.md` | `.md` conservée | Non |
+Le format est celui de Symfony : `Request::getFormat()` appliqué au
+`Content-Type` de la réponse, ou `_format` de la route quand le contrôleur ne
+fixe pas de type. Le fichier prend le nom du format comme extension. Tout format
+connu de Symfony s’exporte donc sans code : `txt`, `css`, `js`, `json`, `xml`,
+`rss`, `atom`, `csv`, `yaml`, `pdf`, etc. Ajouter un format se fait là où Symfony
+l’attend, dans `framework.request.formats` ; il sert alors au SSR comme à
+l’export. Symfony ne connaît pas Markdown :
+
+```yaml
+# config/packages/framework.yaml
+framework:
+    request:
+        formats:
+            md: 'text/markdown'
+```
+
+| Réponse | Sans extension dans l’URL | Avec extension | Sitemap |
+| --- | --- | --- | --- |
+| `text/html` | `/page` → `page/index.html` | `.html`, `.htm` conservées | Oui |
+| `application/json` | `/data` → `data.json` | `.json` conservée, contenu validé | Non |
+| `text/plain` | `/about` → `about.txt` | `.txt` conservée | Non |
+| `text/markdown` (format `md`) | `/guide` → `guide.md` | `.md` conservée | Non |
+| `application/rss+xml` | `/feed` → `feed.rss` | `.rss` ou `.xml` (suffixe `+xml`) | Non |
 
 À la racine, chaque format produit `index` avec son extension. Utiliser des
 routes avec extension pour les sorties non HTML afin que l’URL SSR corresponde
-au fichier déployé. Les extensions incompatibles avec le format sont refusées.
-Les bytes sont conservés : pas de conversion automatique de HTML vers Markdown,
-ni de réencodage du JSON. Le JSON est validé avant publication. Le bundle n’altère pas le `_format` Symfony ou la logique du contrôleur.
-La casse du type MIME et les paramètres comme `charset=UTF-8` sont normalisés
-pour la sélection. `text/plain` produit du texte, même si le contenu ressemble
-à du Markdown ; utiliser `text/markdown` pour une sortie `.md`. Un type absent ou
-non pris en charge échoue explicitement, sans déduction d’après le nom de fichier.
+au fichier déployé. Une extension qui n’est ni le nom du format ni le suffixe
+structuré du type (`+xml`, `+json`) est refusée. Les bytes sont conservés : pas
+de conversion de HTML vers Markdown, ni de réencodage du JSON. La casse du type
+MIME et les paramètres comme `charset=UTF-8` sont ignorés pour la sélection. Un
+type absent ou inconnu de Symfony échoue explicitement et désigne
+`framework.request.formats`, sans déduction d’après le nom de fichier.
 
 Le chemin final et le choix par défaut du sitemap sont déterminés après le rendu.
 Les collisions entre fichiers sont donc vérifiées pendant le build, dans le
 staging, avant remplacement du précédent export.
 
-Pour ajouter CSV, XML ou un autre format, implémenter
-`CJean\StaticSiteBundle\Format\OutputFormatInterface`. Les quatre méthodes
-forment le contrat : types MIME pris en charge, chemin de fichier relatif, validation
-et contenu de la réponse, inclusion par défaut dans le sitemap (voir [Sitemap](#sitemap)). L’implémentation
-est autoconfigurée avec le tag `static_site.format` :
+Une classe de format n’est utile que pour ajouter des règles à un format
+Symfony : valider le contenu, changer le chemin ou l’inclusion dans le sitemap.
+Le bundle en fournit deux, `HtmlFormat` (refus des réponses Vite de
+développement) et `JsonFormat` (JSON valide). Étendre `BufferedTextFormat` avec
+le nom du format ; la classe est autoconfigurée avec le tag `static_site.format` :
 
 ```php
 use CJean\StaticSiteBundle\Format\BufferedTextFormat;
+use Symfony\Component\HttpFoundation\Response;
 
 final class CsvFormat extends BufferedTextFormat
 {
     public function __construct()
     {
-        parent::__construct('csv', 'csv', ['text/csv']);
+        parent::__construct('csv');
+    }
+
+    public function render(Response $response): string
+    {
+        $content = parent::render($response);
+        if (!str_starts_with($content, 'id,')) {
+            throw new \RuntimeException('CSV exports start with an id column.');
+        }
+        return $content;
     }
 }
 ```
 
-Puis retourner une réponse `Content-Type: text/csv` depuis une action `#[StaticPage]`. `BufferedTextFormat` est une
-implémentation réutilisable pour les formats textuels ; implémenter directement
-`OutputFormatInterface` pour des règles différentes. Sans autoconfiguration,
-ajouter explicitement `static_site.format` dans la déclaration du module.
-Deux formats déclarant le même type MIME sont refusés pour éviter toute
-ambiguïté. Aucun ordre ou priorité implicite ne décide du format.
+Implémenter directement `OutputFormatInterface` pour d’autres règles : nom du
+format Symfony, chemin de fichier relatif, validation et contenu de la réponse,
+inclusion par défaut dans le sitemap (voir [Sitemap](#sitemap)). Sans
+autoconfiguration, ajouter explicitement `static_site.format`. Deux classes pour
+le même format sont refusées.
 
 Le moteur valide aussi les chemins renvoyés par les formats personnalisés,
 refuse les réponses avec cookies/session, les streams et les redirections,
@@ -303,17 +370,32 @@ les types MIME, notamment `.md`, sur l’hébergement statique.
 ## Configurer et exporter
 
 ```yaml
+# config/packages/framework.yaml
+framework:
+    router:
+        default_uri: 'https://mon-site.fr'
+```
+
+```yaml
 # config/packages/static_site.yaml
 static_site:
-    base_url: 'https://mon-site.fr'
     output_dir: '%kernel.project_dir%/var/static'
     assets: ['build', 'bundles', 'images', 'favicon.ico', 'robots.txt']
     require_vite_build: true
     vite_build_directory: build
+    sitemap: true
 ```
 
-`base_url` doit être une origine HTTP (S), sans préfixe de chemin. Le site est
-actuellement prévu pour un déploiement à la racine du domaine. Les fichiers
+L’URL publique du site est celle que Symfony utilise hors requête HTTP :
+`framework.router.default_uri`, qui peut venir d’une variable d’environnement.
+Elle est obligatoire pour le build et le sitemap, en HTTP(S), sans query ni
+fragment. Un chemin y place le site sous un préfixe : avec
+`default_uri: 'https://mon-site.fr/docs'`, les liens de `path()` et `url()`, les
+URL de `asset()` et des balises Reprise ainsi que le sitemap portent `/docs` ;
+les fichiers restent à la racine de `output_dir`, à publier sous `/docs`.
+Garder `publicPath: '/build/'` dans le plugin Reprise : les URL que Vite écrit
+lui-même dans les fichiers compilés (`url()` du CSS, imports dynamiques) ne
+portent pas le préfixe, à vérifier si l’application en contient. `sitemap: false` désactive le sitemap du build et la route SSR. Les fichiers
 publics absents de la liste sont ignorés ; les entrées optionnelles inexistantes
 sont ignorées. Le build Vite et ses métadonnées de production sont obligatoires
 par défaut. Pour un site sans assets Vite, désactiver `require_vite_build`. Les
@@ -385,8 +467,8 @@ pas le mécanisme de bascule de l’hébergeur.
   fait aussi échouer le build.
 - Les pages doivent être publiques et indépendantes d’un utilisateur. Le bundle
   ne peut pas détecter une personnalisation applicative qui n’utilise ni cookie
-  ni session. `kernel.terminate` est exécuté : les listeners ne doivent pas avoir
-  d’effets métier incompatibles avec un build.
+  ni session. `kernel.terminate` n’est pas exécuté : les traitements différés
+  (e-mails, messages Messenger…) ne partent pas pendant un build.
 - `sitemap.xml` est réservé et généré quand au moins une page y est listée.
   Au-delà de 50 000 URL ou 50 Mio de XML non compressé, il devient un index
   pointant vers `sitemap-1.xml`, `sitemap-2.xml`, etc. Le build incrémental reste hors périmètre.
@@ -398,6 +480,129 @@ fonctionnalités dynamiques nécessitent un backend accessible séparément.
 Les en-têtes HTTP du SSR ne sont pas reproduits dans les fichiers : configurer
 cache, CSP et autres en-têtes sur l’hébergeur. Pour les assets hashés, utiliser
 un cache long immutable ; pour le HTML, un cache court ou une revalidation.
+
+## Servir le site statique
+
+Chaque page HTML est écrite en `<chemin>/index.html` ; les autres formats et les
+URL avec extension restent des fichiers simples. Pour une page d’erreur, exporter
+une route `/404.html` qui répond 200 avec le contenu de l’erreur, hors sitemap :
+
+```php
+#[Route('/404.html', name: 'not_found', methods: ['GET'])]
+#[StaticPage(sitemap: false)]
+public function notFound(): Response { /* ... */ }
+```
+
+Caddy :
+
+```caddyfile
+mon-site.fr {
+    root * /var/www/site
+    encode zstd gzip
+    file_server
+    handle_errors {
+        rewrite * /404.html
+        file_server
+    }
+}
+```
+
+nginx :
+
+```nginx
+server {
+    server_name mon-site.fr;
+    root /var/www/site;
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    error_page 404 /404.html;
+}
+```
+
+Apache (`.htaccess` à la racine) :
+
+```apache
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+```
+
+GitHub Pages et Cloudflare Pages servent `index.html` dans les répertoires et
+`404.html` pour les pages absentes, sans configuration. Avec GitHub Pages,
+déployer par un workflow : l’artefact est servi tel quel, sans Jekyll.
+
+```yaml
+# .github/workflows/deploy.yml (permissions pages: write et id-token: write)
+- run: npm run build
+- run: php bin/console ssg:build
+  env: { APP_ENV: prod, APP_DEBUG: '0' }
+- uses: actions/upload-pages-artifact@v5
+  with: { path: var/static }
+- uses: actions/deploy-pages@v5
+```
+
+Cloudflare Pages déploie le répertoire avec `npx wrangler pages deploy var/static`.
+Pour un site publié sous un chemin de base, adapter `root` ou l’emplacement
+de publication à ce chemin.
+
+## Événements
+
+Trois événements Symfony jalonnent un build. Ils se consomment avec un listener
+ou un subscriber habituel, par exemple `#[AsEventListener]` :
+
+| Événement | Moment | Usage typique |
+| --- | --- | --- |
+| `Event\PageRenderedEvent` | page validée par son format, avant écriture | réécrire le contenu, exclure du sitemap |
+| `Event\SiteRenderedEvent` | toutes les pages écrites, avant publication | ajouter un flux, un index de recherche |
+| `Event\SitePublishedEvent` | nouvel export actif | notifier, purger un cache, déclencher un déploiement |
+
+```php
+use CJean\StaticSiteBundle\Event\PageRenderedEvent;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+
+#[AsEventListener]
+final class NoindexOutOfSitemap
+{
+    public function __invoke(PageRenderedEvent $event): void
+    {
+        if (str_contains($event->getContent(), 'content="noindex"')) {
+            $event->excludeFromSitemap();
+        }
+    }
+}
+```
+
+`PageRenderedEvent` expose la requête (`$event->page` : route, URL, paramètres),
+le fichier de sortie et le contenu. `setContent()` remplace le contenu sans
+relancer la validation du format. `excludeFromSitemap()` ne fait qu’exclure :
+une page exclue par l’attribut ou son provider n’est pas inspectée par le
+sitemap SSR. Ce sitemap applique les mêmes listeners lorsqu’il découvre les
+pages lui-même ; `$event->preview` vaut alors `true` et le contenu est ignoré.
+Un listener de cet événement doit donc rester sans effet de bord.
+
+```php
+use CJean\StaticSiteBundle\Event\SiteRenderedEvent;
+
+#[AsEventListener]
+final class PagesIndex
+{
+    public function __invoke(SiteRenderedEvent $event): void
+    {
+        $urls = array_map(static fn($exported) => $exported->page->url, $event->pages);
+        $event->write('pages.json', json_encode($urls, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+    }
+}
+```
+
+`SiteRenderedEvent::write()` applique les règles des pages : chemin relatif sûr,
+aucune collision avec une page, un asset ou un autre fichier ajouté. Une
+exception dans `PageRenderedEvent` ou `SiteRenderedEvent` fait échouer le build
+et conserve le précédent export. Après publication, une exception dans
+`SitePublishedEvent` devient un avertissement : l’export reste actif.
+
+Le sitemap du bundle est lui-même un listener de `SiteRenderedEvent` et de
+`SitePublishedEvent`. Il s’appuie sur le choix final de chaque page, après les
+listeners de `PageRenderedEvent`.
 
 ## Qualité et Symfony 8.2
 
@@ -490,7 +695,7 @@ pour charger les données communes une seule fois, gérer les resets et mesurer
 les builds à froid et à chaud.
 
 La [documentation du bundle en site Symfony](examples/bundle-docs/README.md)
-propose 11 pages en français et une navigation
+propose 12 pages en français et une navigation
 précédente/suivante.
 
 ## Toolbar et diagnostic SSB

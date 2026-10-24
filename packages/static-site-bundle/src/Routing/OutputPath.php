@@ -6,15 +6,20 @@ namespace CJean\StaticSiteBundle\Routing;
 
 final class OutputPath
 {
-    public static function fromUrl(string $url, string $extension = 'html', bool $directoryIndex = true): string
-    {
+    /** @param list<string> $aliases Other extensions a URL may already carry. */
+    public static function fromUrl(
+        string $url,
+        string $extension = 'html',
+        bool $directoryIndex = true,
+        array $aliases = [],
+    ): string {
         $decoded = self::decodeUrl($url);
         $path = trim($decoded, '/');
         if (!preg_match('/^[a-z0-9]+$/', $extension)) {
             throw new \InvalidArgumentException('Invalid output extension.');
         }
         $existing = pathinfo($path, PATHINFO_EXTENSION);
-        $allowed = $extension === 'html' ? ['html', 'htm'] : [$extension];
+        $allowed = [$extension, ...$aliases, ...($extension === 'html' ? ['htm'] : [])];
         if ($existing !== '' && !in_array(strtolower($existing), $allowed, true)) {
             throw new \InvalidArgumentException('URL extension does not match the selected format.');
         }

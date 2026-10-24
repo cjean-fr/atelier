@@ -23,6 +23,23 @@ final readonly class StaticPageResolver
 
     private function controllerReflection(Route $route): ?\ReflectionMethod
     {
+        $target = $this->controller($route);
+        if ($target === null || !method_exists($target[0], $target[1])) {
+            return null;
+        }
+        return new \ReflectionMethod($target[0], $target[1]);
+    }
+
+    /** @return \ReflectionClass<object>|null The routed class, not the one declaring an inherited action. */
+    private function controllerClass(Route $route): ?\ReflectionClass
+    {
+        $target = $this->controller($route);
+        return $target === null ? null : new \ReflectionClass($target[0]);
+    }
+
+    /** @return array{class-string, string}|null */
+    private function controller(Route $route): ?array
+    {
         $controller = $route->getDefault('_controller');
         if (is_string($controller)) {
             [$class, $method] = str_contains($controller, '::')
@@ -43,19 +60,34 @@ final readonly class StaticPageResolver
             return null;
         }
         $class = $this->controllerClasses[$class] ?? $class;
-        if (!class_exists($class) || !method_exists($class, $method)) {
-            return null;
-        }
-        return new \ReflectionMethod($class, $method);
+        return class_exists($class) ? [$class, $method] : null;
     }
 
     public function resolve(string $name, Route $route): ?StaticPage
     {
+        $defaults = $route->getDefaults();
+        if (array_key_exists(StaticPage::ROUTE_DEFAULT, $defaults)) {
+            return $this->fromDefault($name, $defaults[StaticPage::ROUTE_DEFAULT]);
+        }
         $method = $this->controllerReflection($route);
         if ($method === null)
             return null;
+        $attributes = $method->getAttributes(StaticPage::class);
+        if ($attributes !== []) {
+            return $this->select($name, $route, $attributes);
+        }
+        // A class-level selection skips actions that cannot be exported, such as form handlers.
+        if ($route->getMethods() !== [] && !in_array('GET', $route->getMethods(), true)) {
+            return null;
+        }
+        return $this->select($name, $route, $this->controllerClass($route)?->getAttributes(StaticPage::class) ?? []);
+    }
+
+    /** @param list<\ReflectionAttribute<StaticPage>> $attributes */
+    private function select(string $name, Route $route, array $attributes): ?StaticPage
+    {
         $selection = null;
-        foreach ($method->getAttributes(StaticPage::class) as $attribute) {
+        foreach ($attributes as $attribute) {
             $page = $attribute->newInstance();
             if (
                 $page->route !== null
@@ -73,5 +105,33 @@ final readonly class StaticPageResolver
             $selection = $page;
         }
         return $selection;
+    }
+
+    /** true selects the route, false excludes it, an array holds the StaticPage arguments. */
+    private function fromDefault(string $name, mixed $value): ?StaticPage
+    {
+        if (is_bool($value)) {
+            return $value ? new StaticPage() : null;
+        }
+        $allowed = ['provider' => true, 'sitemap' => true, 'parameters' => true];
+        if (!is_array($value) || array_diff_key($value, $allowed) !== []) {
+            throw new \LogicException(sprintf(
+                'Route "%s": the "%s" default must be a boolean or an array with provider, sitemap or parameters.',
+                $name,
+                StaticPage::ROUTE_DEFAULT,
+            ));
+        }
+        $provider = $value['provider'] ?? null;
+        $sitemap = $value['sitemap'] ?? null;
+        $parameters = $value['parameters'] ?? null;
+        if (
+            $provider !== null && !is_string($provider)
+            || $sitemap !== null && !is_bool($sitemap)
+            || $parameters !== null && !is_array($parameters)
+        ) {
+            throw new \LogicException(sprintf('Route "%s": invalid "%s" default.', $name, StaticPage::ROUTE_DEFAULT));
+        }
+        /** @var list<array<string, scalar>>|null $parameters Each set is checked by the planner. */
+        return new StaticPage($provider, sitemap: $sitemap, parameters: $parameters);
     }
 }

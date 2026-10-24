@@ -1,8 +1,9 @@
 # Architecture
 
 L’interface publique du module est volontairement petite : l’attribut PHP dédié
-`#[StaticPage(provider: ..., route: ..., sitemap: ...)]`, `RouteProviderInterface::parameters()` (tableaux ou `RouteParameters`), la configuration
-`static_site` et la commande `ssg:build`. Les classes de génération et de routing
+`#[StaticPage(provider: ..., route: ..., sitemap: ..., parameters: ...)]` et son équivalent `_static_page`
+dans les defaults d’une route, `RouteProviderInterface::parameters()` (tableaux ou `RouteParameters`), les trois
+événements de build, la configuration `static_site` et la commande `ssg:build`. Les classes de génération et de routing
 sont internes, hors le contrat `OutputFormatInterface` et les formats réutilisables ; leur disposition peut changer sans changer l’intégration d’une application.
 
 La seam externe pour les données est le provider. Un adapter Doctrine, un adapter
@@ -14,11 +15,12 @@ ou de rendu supplémentaire n’est imposé à l’application.
 |----------------------|------------------------|-----------------------------------------------------------------------------------------------------------|
 | `StaticPageResolver` | `resolve(name, route)` | Lecture des attributs des actions sans instanciation ni mutation des routes                               |
 | `RoutePlanner`       | `pages()`              | Requêtes : sélection, providers, URL Symfony, origine, matching, URL dupliquées ; contexte restauré       |
-| `PageRenderer`       | `render(page)`         | Requête principale, terminate, validation de réponse, reset des modules Symfony, restauration du contexte |
+| `PageRenderer`       | `render(page)`         | Requête principale sans terminate, validation de réponse, `PageRenderedEvent`, reset des modules Symfony, restauration du contexte |
 | `AssetExporter`      | `exportTo(staging)`    | Métadonnées Vite et allowlist public                                                                      |
 | `StagingDirectory`   | `write()`, `copy()`    | Chemins sûrs, écriture unique (toutes les collisions), rejet des liens, fichiers cachés et scripts        |
 | `DirectoryPublisher` | `publish(write)`       | Répertoire détenu par le bundle, verrou, staging, remplacement et rollback                                |
-| `SiteBuilder`        | `build()`              | URL validées, assets et réponses rendues, chemins vérifiés puis sitemap dans une publication unique                   |
+| `SiteBuilder`        | `build()`              | URL validées, assets et réponses rendues, chemins vérifiés puis `SiteRenderedEvent` dans une publication unique       |
+| `SitemapListener`    | listeners de build     | Sitemap écrit depuis les choix finaux des pages, puis cache SSR alimenté après publication                    |
 
 `DirectoryPublisher` est un module profond : l’appelant fournit uniquement une
 fonction qui reçoit un `StagingDirectory`. Il n’a pas à connaître le verrou,
@@ -60,12 +62,43 @@ contrôles de sécurité communs et la publication restent centralisés. Aucun s
 sur les noms des formats ne se trouve dans le moteur. Un adapter additionnel
 est découvert par autoconfiguration ; il ne nécessite pas de modifier le bundle.
 
-Le `Content-Type` de la réponse est la source de vérité du format. Le registre
-associe chaque type MIME exact à un seul adapter ; les déclarations ambiguës
-échouent. `ExportPage` décrit une requête à exécuter et ses éventuelles directives
+Le `Content-Type` de la réponse est la source de vérité du format, interprété
+par la table de formats de Symfony (`Request::getFormat()`, complétée par
+`framework.request.formats`) : le bundle ne tient aucune liste de types MIME.
+Le nom du format donne l’extension. Un adapter est facultatif et ajoute ses
+règles à un format nommé ; sans adapter, les bytes sont exportés tels quels. `ExportPage` décrit une requête à exécuter et ses éventuelles directives
 sitemap. `PageRenderer` retourne un `RenderedPage` avec chemin, bytes et choix
 sitemap final. La décision spécifique au format ne fuit pas dans le plan ou
 l’attribut. Les overrides sitemap de l’attribut et du provider restent prioritaires.
+
+## Événements de build
+
+Les événements forment une seam externe pour les sorties qui dépendent de tout
+le site ou d’une transformation de page. `SiteBuilder` ne connaît plus le
+sitemap : il rend les pages, puis émet `SiteRenderedEvent` avec la liste des
+pages écrites et un accès en écriture au staging. Le sitemap est un listener
+interne de cet événement et de `SitePublishedEvent` ; un flux RSS ou un index de
+recherche applicatif utilise exactement la même interface. Les fichiers ajoutés
+passent par `StagingDirectory`, donc par les mêmes contrôles de chemin et de
+collision, et profitent de la publication atomique.
+
+`PageRenderedEvent` est émis après la validation du format, dans le cycle de
+rendu : une exception de listener est une erreur de rendu, et le reset comme la
+restauration du contexte restent garantis. Le choix sitemap n’accepte qu’une
+exclusion. Le sitemap SSR émet le même événement, en mode `preview`, lors de sa
+découverte à froid ; build et SSR produisent ainsi le même XML sans que le
+listener sache d’où vient la page. Les pages déjà exclues par l’attribut ou le
+provider ne sont pas inspectées, ce qui rend une inclusion par listener impossible
+à garantir : elle n’est donc pas proposée.
+
+`SitePublishedEvent` est émis sous le verrou, après activation. Son échec ne peut
+plus changer l’export actif ; il devient un avertissement. Les listeners de
+cet événement sont dispatchés avant l’écriture des diagnostics du profiler.
+
+Les événements ne remplacent pas les seams existantes : le provider reste la
+source des paramètres et `OutputFormatInterface` le contrat d’un type MIME. Aucun
+service interne n’est remplaçable par redéfinition de son identifiant ; un
+événement couvre les variations observées sans figer la disposition interne.
 
 ## Revue de profondeur du 12 octobre 2026
 
@@ -107,7 +140,7 @@ précédent export via la commande quand un fichier référencé manque.
 ### Erreurs du cycle de rendu
 
 Le module de rendu tente le reset et la restauration du contexte indépendamment.
-Une erreur de rendu (kernel, terminate ou conversion) reste prioritaire si le
+Une erreur de rendu (kernel, conversion ou listener) reste prioritaire si le
 nettoyage échoue aussi. Sans erreur de rendu, la première erreur de nettoyage
 fait échouer le build ; elle ne devient pas un succès silencieux. La restauration
 est tentée même quand le reset échoue ; son propre échec ne peut évidemment pas

@@ -60,7 +60,11 @@ final readonly class SitemapGenerator
             $documents[$file] = $chunk;
             $index .=
                 '<sitemap><loc>'
-                . htmlspecialchars(rtrim($this->baseUrl, '/') . '/' . $file, ENT_XML1 | ENT_QUOTES, 'UTF-8')
+                . htmlspecialchars(
+                    \CJean\StaticSiteBundle\Routing\SiteUrl::fromDefaultUri($this->baseUrl)->url . '/' . $file,
+                    ENT_XML1 | ENT_QUOTES,
+                    'UTF-8',
+                )
                 . '</loc></sitemap>';
         }
         $index .= '</sitemapindex>';

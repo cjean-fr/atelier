@@ -16,6 +16,7 @@ final readonly class VirtualSitemapLoader implements LoaderInterface
     public function __construct(
         private LoaderInterface $inner,
         private bool $debug = false,
+        private bool $sitemap = true,
     ) {}
 
     public function load(mixed $resource, ?string $type = null): mixed
@@ -37,6 +38,9 @@ final readonly class VirtualSitemapLoader implements LoaderInterface
                     ),
                     100,
                 );
+            }
+            if (!$this->sitemap) {
+                return $routes;
             }
             foreach ($routes as $route) {
                 if ($route->getPath() === '/sitemap.xml') {

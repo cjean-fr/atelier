@@ -2,6 +2,12 @@ framework:
   secret: '%env(APP_SECRET)%'
   router:
     utf8: true
+    # The public URL of the static site, base path included (e.g. https://example.com/docs).
+    default_uri: 'https://static-site.example'
+  request:
+    # Symfony does not know Markdown: declare it so text/markdown responses export as .md.
+    formats:
+      md: 'text/markdown'
   http_method_override: false
   handle_all_throwables: true
 
