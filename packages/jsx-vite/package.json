@@ -52,7 +52,7 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@types/react": "^19"
+    "@types/react": "^19.3.0"
   },
   "peerDependenciesMeta": {
     "@types/react": {
