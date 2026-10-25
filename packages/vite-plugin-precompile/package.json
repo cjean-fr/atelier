@@ -33,7 +33,7 @@
   "devDependencies": {
     "@cjean-fr/jsx-string": "workspace:*",
     "@jridgewell/trace-mapping": "^0.3.31",
-    "vite": "^8",
+    "vite": "^8.3.5",
     "@oxc-project/types": "^0.135.0"
   },
   "files": [
