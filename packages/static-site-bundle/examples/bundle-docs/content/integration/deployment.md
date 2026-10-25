@@ -87,7 +87,7 @@ déployer par un workflow : l’artefact est servi tel quel, sans Jekyll.
 ```yaml
 # .github/workflows/deploy.yml (permissions pages: write et id-token: write)
 - run: npm run build
-- run: php bin/console ssg:build
+- run: php bin/console ssg:generate
   env: { APP_ENV: prod, APP_DEBUG: '0' }
 - uses: actions/upload-pages-artifact@v5
   with: { path: var/static }

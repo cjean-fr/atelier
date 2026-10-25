@@ -10,7 +10,7 @@ composer install
 npm ci --prefix examples/bundle-docs
 npm run build --prefix examples/bundle-docs
 APP_ENV=prod APP_DEBUG=0 APP_SECRET=local-docs-secret php examples/bundle-docs/bin/console cache:clear
-APP_ENV=prod APP_DEBUG=0 APP_SECRET=local-docs-secret php examples/bundle-docs/bin/console ssg:build
+APP_ENV=prod APP_DEBUG=0 APP_SECRET=local-docs-secret php examples/bundle-docs/bin/console ssg:generate
 APP_ENV=prod APP_SECRET=local-docs-secret php examples/bundle-docs/tools/verify.php
 ```
 

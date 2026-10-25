@@ -88,7 +88,7 @@ jobs:
       - run: composer install --prefer-dist --no-interaction
       - run: npm ci --prefix examples
       - run: npm run build --prefix examples
-      - run: php examples/bin/console ssg:build
+      - run: php examples/bin/console ssg:generate
         env:
           APP_ENV: prod
           APP_DEBUG: '0'
@@ -96,7 +96,7 @@ jobs:
       - run: test -f examples/var/static/articles/bonjour-symfony/index.html
       - run: npm ci --prefix examples/bundle-docs
       - run: npm run build --prefix examples/bundle-docs
-      - run: php examples/bundle-docs/bin/console ssg:build
+      - run: php examples/bundle-docs/bin/console ssg:generate
         env:
           APP_ENV: prod
           APP_DEBUG: '0'

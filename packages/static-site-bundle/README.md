@@ -1,7 +1,7 @@
 # StaticSiteBundle
 
 Bundle SSG pour Symfony 8 et PHP ≥ 8.4.1. Les contrôleurs et templates Twig
-fonctionnent en SSR pendant le développement. La commande `ssg:build` exécute
+fonctionnent en SSR pendant le développement. La commande `ssg:generate` exécute
 les mêmes routes et produit des fichiers HTML, JSON, texte ou Markdown, un sitemap et les assets de production.
 
 Vite 8, Tailwind CSS 4 et l’intégration officielle Symfony Reprise sont inclus dans l’exemple
@@ -18,12 +18,12 @@ npm ci --prefix examples
 export APP_SECRET="une-cle-locale-pour-la-demo"
 npm run build --prefix examples
 APP_ENV=prod APP_DEBUG=0 php examples/bin/console cache:clear
-APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:build --dry-run
-APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:build
+APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:generate --dry-run
+APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:generate
 ```
 
 Le résultat se trouve dans `examples/var/static/` : accueil, deux articles, JSON, texte, Markdown,
-assets hashés et `sitemap.xml`. Le domaine de l’exemple est `https://example.com` ;
+assets hashés et `sitemap.xml`. L’ancien nom `ssg:build` reste un alias déprécié de `ssg:generate`. Le domaine de l’exemple est `https://example.com` ;
 modifier `examples/config/packages/static_site.yaml` avant de déployer.
 
 Pour le développement, ouvrir deux terminaux avec `APP_SECRET` défini :
@@ -427,7 +427,7 @@ Les assets compilés restent dans `public/build` et sont copiés normalement.
 ```bash
 npm run build
 APP_ENV=prod APP_DEBUG=0 php bin/console cache:clear
-APP_ENV=prod APP_DEBUG=0 php bin/console ssg:build
+APP_ENV=prod APP_DEBUG=0 php bin/console ssg:generate
 ```
 
 `--dry-run` valide et liste les routes sans rendu ni écriture. Il ne peut donc prédire
@@ -534,7 +534,7 @@ déployer par un workflow : l’artefact est servi tel quel, sans Jekyll.
 ```yaml
 # .github/workflows/deploy.yml (permissions pages: write et id-token: write)
 - run: npm run build
-- run: php bin/console ssg:build
+- run: php bin/console ssg:generate
   env: { APP_ENV: prod, APP_DEBUG: '0' }
 - uses: actions/upload-pages-artifact@v5
   with: { path: var/static }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CJean\StaticSiteBundle;
 
-use CJean\StaticSiteBundle\Command\BuildCommand;
+use CJean\StaticSiteBundle\Command\GenerateCommand;
 use CJean\StaticSiteBundle\DependencyInjection\ControllerMetadataPass;
 use CJean\StaticSiteBundle\Format\FormatRegistry;
 use CJean\StaticSiteBundle\Format\HtmlFormat;
@@ -193,7 +193,7 @@ final class StaticSiteBundle extends AbstractBundle
             ]);
         }
         $services
-            ->set(BuildCommand::class)
+            ->set(GenerateCommand::class)
             ->args([
                 service(SiteBuilder::class),
                 service(RoutePlanner::class),

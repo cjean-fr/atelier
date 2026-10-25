@@ -12,8 +12,8 @@ npm ci --prefix examples
 export APP_SECRET="une-cle-locale-pour-la-demo"
 npm run build --prefix examples
 APP_ENV=prod APP_DEBUG=0 php examples/bin/console cache:clear
-APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:build --dry-run
-APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:build
+APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:generate --dry-run
+APP_ENV=prod APP_DEBUG=0 php examples/bin/console ssg:generate
 ```
 
 Le résultat se trouve dans `examples/var/static/` : accueil, deux articles, JSON, texte, Markdown,

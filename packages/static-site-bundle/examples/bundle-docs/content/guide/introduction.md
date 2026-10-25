@@ -13,7 +13,7 @@ StaticSiteBundle sélectionne explicitement les actions avec `#[StaticPage]`. Le
 1. Rendez vos pages normalement dans Symfony.
 2. Marquez les actions à exporter et associez leurs providers.
 3. Compilez les assets Vite avec Symfony Reprise.
-4. Exécutez `ssg:build` en production.
+4. Exécutez `ssg:generate` en production.
 5. Déployez le contenu de `var/static`.
 
 ## Prérequis
