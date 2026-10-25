@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./packages/typescript-config/react.json",
+  "compilerOptions": {
+    "paths": {
+      "@cjean-fr/jsx-string": ["./packages/jsx-string/src/index.ts"],
+      "@cjean-fr/jsx-string/jsx-runtime": [
+        "./packages/jsx-string/src/jsx-runtime.ts"
+      ],
+      "@cjean-fr/jsx-string/jsx-dev-runtime": [
+        "./packages/jsx-string/src/jsx-dev-runtime.ts"
+      ],
+      "@cjean-fr/jsx-string/html": ["./packages/jsx-string/src/utils/html.ts"],
+      "@cjean-fr/precompile-core": ["./packages/precompile-core/src/index.ts"]
+    }
+  }
+}

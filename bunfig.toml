@@ -1,0 +1,7 @@
+# Root `bun test`: fast, build-free run of the Bun-based suites.
+# Scope and exclusions are documented in test-setup.ts and the README.
+[test]
+preload = ["./test-setup.ts"]
+# node:test integration suite (needs built dist of this package and its
+# dependencies, spawns node). Run by `bun run test` (turbo).
+pathIgnorePatterns = ["packages/jsonresume-theme-cjean/**"]
