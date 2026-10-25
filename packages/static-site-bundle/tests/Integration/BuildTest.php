@@ -37,11 +37,22 @@ final class BuildTest extends TestCase
         self::assertFileDoesNotExist($this->directory . '/var/static/stale.html');
     }
 
+    public function testDeprecatedBuildAliasStillWorksAndWarns(): void
+    {
+        $this->kernel = new TestKernel($this->directory, 'ok', 'prod');
+        $tester = new CommandTester(new Application($this->kernel)->find('ssg:build'));
+        self::assertSame(0, $tester->execute(['command' => 'ssg:build']), $tester->getDisplay());
+        self::assertStringContainsString('"ssg:build" command is deprecated', $tester->getDisplay());
+        $tester = $this->command();
+        self::assertSame(0, $tester->execute([]));
+        self::assertStringNotContainsString('deprecated', $tester->getDisplay());
+    }
+
     private function command(string $scenario = 'ok', string $environment = 'prod'): CommandTester
     {
         $this->kernel = new TestKernel($this->directory, $scenario, $environment);
         $application = new Application($this->kernel);
-        return new CommandTester($application->find('ssg:build'));
+        return new CommandTester($application->find('ssg:generate'));
     }
 
     public function testVirtualSitemapServesThePublishedXmlInDev(): void

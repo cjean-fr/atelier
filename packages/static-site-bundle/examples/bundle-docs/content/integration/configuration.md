@@ -62,7 +62,7 @@ Les assets compilés restent dans `public/build` et sont copiés normalement.
 ```bash
 npm run build
 APP_ENV=prod APP_DEBUG=0 php bin/console cache:clear
-APP_ENV=prod APP_DEBUG=0 php bin/console ssg:build
+APP_ENV=prod APP_DEBUG=0 php bin/console ssg:generate
 ```
 
 `--dry-run` valide et liste les routes sans rendu ni écriture. Il ne peut donc prédire

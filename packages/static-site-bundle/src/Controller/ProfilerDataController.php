@@ -45,7 +45,7 @@ final readonly class ProfilerDataController
                 'available' => $data !== null,
                 'data' => $data,
                 'message' => $data === null
-                    ? 'No data from a published build. Run ssg:build in production first.'
+                    ? 'No data from a published build. Run ssg:generate in production first.'
                     : null,
             ]);
         } catch (\Throwable $error) {

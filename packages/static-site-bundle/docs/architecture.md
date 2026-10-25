@@ -3,7 +3,7 @@
 L’interface publique du module est volontairement petite : l’attribut PHP dédié
 `#[StaticPage(provider: ..., route: ..., sitemap: ..., parameters: ...)]` et son équivalent `_static_page`
 dans les defaults d’une route, `RouteProviderInterface::parameters()` (tableaux ou `RouteParameters`), les trois
-événements de build, la configuration `static_site` et la commande `ssg:build`. Les classes de génération et de routing
+événements de build, la configuration `static_site` et la commande `ssg:generate`. Les classes de génération et de routing
 sont internes, hors le contrat `OutputFormatInterface` et les formats réutilisables ; leur disposition peut changer sans changer l’intégration d’une application.
 
 La seam externe pour les données est le provider. Un adapter Doctrine, un adapter
@@ -167,7 +167,7 @@ CDN restent externes ; la politique de copie et de publication ne change pas.
 `DirectoryPublisher::publish()` retourne un `PublicationResult` interne après
 l’activation du nouvel export. Les erreurs ultérieures de suppression du backup,
 de staging ou de libération explicite du verrou deviennent des avertissements
-dans ce résultat ; `ssg:build` les affiche et conserve le code de succès.
+dans ce résultat ; `ssg:generate` les affiche et conserve le code de succès.
 
 Avant activation, l’erreur initiale reste prioritaire. Si le rollback ou le
 nettoyage échoue également, `PublicationFailure` conserve l’exception initiale

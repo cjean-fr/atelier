@@ -52,7 +52,7 @@ final readonly class AssetExporter
             );
         }
         if (!is_file($metadata . '/entrypoints.json') || !is_file($manifest)) {
-            throw new \RuntimeException('Reprise build missing. Run npm run build before ssg:build.');
+            throw new \RuntimeException('Reprise build missing. Run npm run build before ssg:generate.');
         }
         $entries = $this->readMetadata($metadata . '/entrypoints.json');
         $assets = $this->readMetadata($manifest);

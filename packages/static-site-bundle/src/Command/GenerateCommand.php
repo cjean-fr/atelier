@@ -13,8 +13,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'ssg:build', description: 'Render the opted-in routes and publish a static site.')]
-final class BuildCommand extends Command
+#[AsCommand(
+    name: 'ssg:generate',
+    description: 'Render the opted-in routes and publish a static site.',
+    aliases: ['ssg:build'],
+)]
+final class GenerateCommand extends Command
 {
     public function __construct(
         private readonly SiteBuilder $builder,
@@ -38,6 +42,9 @@ final class BuildCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        if ($input->getFirstArgument() === 'ssg:build') {
+            $io->warning('The "ssg:build" command is deprecated, use "ssg:generate" instead.');
+        }
         if ($this->environment !== 'prod' || $this->debug) {
             $io->error('Use APP_ENV=prod APP_DEBUG=0 to avoid publishing debug pages or development assets.');
             return Command::FAILURE;
