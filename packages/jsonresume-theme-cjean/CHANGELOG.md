@@ -1,12 +1,18 @@
 # jsonresume-theme-cjean
 
-## Unreleased
+## 1.4.2 — 2026-10-28
 
 ### Fixed
 
 - Icon and favicon requests now use the Iconify API's `/{prefix}/{name}.svg`
   form; the legacy `{prefix}:{name}.svg` URLs answer 404, which made
   `render()` fail on any resume showing contact links.
+
+### Added
+
+- Ship `sample.json`, a fictional Michael Scott resume demonstrating every
+  section and the `meta.themeConfig` options, exported as
+  `jsonresume-theme-cjean/sample.json`.
 
 ## 1.4.1 — 2026-10-05
 
