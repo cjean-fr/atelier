@@ -1,0 +1,141 @@
+{
+  "$comment": "Fictional demonstration resume (Michael Scott, The Office) for jsonresume-theme-cjean demos. Contacts are RFC 2606 / 555-01XX placeholders on purpose: no real person's data. Portrait: 'Steve Carell November 2014' by Montclair Film Festival, CC BY 2.0 (https://commons.wikimedia.org/wiki/File:Steve_Carell_November_2014.jpg), cropped square.",
+  "meta": {
+    "lang": "en",
+    "lastModified": "2026-10-28",
+    "themeConfig": {
+      "ui": {
+        "showLogos": false,
+        "headerFrom": "#c8d2de",
+        "headerTo": "#16324f",
+        "footerFrom": "#8fa8c8",
+        "footerTo": "#16324f",
+        "primary": "#16324f"
+      }
+    }
+  },
+  "basics": {
+    "name": "Michael G. Scott",
+    "label": "Regional Manager",
+    "email": "michael.scott@dundermifflin.example",
+    "phone": "+1 570-555-0142",
+    "summary": "Regional manager with 15+ years in mid-range paper sales. I lead with heart first and spreadsheets second: my branch runs on trust, improv rules, and the occasional conference-room meeting that could have been an email. I believe a team that laughs together outsells a team that doesn't.",
+    "location": {
+      "city": "Scranton",
+      "region": "Pennsylvania",
+      "countryCode": "US"
+    }
+  },
+  "work": [
+    {
+      "name": "Dunder Mifflin Paper Company",
+      "position": "Regional Manager, Scranton branch",
+      "url": "https://dundermifflin.example",
+      "startDate": "2009-10-01",
+      "summary": "Rehired after the Michael Scott Paper Company buyout. Run the most resilient branch of the company.",
+      "highlights": [
+        "Kept Scranton the top-performing branch through two mergers and one very long recession.",
+        "Retained 100% of key accounts during the Michael Scott Paper Company transition, including Lackawanna County.",
+        "Mentored future managers through a highly personalized, largely unscripted leadership style."
+      ]
+    },
+    {
+      "name": "Michael Scott Paper Company",
+      "position": "Founder & CEO",
+      "url": "https://dundermifflin.example",
+      "startDate": "2009-04-01",
+      "endDate": "2009-09-30",
+      "summary": "Independent paper startup founded in a converted office closet.",
+      "highlights": [
+        "Won back major clients in one quarter through aggressive personal service and below-cost pricing.",
+        "Negotiated the company's acquisition by Dunder Mifflin, securing positions for all employees."
+      ]
+    },
+    {
+      "name": "Dunder Mifflin Paper Company",
+      "position": "Regional Manager, Scranton branch",
+      "url": "https://dundermifflin.example",
+      "startDate": "2002-03-01",
+      "endDate": "2009-03-31",
+      "highlights": [
+        "Promoted from sales to regional management after consecutive top-salesman years.",
+        "Hosted the annual Dundie Awards, the branch's longest-running recognition program."
+      ]
+    },
+    {
+      "name": "Dunder Mifflin Paper Company",
+      "position": "Sales Representative",
+      "url": "https://dundermifflin.example",
+      "startDate": "1994-06-01",
+      "endDate": "2002-02-28",
+      "highlights": [
+        "Two-time Salesman of the Year.",
+        "Built a client book that still anchors the branch's revenue."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Threat Level Midnight",
+      "description": "Written, directed and starred in an independent action feature over eleven years of meticulous principal photography.",
+      "startDate": "1997-01-01",
+      "endDate": "2008-12-01",
+      "highlights": [
+        "Completed post-production despite budget, studio notes and hockey schedules."
+      ]
+    },
+    {
+      "name": "Michael Scott's Dunder Mifflin Scranton Meredith Palmer Memorial Celebrity Rabies Awareness Pro-Am Fun Run Race For The Cure",
+      "description": "Founded and hosted a charity 5K raising rabies awareness across the greater Scranton area.",
+      "startDate": "2007-04-01",
+      "highlights": [
+        "Secured full office participation and a generous check presentation ceremony."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Scranton University",
+      "area": "Business Administration",
+      "studyType": "Bachelor",
+      "startDate": "1984-09-01",
+      "endDate": "1988-05-01"
+    }
+  ],
+  "certificates": [
+    {
+      "name": "Dundie Award — Best Boss",
+      "issuer": "Dunder Mifflin Scranton",
+      "date": "2005-04-01"
+    }
+  ],
+  "skills": [
+    {
+      "name": "Sales & Negotiation",
+      "keywords": [
+        "B2B paper sales",
+        "Account retention",
+        "Cold calling",
+        "Closing"
+      ]
+    },
+    {
+      "name": "Leadership",
+      "keywords": [
+        "Team building",
+        "Conflict resolution",
+        "Motivational speaking",
+        "Trust falls"
+      ]
+    },
+    {
+      "name": "Communication",
+      "keywords": [
+        "Improv comedy",
+        "Storytelling",
+        "Conference-room meetings",
+        "Catchphrases"
+      ]
+    }
+  ]
+}

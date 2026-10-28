@@ -47,6 +47,15 @@ npx jsonresume-theme-cjean resume.json -o resume.html
 bunx jsonresume-theme-cjean resume.json -o resume.html
 ```
 
+
+### Sample resume
+
+The package ships `sample.json`, a complete fictional resume (Michael Scott, Dunder Mifflin) demonstrating every section and the `meta.themeConfig` options:
+
+```bash
+bunx jsonresume-theme-cjean node_modules/jsonresume-theme-cjean/sample.json -o resume.html
+```
+
 ## Configuration
 
 ### CSS generation
