@@ -2,10 +2,10 @@
 
 ## 1.4.3 — 2026-10-28
 
-### Added
+### Changed
 
-- `meta.themeConfig.ui.portraitPosition` (`"left"` default, `"right"`) places
-  the portrait beside or after the summary in the about row.
+- The portrait now sits on the right of the summary in the about row (visual
+  order only; DOM order is unchanged for assistive technologies).
 
 ### Fixed
 
