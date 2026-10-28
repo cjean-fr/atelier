@@ -38,3 +38,21 @@ test("the sample.json export is shipped in the published tarball", async () => {
   const names = files.map((f) => f.path);
   assert.ok(names.includes("sample.json"), `tarball must ship sample.json, got: ${names}`);
 });
+
+test("portraitPosition right reverses the about row", async (t) => {
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async () => new Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
+  );
+  const sample = JSON.parse(
+    await readFile(join(import.meta.dirname, "../sample.json"), "utf8"),
+  );
+  // flex-row-reverse keeps the DOM order (accessibility) and flips the
+  // visual order only, so assert the class, not element positions.
+  const flipped = await render(sample);
+  assert.match(flipped, /resume-about[^"]*sm:flex-row-reverse/);
+  const { meta, ...rest } = sample;
+  const plain = await render(rest);
+  assert.doesNotMatch(plain, /sm:flex-row-reverse/);
+});
