@@ -1,5 +1,13 @@
 # jsonresume-theme-cjean
 
+## 1.4.3 — 2026-10-28
+
+### Fixed
+
+- Include `sample.json` in the published tarball: 1.4.2 declared the
+  `jsonresume-theme-cjean/sample.json` export but the `files` list omitted
+  the file, so importing it from an installed package failed.
+
 ## 1.4.2 — 2026-10-28
 
 ### Fixed
