@@ -13,7 +13,11 @@ export const fetchIcon = async (
   name: IconifyIconName,
   options: IconifyAPIOptions = {},
 ) => {
-  const url = new URL(`https://api.iconify.design/${name}.svg`);
+  // The Iconify API serves `/{prefix}/{name}.svg`; the legacy
+  // `{prefix}:{name}.svg` form is a 404.
+  const url = new URL(
+    `https://api.iconify.design/${name.replace(":", "/")}.svg`,
+  );
   for (const [key, value] of Object.entries(options)) {
     if (value) {
       url.searchParams.set(key, value.toString());
