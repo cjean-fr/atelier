@@ -2,6 +2,11 @@
 
 ## 1.4.3 — 2026-10-28
 
+### Added
+
+- `meta.themeConfig.ui.portraitPosition` (`"left"` default, `"right"`) places
+  the portrait beside or after the summary in the about row.
+
 ### Fixed
 
 - Include `sample.json` in the published tarball: 1.4.2 declared the
