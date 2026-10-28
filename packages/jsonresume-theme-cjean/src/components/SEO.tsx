@@ -60,7 +60,7 @@ export async function Base({
 }) {
   const faviconUrl =
     favicon && /^[a-z0-9-]+:[a-z0-9-]+$/.test(favicon)
-      ? `https://api.iconify.design/${favicon}.svg`
+      ? `https://api.iconify.design/${favicon.replace(":", "/")}.svg`
       : undefined;
 
   return (

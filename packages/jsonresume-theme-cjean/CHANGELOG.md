@@ -1,5 +1,13 @@
 # jsonresume-theme-cjean
 
+## Unreleased
+
+### Fixed
+
+- Icon and favicon requests now use the Iconify API's `/{prefix}/{name}.svg`
+  form; the legacy `{prefix}:{name}.svg` URLs answer 404, which made
+  `render()` fail on any resume showing contact links.
+
 ## 1.4.1 — 2026-10-05
 
 ### Changed
