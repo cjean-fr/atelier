@@ -1,5 +1,12 @@
 # jsonresume-theme-cjean
 
+## Unreleased
+
+### Added
+
+- Ship `sample.json`, a fictional Michael Scott resume demonstrating every section and the `meta.themeConfig` options, exported as `jsonresume-theme-cjean/sample.json`.
+
+
 ## 1.4.1 — 2026-10-05
 
 ### Changed
