@@ -20,7 +20,6 @@ export const ThemeConfigSchema = z.object({
           ),
         }),
       ),
-      portraitPosition: z._default(z.enum(["left", "right"]), "left"),
       links: z._default(z.array(z.string()), [
         "phone",
         "email",

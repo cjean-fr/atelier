@@ -56,11 +56,7 @@ export default ({ resume, ...props }: ResumeBodyProps) => {
           </address>
 
           {(basics.image || basics.summary) && (
-            <div
-              className={`resume-about flex break-inside-avoid flex-wrap items-center gap-6 sm:flex-nowrap${
-                ui.portraitPosition === "right" ? " sm:flex-row-reverse" : ""
-              }`}
-            >
+            <div className="resume-about flex break-inside-avoid flex-wrap items-center gap-6 sm:flex-row-reverse sm:flex-nowrap">
               {basics.image && (
                 <div className="relative inline-block">
                   <img
