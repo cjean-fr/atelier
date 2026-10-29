@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@cjean-fr/i18n-tiny": "workspace:*",
+    "@cjean-fr/trianglify": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",

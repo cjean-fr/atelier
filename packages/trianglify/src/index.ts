@@ -13,7 +13,7 @@ class PRNG {
   }
 }
 
-interface Point {
+export interface Point {
   x: number;
   y: number;
 }
@@ -54,6 +54,35 @@ export function generateTriangulation(options: TrianglifyOptions = {}): string {
     .replace(/%2F/g, "/")
     .replace(/%22/g, "'");
   return `data:image/svg+xml,${encoded}`;
+}
+
+/**
+ * The data behind `generateTriangulation`, in the SVG's own coordinates,
+ * for redrawing it client side: the jittered grid, where each cell (j, i)
+ * holds the triangles (j,i)(j,i+1)(j+1,i) and (j,i+1)(j+1,i+1)(j+1,i), and
+ * one shade per triangle in that order: white alpha when positive, black
+ * alpha when negative, out of 255.
+ */
+export function generateTiles(options: TrianglifyOptions = {}): {
+  points: Point[][];
+  shades: number[];
+} {
+  const {
+    width = 900,
+    height = 300,
+    cellSize = 50,
+    variance = 0.75,
+    seed = 1,
+  } = options;
+  const prng = new PRNG(seed);
+  const points = generatePoints(width, height, cellSize, variance, prng);
+  const triangles = 2 * (points.length - 1) * ((points[0]?.length ?? 1) - 1);
+  const shades = Array.from({ length: triangles }, () => {
+    const rand = prng.next();
+    const alpha = Math.round(rand * 5) * 5;
+    return rand > 0.5 ? -alpha : alpha;
+  });
+  return { points, shades };
 }
 
 /**
