@@ -16,4 +16,4 @@ generateTiles(options); // { points, shades }, to redraw the pattern yourself
 relative coordinates. `generateTiles` returns the grid points and one shade per
 triangle, in the order described in its doc comment.
 
-Private for now: the package is used inside this monorepo and is not published.
+Thanks to [Trianglify](https://trianglify.io/) for the inspiration.
