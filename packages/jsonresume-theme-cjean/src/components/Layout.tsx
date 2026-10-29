@@ -1,6 +1,6 @@
 import type { Resume } from "../schema.js";
 import SEO from "./SEO.js";
-import { generateTriangulation } from "@cjean-fr/trianglify";
+import { generateTriangulation } from "@cjean-fr/jittergrid";
 import { raw, type RawString } from "@vincle/core";
 
 function getPermissionsPolicy(): string {

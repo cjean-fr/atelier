@@ -1,5 +1,5 @@
 {
-  "name": "@cjean-fr/trianglify",
+  "name": "@cjean-fr/jittergrid",
   "version": "0.1.0",
   "description": "Seeded jittered-grid triangulation, as a compact SVG data URI or as raw tile data.",
   "author": "Christophe Jean",
@@ -7,7 +7,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cjean-fr/atelier.git",
-    "directory": "packages/trianglify"
+    "directory": "packages/jittergrid"
   },
   "sideEffects": false,
   "type": "module",
