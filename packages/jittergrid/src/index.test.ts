@@ -37,6 +37,21 @@ describe("generateTriangulation", () => {
   it("changes with the seed", () => {
     expect(generateTriangulation({ ...options, seed: 8 })).not.toBe(uri);
   });
+
+  it("treats seed 0 as a valid seed instead of getting stuck", () => {
+    expect(generateTriangulation({ ...options, seed: 0 })).toBe(
+      generateTriangulation({ ...options, seed: 1 }),
+    );
+  });
+
+  it("survives non-finite seeds", () => {
+    expect(
+      generateTriangulation({ ...options, seed: Number.NaN }),
+    ).not.toContain("NaN");
+    expect(
+      generateTriangulation({ ...options, seed: Number.POSITIVE_INFINITY }),
+    ).not.toContain("NaN");
+  });
 });
 
 describe("generateTiles", () => {
