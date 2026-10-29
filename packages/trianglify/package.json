@@ -1,7 +1,6 @@
 {
   "name": "@cjean-fr/trianglify",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "Seeded jittered-grid triangulation, as a compact SVG data URI or as raw tile data.",
   "author": "Christophe Jean",
   "license": "MIT",
@@ -22,6 +21,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "pkgroll --minify",
