@@ -4,7 +4,11 @@
 class PRNG {
   private seed: number;
   constructor(seed: number) {
-    this.seed = seed;
+    // A Lehmer seed must be a positive integer below 2^31 - 1: 0 would stay
+    // stuck at 0 and produce negative "random" values. Fold anything else
+    // (0, negatives, fractions, NaN/Infinity) into the valid range.
+    this.seed =
+      ((Math.trunc(seed) % 2147483647) + 2147483647) % 2147483647 || 1;
   }
   next() {
     // https://en.wikipedia.org/wiki/Lehmer_random_number_generator
