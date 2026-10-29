@@ -1,4 +1,4 @@
-# @cjean-fr/trianglify
+# @cjean-fr/jittergrid
 
 ## 0.1.0
 

@@ -47,9 +47,18 @@
         "typescript": "catalog:",
       },
     },
+    "packages/jittergrid": {
+      "name": "@cjean-fr/jittergrid",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "pkgroll": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/jsonresume-theme-cjean": {
       "name": "jsonresume-theme-cjean",
-      "version": "1.4.2",
+      "version": "1.4.3",
       "bin": {
         "jsonresume-theme-cjean": "./bin/jsonresume-theme-cjean.js",
       },
@@ -60,7 +69,7 @@
       },
       "devDependencies": {
         "@cjean-fr/i18n-tiny": "workspace:*",
-        "@cjean-fr/trianglify": "workspace:*",
+        "@cjean-fr/jittergrid": "workspace:*",
         "@types/node": "catalog:",
         "@types/react": "catalog:",
         "@typescript-eslint/eslint-plugin": "catalog:",
@@ -118,15 +127,6 @@
     },
     "packages/static-site-bundle": {
       "name": "@cjean-fr/static-site-bundle",
-    },
-    "packages/trianglify": {
-      "name": "@cjean-fr/trianglify",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "catalog:",
-        "pkgroll": "catalog:",
-        "typescript": "catalog:",
-      },
     },
     "packages/vite-plugin-precompile": {
       "name": "@cjean-fr/vite-plugin-precompile",
@@ -199,6 +199,8 @@
 
     "@cjean-fr/i18n-tiny": ["@cjean-fr/i18n-tiny@workspace:packages/i18n-tiny"],
 
+    "@cjean-fr/jittergrid": ["@cjean-fr/jittergrid@workspace:packages/jittergrid"],
+
     "@cjean-fr/jsx-string": ["@cjean-fr/jsx-string@workspace:packages/jsx-string"],
 
     "@cjean-fr/jsx-vite": ["@cjean-fr/jsx-vite@workspace:packages/jsx-vite"],
@@ -206,8 +208,6 @@
     "@cjean-fr/precompile-core": ["@cjean-fr/precompile-core@workspace:packages/precompile-core"],
 
     "@cjean-fr/static-site-bundle": ["@cjean-fr/static-site-bundle@workspace:packages/static-site-bundle"],
-
-    "@cjean-fr/trianglify": ["@cjean-fr/trianglify@workspace:packages/trianglify"],
 
     "@cjean-fr/vite-plugin-precompile": ["@cjean-fr/vite-plugin-precompile@workspace:packages/vite-plugin-precompile"],
 
