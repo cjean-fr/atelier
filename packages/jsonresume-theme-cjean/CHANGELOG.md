@@ -1,5 +1,13 @@
 # jsonresume-theme-cjean
 
+## 1.4.4 — 2026-11-01
+
+### Changed
+
+- Rebuild the bundled JSX renderer on @vincle/core 0.10.0 and source the
+  background triangulation from the extracted @cjean-fr/trianglify package,
+  bundled into `dist`; the rendered output is unchanged.
+
 ## 1.4.3 — 2026-10-28
 
 ### Changed
