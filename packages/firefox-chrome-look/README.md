@@ -1,5 +1,7 @@
 # Firefox → Chrome-like layout (native vertical tabs)
 
+![Top left of a Firefox window with native vertical tabs: before (default layout) and after (this userChrome.css)](before-after.png)
+
 `userChrome.css` for Firefox 159 (tested on Ubuntu) with native vertical
 tabs:
 
