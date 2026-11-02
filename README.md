@@ -22,11 +22,12 @@ Personal monorepo of high-performance, type-safe tools built around JSX-to-HTML 
 | [`@cjean-fr/precompile-core`](./packages/precompile-core)                   | JSX precompilation shared by build integrations.                        |
 | [`@cjean-fr/vite-plugin-precompile`](./packages/vite-plugin-precompile)     | Vite plugin for JSX precompilation.                                     |
 | [`jsonresume-theme-cjean`](./packages/jsonresume-theme-cjean)               | Clean, print-optimized JSON Resume theme (Tailwind + TypeScript + JSX). |
+| [`firefox-chrome-look`](./packages/firefox-chrome-look)                     | Chrome-like userChrome.css layout for Firefox's native vertical tabs.   |
 
 ### Symfony
 
-| Package | Description |
-| :------ | :---------- |
+| Package                                                     | Description                                           |
+| :---------------------------------------------------------- | :---------------------------------------------------- |
 | [`cjean/static-site-bundle`](./packages/static-site-bundle) | Provider-driven static site generation for Symfony 8. |
 
 ## Development

@@ -1,0 +1,22 @@
+{
+  "name": "@cjean-fr/firefox-chrome-look",
+  "private": true,
+  "description": "Chrome-like userChrome.css layout for Firefox's native vertical tabs, with an interactive installer.",
+  "author": "Christophe Jean",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjean-fr/atelier.git",
+    "directory": "packages/firefox-chrome-look"
+  },
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
