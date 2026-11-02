@@ -88,7 +88,7 @@ the toolbar density changes).
 
 - Rely on Firefox conventions (native attributes, variables and
   mechanisms), so that new versions are easy to follow.
-- After changing `install.sh`, run `bash test-install.sh` (tests on a
+- After changing `install.sh`, run `bun run test` (contract tests on a
   fake `$HOME`, nothing else is touched).
 - The committed version is our version, not a version to preserve.
 - Firefox's behavior without a custom `userChrome.css` remains a useful
