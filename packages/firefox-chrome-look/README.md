@@ -33,23 +33,39 @@ Lavender, light and dark variants where available):
 
 ## Installation
 
-1. Run:
+1. Close Firefox, then run this command from a terminal (requires Bash and
+   curl):
 
    ```bash
-   bash install.sh
+   curl -fsSL https://raw.githubusercontent.com/cjean-fr/atelier/main/packages/firefox-chrome-look/install-remote.sh | bash
    ```
 
-   Without an argument, the script lists the profiles of the detected
-   Firefox (deb, snap and flatpak are all inspected) and offers to pick
-   one: type its number, or Enter for the default profile. A path can
-   also be pasted at the prompt, or passed as an argument:
+   This downloads the installer and CSS from the same pinned revision into
+   a temporary directory, then removes them on exit. A failed download stops
+   the installation before any profile files are changed. The command runs
+   code from this repository: inspect `install-remote.sh` before running it
+   if you prefer.
+
+   The script lists the profiles of the detected Firefox (deb, snap and
+   flatpak are all inspected) and offers to pick one: type its number, or
+   Enter for the default profile. It reads your choice from the terminal,
+   even when launched through a pipe. A path can also be pasted at the
+   prompt. Without a terminal, pass the profile directory explicitly:
 
    ```bash
-   bash install.sh "/path/to/profile"
+   curl -fsSL https://raw.githubusercontent.com/cjean-fr/atelier/main/packages/firefox-chrome-look/install-remote.sh | bash -s -- "/path/to/profile"
    ```
 
    The profile directory is shown in `about:support`, row "Profile
    Directory".
+
+   From a local checkout of this package, installation still works without
+   downloading anything:
+
+   ```bash
+   bash install.sh
+   # Or: bash install.sh "/path/to/profile" ["/path/to/userChrome.css"]
+   ```
 
 2. Fully restart Firefox.
 
@@ -88,8 +104,10 @@ the toolbar density changes).
 
 - Rely on Firefox conventions (native attributes, variables and
   mechanisms), so that new versions are easy to follow.
-- After changing `install.sh`, run `bun run test` (contract tests on a
+- After changing either installer, run `bun run test` (contract tests on a
   fake `$HOME`, nothing else is touched).
+- When updating the installer or CSS, update the payload revision in
+  `install-remote.sh` to a commit containing both files.
 - The committed version is our version, not a version to preserve.
 - Firefox's behavior without a custom `userChrome.css` remains a useful
   baseline.
