@@ -74,7 +74,8 @@
     "check": "tsc --noEmit",
     "test": "bun run build && node --test test/*.test.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "sample:render": "bun run build && node scripts/render-sample.mjs"
   },
   "type": "module"
 }
