@@ -1,0 +1,524 @@
+/* ==========================================================================
+   Firefox 159 → Chrome-like layout for native vertical tabs (Ubuntu).
+   The layout only applies in vertical tabs mode; the shape of buttons
+   (§2) and of the address bar (§7) applies in every mode.
+   - The tabs panel reaches the top of the window (§1).
+   - Rounded, spaced tabs like Chrome (§3), pinned tab chips (§4).
+   - Colors: the active Firefox theme is followed through the native
+     variables; with the system theme, falls back to measured values
+     (light/dark) because userChrome.css cannot resolve -moz-* system
+     colors.
+   Quick settings: variables in :root below.
+   References: userchrome.org (userChrome community guide),
+   github.com/MrOtherGuy/firefox-csshacks (proven recipes).
+   ========================================================================== */
+
+:root {
+  --fxc-tab-radius: 10px; /* tab corner radius             */
+  --fxc-tab-h:      32px; /* tab height (= "New tab" row)  */
+  --fxc-tab-gap:     2px; /* vertical gap between tabs     */
+  --fxc-tab-mx:      6px; /* tab side margin               */
+  --fxc-grip-h:     40px; /* height of the empty area at the top of the
+                             panel (follows the navigation bar height) */
+}
+/* Colors measured on Ubuntu's Yaru theme (tool panel card and borders),
+   switched according to the system theme mode. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fxc-panel-bg: rgb(39, 39, 39);
+    --fxc-panel-line: rgb(24, 24, 24);
+  }
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --fxc-panel-bg: rgb(255, 255, 255);
+    --fxc-panel-line: rgb(199, 199, 199);
+  }
+}
+
+/* === 1. Layout: full-height panel, navigation next to it ===============
+   #browser is "flattened" (display: contents) and its children are placed
+   in a grid over the window: one column for the tabs panel over the full
+   height, the navigation bar above the content next to it. The panel
+   width stays resizable (auto column).
+   The panel can be on the left (default) or on the right (native option
+   "Move sidebar to the right": Firefox then reverses the children order
+   and marks the panel with a sidebar-positionend attribute). The grid
+   follows the chosen side through the column variables below. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) > body {
+  display: grid !important;
+  grid-template-columns: auto auto 1fr auto;
+  /* In positionend the column variables are mirrored (below): the
+     template must follow, otherwise the 1fr column stays on the panel
+     side and the content collapses to 0 (measured). */
+  grid-template-rows: auto 1fr;
+  grid-auto-columns: 0;
+  grid-auto-rows: 0;
+  height: 100% !important;
+  position: relative;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #browser {
+  display: contents !important;
+}
+/* Column placement: panel on the left (default)... */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) {
+  --fxc-col-panel: 1;
+  --fxc-col-panel-edge: end;
+  --fxc-col-sidebox: 2;
+  --fxc-col-sidebox-edge: end;
+  --fxc-col-content: 3;
+  --fxc-col-ai: 4;
+  --fxc-col-ai-edge: start;
+}
+/* ... or on the right (native option): mirrored. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#sidebar-container[sidebar-positionend]) > body {
+  grid-template-columns: auto 1fr auto auto !important;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#sidebar-container[sidebar-positionend]) {
+  --fxc-col-panel: 4;
+  --fxc-col-panel-edge: start;
+  --fxc-col-sidebox: 3;
+  --fxc-col-sidebox-edge: start;
+  --fxc-col-content: 2;
+  --fxc-col-ai: 1;
+  --fxc-col-ai-edge: end;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #sidebar-container {
+  grid-column: var(--fxc-col-panel);
+  grid-row: 1 / -1;
+  /* CSS anchor: the header buttons (§6) are positioned on the panel and
+     follow its resizing and its side. */
+  anchor-name: --fxc-panel;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #sidebar-launcher-splitter {
+  grid-column: var(--fxc-col-panel);
+  grid-row: 1 / -1;
+  justify-self: var(--fxc-col-panel-edge);
+  z-index: 2;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #sidebar-box {
+  grid-column: var(--fxc-col-sidebox);
+  grid-row: 2;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #sidebar-splitter {
+  grid-column: var(--fxc-col-sidebox);
+  grid-row: 2;
+  justify-self: var(--fxc-col-sidebox-edge);
+  z-index: 2;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #navigator-toolbox {
+  grid-column: 2 / 4;
+  grid-row: 1;
+  /* The z-index must exceed the panel so that the collapse/expand button
+     (§6), moved into the empty area, stays clickable. */
+  z-index: 5 !important;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #tabbrowser-tabbox {
+  grid-column: var(--fxc-col-content);
+  grid-row: 2;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #ai-window-splitter {
+  grid-column: var(--fxc-col-ai);
+  grid-row: 1 / -1;
+  justify-self: var(--fxc-col-ai-edge);
+  z-index: 2;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #ai-window-box {
+  grid-column: var(--fxc-col-ai);
+  grid-row: 1 / -1;
+}
+#main-window #ai-window-box[collapsed],
+#main-window #ai-window-splitter[collapsed] {
+  display: none !important;
+}
+
+/* === 2. Shared alignment and button shape ===============================
+   Pinned tabs, tabs, the "New tab" button and the header buttons share
+   the same side margins (reference: the "New tab" row, 6px). The native
+   spacing variable of the pinned container is set to zero (the container
+   redefines it to 3px in §4); the header buttons, which also use it,
+   follow automatically. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]),
+#tabbrowser-tabs[orient="vertical"] {
+  --tab-container-margin-inline-pinned-expanded: 0px !important;
+}
+:root {
+  /* Interface buttons as rounded rectangles (like Chrome) rather than
+     circles, whatever the tabs mode. The native window controls do not
+     use it. */
+  --toolbarbutton-border-radius: var(--border-radius-small) !important;
+}
+
+/* === 3. Tab shape: rounded, spaced rows like Chrome ==================== */
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab {
+  min-height: var(--fxc-tab-h) !important;
+  margin: var(--fxc-tab-gap) var(--fxc-tab-mx) !important;
+  padding-block: 0 !important;
+  border-radius: var(--fxc-tab-radius) !important;
+  overflow: hidden;
+}
+/* Small gap between favicon and title, like Chrome (~8px measured on the
+   reference screenshot): icon container margin set to zero, margin on
+   the icon itself. */
+#tabbrowser-tabs[orient="vertical"] .tab-icon-stack {
+  margin-inline-end: 0 !important;
+}
+#tabbrowser-tabs[orient="vertical"] .tab-icon-image {
+  margin-inline-end: 8px !important;
+}
+#tabbrowser-tabs[orient="vertical"] .tab-content {
+  min-height: var(--fxc-tab-h) !important;
+  padding-inline: 8px !important;
+}
+#tabbrowser-tabs[orient="vertical"] .tab-background {
+  margin: 0 !important;
+  border-radius: var(--fxc-tab-radius) !important;
+}
+/* Close button: same small-radius family as the other buttons. */
+#tabbrowser-tabs[orient="vertical"] .tab-close-button {
+  border-radius: var(--border-radius-small) !important;
+}
+/* "+" button: rounded pill aligned with the tabs. */
+#tabbrowser-tabs[orient="vertical"]
+  :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
+  margin: 2px var(--fxc-tab-mx) !important;
+  min-height: var(--fxc-tab-h);
+  border-radius: var(--fxc-tab-radius) !important;
+}
+
+/* === 4. Pinned tabs =====================================================
+   Tighter spacing between chips: 3px margin per chip + 3px container
+   inset — outer edges still aligned on the shared reference (6px), gap
+   between chips 6px instead of 12px. */
+#pinned-tabs-container {
+  --tab-container-margin-inline-pinned-expanded: 3px !important;
+}
+#tabbrowser-tabs[orient="vertical"][expanded] .tabbrowser-tab[pinned] {
+  margin-inline: 3px !important;
+}
+/* Chips have no title: the favicon/title margin (8px) does not apply,
+   otherwise the icon is off-center in the chip. */
+#tabbrowser-tabs[orient="vertical"][expanded] .tabbrowser-tab[pinned] .tab-icon-image {
+  margin-inline-end: 0 !important;
+}
+/* Vertical rhythm: same space (6px) above the chips, between them and
+   below the group.
+   - 3px block margin per chip: 6px between stacked rows/chips;
+   - 4px top margin on the container: with the 3px margin, 6px visible
+     below the top separator line (1px). Margin, not padding: after a
+     resize at the splitter, Firefox sets the container height
+     (border-box) to that of its chips; a padding would be subtracted
+     from it and the group would scroll by 4px;
+   - strip row-gap 3px (instead of ~6.7px): this gap only spaces the
+     panel blocks (pinned group / splitter / tabs), never the tabs
+     between themselves; with the 3px margins it gives 6px between the
+     last chip and the splitter;
+   - 1px below the splitter for 6px between it and the first tab
+     (4px splitter + 1 + 3 + tab margin 2). */
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[pinned] {
+  margin-block: 3px !important;
+}
+#tabbrowser-tabs[orient="vertical"] > #pinned-tabs-container {
+  margin-block-start: 4px !important;
+  /* Space sharing: entirely native. The pinned container has
+     flex-shrink: 1 and min-height: 41px (one row) in the native sheet:
+     under pressure it gives way to the tabs list and its internal
+     scrolling takes over. Do NOT add flex-shrink: 0 or max-height here:
+     it broke this sharing (the last attempt at a cap, in %, resolved
+     against an undefined strip height during mode transitions and
+     reduced the group to one row with a stray internal scrollbar). */
+}
+#tabbrowser-tabs[orient="vertical"] {
+  row-gap: 3px !important;
+}
+#vertical-pinned-tabs-splitter {
+  margin-block-end: 1px !important;
+}
+
+/* === 5. Collapsed mode (50px panel) =====================================
+   The native forced width of the pinned tab (full-width cell) ignored
+   our margins and overflowed the panel — the painted background was cut
+   at the right edge. Auto width: the box fits in the same margins as
+   the other tabs. */
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab[pinned] {
+  width: auto !important;
+  margin-inline: var(--fxc-tab-mx) !important;
+}
+/* The native close badge is positioned for the full-width cell (50px,
+   icon centered at 25px); in our slimmer box (38px, icon centered at
+   22px) the native position puts it on the favicon, and the margin left
+   of the favicon (8px) cannot hold it. Placed in the margin right of the
+   favicon (30..44, adjacent without touching it, without exceeding the
+   box which clips beyond), slightly shrunk (14px) to fit entirely. */
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tab-close-button {
+  inset-inline-start: 24px !important;
+  width: 14px !important;
+  height: 14px !important;
+  padding: 2px !important;
+}
+/* The native drop shadow of the selected chip/tab (box-shadow 0 1px 2px)
+   reads as a stray gradient under the chip on the dense icon column:
+   flat rail when collapsed (native shadow kept when expanded). */
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tab-background {
+  box-shadow: none !important;
+}
+
+/* === 5bis. "Expand sidebar on hover" mode ===============================
+   While hovering, pinned tabs become titled rows again (native choice):
+   same margins as the other tabs, and the 8px favicon/title gap applies
+   (the chip rule would remove it: title stuck to the favicon). Only the
+   side margins change: the chips' vertical margins (3px, §4) are kept,
+   otherwise each pinned tab loses 2px on opening and everything below
+   moves up then down again. */
+:root[sidebar-expand-on-hover] #tabbrowser-tabs[orient="vertical"][expanded] .tabbrowser-tab[pinned] {
+  margin-inline: var(--fxc-tab-mx) !important;
+}
+:root[sidebar-expand-on-hover] #tabbrowser-tabs[orient="vertical"][expanded] .tabbrowser-tab[pinned] .tab-icon-image {
+  margin-inline-end: 8px !important;
+}
+
+/* === 5ter. Smooth expansion on hover ====================================
+   Native (Firefox 159): expanded on hover, the panel container leaves the
+   flow (position absolute, over the content) and only it is animated, by
+   translation (400ms ease-in-out, pref
+   sidebar.animation.expand-on-hover.duration-ms). The secondary panel and
+   the page are offset by a native margin of the collapsed width.
+   In our grid (§1), the panel column follows the IN-FLOW width of the
+   container: it dropped to 0 as soon as it left the flow, and the
+   navigation bar jumped to the edge on every hover.
+   (a) Without a secondary panel: the column keeps the collapsed width,
+   reserved by the resize handle (in flow in the same column, natively
+   hidden during expansion; its native -4px margin, which makes it
+   overlap the panel, is cancelled so that the reserve is exactly the
+   collapsed width). The page's native offset margin is cancelled (it
+   would be redundant). Nothing moves except the panel, which goes over
+   the page. */
+:root[sidebar-expand-on-hover] #sidebar-launcher-splitter[sidebar-launcher-expanded],
+:root[sidebar-expand-on-hover]:has(#sidebar-container[sidebar-ongoing-animations]) #sidebar-launcher-splitter {
+  min-width: var(--sidebar-launcher-collapsed-width) !important;
+  margin-inline: 0 !important;
+  visibility: hidden !important;
+}
+:root[sidebar-expand-on-hover] #tabbrowser-tabbox:not([sidebar-panel-open]) {
+  margin-inline: 0 !important;
+}
+/* (b) With a secondary panel open (Customize, History…): on top, the
+   expanded panel would cover it and make it unusable. The container
+   therefore stays in flow and pushes the panel, page and navigation bar.
+   For everything to slide together, its width is animated (CSS
+   transition, same duration and curve as native): on every frame, the
+   grid repositions the neighbours. The native translation animation is
+   neutralized (a Web animation yields to an !important declaration), as
+   well as the widths and margins it freezes during collapse. Expanded
+   width: the one set by the user (inline style, customWidth) or, failing
+   that, the native default width (formula from sidebar-main.css).
+   Accepted cost: the page is laid out again on every frame for 400ms,
+   and only in this case. */
+:root[sidebar-expand-on-hover] #sidebar-container[sidebar-panel-open] {
+  position: relative !important;
+  width: var(--sidebar-launcher-collapsed-width);
+  min-width: 0 !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  overflow: clip;
+  translate: none !important;
+  transition: width 400ms ease-in-out;
+}
+:root[sidebar-expand-on-hover] #sidebar-container[sidebar-panel-open][sidebar-launcher-expanded]:not(:has(> sidebar-main[customWidth])) {
+  width: calc(5 * var(--tab-pinned-min-width-expanded) + 2 * var(--tab-container-margin-inline-pinned-expanded) + 1px);
+}
+:root[sidebar-expand-on-hover] #sidebar-container[sidebar-panel-open] > sidebar-main {
+  translate: none !important;
+}
+/* On collapse, the content switches to collapsed mode at once (native)
+   while the width is still closing. On the left, the icons are already
+   in their final place; on the right, stuck to the left edge of the
+   strip, they slid towards the window in the middle of an empty strip.
+   The collapsed content is therefore pinned to the window edge, at the
+   collapsed width: the icons no longer move and the strip closes on
+   them, like the native animation which keeps the icons in place. */
+:root[sidebar-expand-on-hover] #sidebar-container[sidebar-panel-open][sidebar-positionend]:not([sidebar-launcher-expanded]) > sidebar-main {
+  width: var(--sidebar-launcher-collapsed-width) !important;
+  margin-inline-start: auto !important;
+}
+:root[sidebar-expand-on-hover] #sidebar-box[sidebar-panel-open] {
+  margin-inline: 0 !important;
+}
+/* (c) Bottom tools: collapsed, Firefox only shows the "more tools"
+   chevron, sitting above a bottom margin of var(--space-small); expanded,
+   the tools row is centered lower by the same amount (measured: 738 vs
+   745px). This margin and the row live in sidebar-main's shadow DOM, out
+   of reach (::part() is not applied from userChrome.css, verified).
+   Collapsed, sidebar-main is therefore extended by that same token below
+   the window edge: the bottom area moves down by as much, only its empty
+   margin goes out of view (the container clips), and the icon no longer
+   jumps on opening. The tabs list, which takes the remaining space, is
+   not affected. */
+:root[sidebar-expand-on-hover] sidebar-main:not([expanded]) {
+  margin-block-end: calc(-1 * var(--space-small)) !important;
+}
+
+/* === 5quater. Secondary panel titles moved slightly up ==================
+   User request ("should be a bit higher"). The title margin is driven by
+   a SPECIFIC native variable, defined on the :root of each panel document
+   (sidebar.css) and consumed by the h4 inside two levels of shadow root:
+   variables inherit through shadow roots, so it is cleanly overridden
+   here. Measured effect: margin 10px -> 0, title moved up by ~3 actual
+   px (the header centers the title against the Close button, higher).
+   Limit: the header's 13.33px padding uses the global --space-large
+   token, which cannot be overridden without tightening the whole panel —
+   deliberately left untouched. */
+:root {
+  --sidebar-panel-header-heading-margin-block: 0px !important;
+}
+
+/* === 6. Panel, grip area and header buttons ============================ */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) sidebar-main {
+  padding-top: var(--fxc-grip-h) !important;
+  -moz-window-dragging: drag;
+  /* Background = color of the tool panel card (settings, bookmarks...),
+     whatever the theme. Two layers: background-color carries the
+     measured color of the Ubuntu system theme; background-image lays a
+     full-frame gradient on the native --sidebar-background-color
+     variable: with an active Firefox theme the variable holds a real
+     color and the gradient takes over; with the system theme the
+     declaration is ignored (system color unusable here) and the measured
+     background stays visible. */
+  background-color: var(--fxc-panel-bg) !important;
+  background-image: linear-gradient(var(--sidebar-background-color), var(--sidebar-background-color)) !important;
+}
+/* Rounded top-left corner of the navigation bar, like the tool panel
+   card: the native window color shows in the curve and marks the
+   separation from the tabs panel, without imposing a tint. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #nav-bar {
+  border-top-left-radius: var(--border-radius-medium);
+}
+/* Panel on the right: the opposite corner touches the panel. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#sidebar-container[sidebar-positionend]) #nav-bar {
+  border-top-left-radius: 0;
+  border-top-right-radius: var(--border-radius-medium);
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #vertical-tabs {
+  -moz-window-dragging: no-drag;
+  position: relative;
+}
+/* Thin line below the empty area: same two-layer mechanism as the
+   background (measured color as base, gradient on the native
+   --sidebar-border-color variable when a Firefox theme is active). The
+   native border color is translucent: it is laid over the theme's panel
+   color to match the native rendering. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #vertical-tabs::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--fxc-panel-line);
+  background-image:
+    linear-gradient(var(--sidebar-border-color), var(--sidebar-border-color)),
+    linear-gradient(var(--sidebar-background-color), var(--sidebar-background-color));
+  pointer-events: none;
+}
+/* The native collapse/expand panel button is moved (visually) into the
+   empty area. Its painted background is offset 6px inside its box
+   (measured): the position compensates for this inset so that the
+   visible BACKGROUND starts at the shared left edge of the tabs (6px). */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #sidebar-button {
+  position: fixed;
+  position-anchor: --fxc-panel;
+  top: 4px;
+  left: calc(anchor(left, 0px) + var(--tab-container-margin-inline-pinned-expanded, 0px));
+  z-index: 3;
+}
+/* Native list/search tabs button moved into the panel header, aligned
+   right (CSS anchor on the panel container, §1). Same compensation on
+   the right side: painted background offset 2px inside its box; the
+   visible background must end at the right edge of the tabs. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) #alltabs-button {
+  position: fixed;
+  position-anchor: --fxc-panel;
+  top: 4px;
+  left: auto;
+  right: calc(anchor(right, 0px) + var(--tab-container-margin-inline-pinned-expanded, 0px) + 4px);
+  z-index: 3;
+}
+/* Collapsed panel: the search would hide under the collapse/expand
+   button; it is hidden (tabs context menu untouched). */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(sidebar-main:not([expanded])) #alltabs-button {
+  visibility: hidden !important;
+}
+
+/* === 7. Address bar: rectangle with slightly rounded corners ============
+   (like Chrome), instead of the native pill. The search / "go" button
+   inside keeps the native pill: it is aligned on the same rectangular
+   shape. */
+.urlbar-background,
+.urlbar-input-container {
+  border-radius: var(--border-radius-small) !important;
+}
+.urlbar-go-button,
+.search-go-button {
+  border-radius: var(--border-radius-small) !important;
+}
+/* Element at the left end of the address bar (padlock / search engine
+   icon in search mode): same rectangular shape. */
+.identity-box-button,
+#identity-icon-box,
+#urlbar-label-box,
+#urlbar-search-mode-indicator,
+#urlbar-search-mode-indicator-close {
+  border-radius: var(--border-radius-small) !important;
+}
+/* Search engine switcher (magnifier + chevron): it is a moz-button, its
+   radius is read in its shadow DOM through the native
+   --button-border-radius variable; the variable is therefore overridden
+   on the host. */
+.searchmode-switcher {
+  --button-border-radius: var(--border-radius-small) !important;
+}
+
+/* === 8. Back / forward buttons: native icons ============================
+   The navigation bar button icons stay Firefox's own
+   (chrome://browser/skin/back.svg, forward.svg), to stay consistent with
+   the context menu shown by a right click on a page (same icons on both
+   sides). No custom chevron. */
+#back-button {
+  /* Small extra space between the panel border and the first button
+     (user request). */
+  margin-inline-start: 3px !important;
+}
+
+/* === 9. Narrow window: never go under the window buttons ================
+   Below ~1000px wide, the address bar accepts to shrink (flex-basis 0,
+   internal clipping) to leave room for the bar's native buttons and the
+   window controls. The native weight (400) is kept: with a weight of 1,
+   the flexible spacers (flex: 1) around the centered bar took most of
+   its room. */
+@media (max-width: 1000px) {
+  /* Navigation bar width readable in CSS (cqw units). */
+  #main-window:has(#tabbrowser-tabs[orient="vertical"]) #nav-bar {
+    container-type: inline-size;
+  }
+  #main-window:has(#tabbrowser-tabs[orient="vertical"]) #urlbar-container {
+    flex: 400 1 0% !important;
+    /* Minimum width = room left by the items Firefox never moves into
+       the "»" menu (back, forward, reload, extensions, "»", menu, window
+       controls, spacers: ~360px), clamped between 60px and the native
+       minimum. Firefox therefore moves the other buttons (VPN,
+       account…) as soon as the bar would drop below this minimum,
+       without ever overlapping it with the non-movable buttons: a fixed
+       (native) minimum made them overlap (tested). */
+    min-width: clamp(60px, 100cqw - 360px, var(--urlbar-container-min-width)) !important;
+    overflow: hidden !important;
+  }
+  /* Suggestions: natively as wide as the bar, unreadable when it is
+     narrow. Own width, centered under the bar and kept within the
+     window. */
+  #main-window:has(#tabbrowser-tabs[orient="vertical"]) #urlbar > .urlbarView:popover-open {
+    position-area: block-end span-all !important;
+    justify-self: anchor-center !important;
+    width: min(560px, 100vw - 16px) !important;
+    min-width: anchor-size(width) !important;
+  }
+}
