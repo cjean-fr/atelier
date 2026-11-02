@@ -38,6 +38,13 @@
         "eslint": ">=8",
       },
     },
+    "packages/firefox-chrome-look": {
+      "name": "@cjean-fr/firefox-chrome-look",
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/i18n-tiny": {
       "name": "@cjean-fr/i18n-tiny",
       "version": "2.0.1",
@@ -196,6 +203,8 @@
     "@cacheable/utils": ["@cacheable/utils@2.5.0", "", { "dependencies": { "hashery": "^1.5.1", "keyv": "^5.6.0" } }, "sha512-buipgOVDkkPXNR5+xBpDw7Zk2n1EvU7qBJCNUcL7rhQ//kfpOXPAvQ511Os0vpLYJ1pZnvudNytkQt2hst3wqA=="],
 
     "@cjean-fr/eslint-plugin-jsx-string": ["@cjean-fr/eslint-plugin-jsx-string@workspace:packages/eslint-plugin-jsx-string"],
+
+    "@cjean-fr/firefox-chrome-look": ["@cjean-fr/firefox-chrome-look@workspace:packages/firefox-chrome-look"],
 
     "@cjean-fr/i18n-tiny": ["@cjean-fr/i18n-tiny@workspace:packages/i18n-tiny"],
 
