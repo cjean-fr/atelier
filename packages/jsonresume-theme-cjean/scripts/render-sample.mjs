@@ -14,5 +14,6 @@ const portrait = await readFile(
   new URL("../assets/michael-scott.jpg", import.meta.url),
 );
 sample.basics.image = `data:image/jpeg;base64,${portrait.toString("base64")}`;
+sample.meta.themeConfig.seo = { robots: "noindex, follow" };
 await writeFile(new URL("../sample.html", import.meta.url), await render(sample));
 console.log("Wrote sample.html");
