@@ -87,8 +87,10 @@ backup) and restart Firefox.
 
 The variables at the top of `userChrome.css` (`--fxc-*`) control tab
 radius, height and spacing, and the height of the empty area at the top
-of the panel (`--fxc-grip-h`, to align with the navigation bar height if
-the toolbar density changes).
+of the panel. The tab height follows the native toolbar density (the
+`--tab-min-height` variable: compact, normal or touch, and the font
+size), and the empty area follows the navigation bar height of each
+density; both can still be overridden with a fixed value.
 
 ## Known limitations
 

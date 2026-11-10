@@ -14,12 +14,24 @@
    ========================================================================== */
 
 :root {
-  --fxc-tab-radius: 10px; /* tab corner radius             */
-  --fxc-tab-h:      32px; /* tab height (= "New tab" row)  */
-  --fxc-tab-gap:     2px; /* vertical gap between tabs     */
-  --fxc-tab-mx:      6px; /* tab side margin               */
-  --fxc-grip-h:     40px; /* height of the empty area at the top of the
-                             panel (follows the navigation bar height) */
+  --fxc-tab-radius: 10px; /* tab corner radius                           */
+  /* Tab height: the native density variable (compact 28px, normal
+     max(32px, 1.7em) - it follows the font size -, touch 41px), so the
+     rows keep the "New tab" reference in every density mode. */
+  --fxc-tab-h: var(--tab-min-height, 32px);
+  --fxc-tab-gap:     2px; /* vertical gap between tabs                   */
+  --fxc-tab-mx:      6px; /* tab side margin                             */
+  /* Height of the empty area at the top of the panel: follows the
+     navigation bar height, which depends on the density mode (measured:
+     36px compact, 40px normal, 44px touch). Normal mode carries no
+     uidensity attribute: it is the default below. */
+  --fxc-grip-h:     40px;
+}
+#main-window[uidensity="compact"] {
+  --fxc-grip-h: 36px;
+}
+#main-window[uidensity="touch"] {
+  --fxc-grip-h: 44px;
 }
 /* Colors measured on Ubuntu's Yaru theme (tool panel card and borders),
    switched according to the system theme mode. */
