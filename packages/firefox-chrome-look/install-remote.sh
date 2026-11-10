@@ -4,7 +4,7 @@
 set -euo pipefail
 
 main() (
-  local revision='9499763bcde404581bb9a0cedd801973e906ea41'
+  local revision='e3aeb9ae96d8d400c727158924f435f340fbc333'
   local base="https://raw.githubusercontent.com/cjean-fr/atelier/$revision/packages/firefox-chrome-look"
   local work
   command -v curl >/dev/null || { echo 'ERROR: curl is required.' >&2; return 1; }
