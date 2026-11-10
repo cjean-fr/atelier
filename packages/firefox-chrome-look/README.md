@@ -7,6 +7,9 @@ tabs:
 
 - the tabs panel reaches the top of the window;
 - the navigation bar only takes the area to the right of the panel;
+- when the menu bar is shown (via Alt or kept visible), it takes a
+  full-width row above the tabs panel; when it is hidden, the layout is
+  unchanged;
 - tabs as rounded, spaced rows, pill-shaped "+" button;
 - back / forward buttons keep Firefox's native icons, to stay consistent
   with the context menu shown by a right click on a page;

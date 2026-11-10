@@ -132,6 +132,66 @@
   display: none !important;
 }
 
+/* === 1bis. Menu bar: full width above the panel, only when shown ========
+   Firefox itself marks the menu bar with [inactive="true"] whenever it
+   is hidden (disabled in View > Toolbars, or between two Alt presses in
+   autohide mode); the attribute is only ever absent while the bar is
+   shown. Only then is the toolbox flattened (display: contents): the
+   menu bar becomes a grid row of its own, spanning the full window width
+   above the panel, while the other toolbars keep their native stacking
+   order to the right of the panel (the column span the toolbox has in
+   §1). Collapsed or hidden toolbars are dropped from the grid so their
+   row collapses to nothing. When the menu bar is hidden, none of this
+   applies and the layout is exactly the one of §1. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) > body {
+  /* Rows: menu bar, tabs bar, navigation bar, bookmarks bar,
+     notification bars, content. Empty rows collapse to zero. */
+  grid-template-rows: auto auto auto auto auto 1fr !important;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #navigator-toolbox {
+  display: contents !important;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #navigator-toolbox > :is([collapsed], [hidden], [inactive]) {
+  display: none !important;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #toolbar-menubar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  anchor-name: --fxc-menubar;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #TabsToolbar {
+  grid-column: 2 / 4;
+  grid-row: 2;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #nav-bar {
+  grid-column: 2 / 4;
+  grid-row: 3;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #PersonalToolbar {
+  grid-column: 2 / 4;
+  grid-row: 4;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #notifications-toolbar {
+  grid-column: 2 / 4;
+  grid-row: 5;
+}
+/* The panel, its resize handle and the AI panel start below the menu
+   bar; the content and the secondary panel join the last row. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) :is(#sidebar-container, #sidebar-launcher-splitter, #ai-window-box, #ai-window-splitter) {
+  grid-row: 2 / -1;
+}
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) :is(#sidebar-box, #sidebar-splitter, #tabbrowser-tabbox) {
+  grid-row: 6;
+}
+/* The header buttons (§6) are fixed 4px under the window edge: that
+   would put them on the menu bar. They now follow the top of the panel,
+   which has moved below it. While the panel expands on hover it leaves
+   the flow and its anchor no longer resolves: fall back to the bottom
+   edge of the menu bar, where the panel top sits. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) :is(#sidebar-button, #alltabs-button) {
+  top: calc(anchor(top, anchor-size(--fxc-menubar height, 0px)) + 4px);
+}
+
 /* === 2. Shared alignment and button shape ===============================
    Pinned tabs, tabs, the "New tab" button and the header buttons share
    the same side margins (reference: the "New tab" row, 6px). The native
