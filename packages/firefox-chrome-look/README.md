@@ -95,10 +95,15 @@ the toolbar density changes).
 - The window grip uses the native `-moz-window-dragging` mechanism; it
   behaves like the empty area of a Firefox toolbar.
 - The "collapse sidebar" and "list / search tabs" buttons only appear in
-  the empty area if they are present in the navigation bar (native
-  buttons moved, not duplicates). In a very narrow window, the "list /
-  search tabs" button may be moved by Firefox into the navigation bar's
-  "»" overflow menu; it remains accessible there.
+  the empty area if they are present in the navigation bar or the
+  collapsed tabs bar (native buttons moved, not duplicates). In a very
+  narrow window, Firefox may still move the "list / search tabs" button
+  into the navigation bar's "»" overflow menu; it remains accessible
+  there. The address bar's lower minimum (§9 of userChrome.css, applied
+  only when one of these buttons is in the navigation bar) reduces how
+  often this happens on common widths, but does not prevent it: with
+  enough bar buttons, Firefox's native overflow always wins. This is
+  native behavior that CSS cannot block.
 - Back, forward, reload, extensions and the main menu never go into the
   "»" menu (Firefox choice): in a very narrow window, the address bar
   can only keep the room they leave.

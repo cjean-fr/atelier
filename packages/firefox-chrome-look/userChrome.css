@@ -151,8 +151,19 @@
 #main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #navigator-toolbox {
   display: contents !important;
 }
-#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #navigator-toolbox > :is([collapsed], [hidden], [inactive]) {
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #navigator-toolbox > :is([collapsed], [hidden], [inactive]):not(#TabsToolbar) {
   display: none !important;
+}
+/* The tabs bar is collapsed in vertical tabs mode but it can hold the
+   "List all tabs" button (placements from before vertical tabs keep it
+   there). Keep it laid out at zero height instead of dropping it: its row
+   collapses the same, while the button (§6) stays visible. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #TabsToolbar[collapsed] {
+  visibility: collapse !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  /* Same stacking restore as the nav bar below: the button can live here. */
+  z-index: 5;
 }
 #main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #toolbar-menubar {
   grid-column: 1 / -1;
@@ -166,6 +177,12 @@
 #main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #nav-bar {
   grid-column: 2 / 4;
   grid-row: 3;
+  /* The flattened toolbox no longer generates a box, so its z-index (§1),
+     which kept the header buttons (§6) above the panel, is gone. The nav
+     bar is their stacking ancestor (native will-change: opacity): restore
+     the stacking above the panel here, otherwise the panel's opaque
+     background covers the buttons. */
+  z-index: 5;
 }
 #main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#toolbar-menubar:not([inactive="true"])) #PersonalToolbar {
   grid-column: 2 / 4;
@@ -480,6 +497,13 @@
     linear-gradient(var(--sidebar-background-color), var(--sidebar-background-color));
   pointer-events: none;
 }
+/* Both buttons are fixed over the panel (moved out of their native bar).
+   The collapsed tabs bar carries a native visibility: collapse: when a
+   button lives in it (placements from before vertical tabs), force it
+   visible again so it can keep its place in the empty area. */
+#main-window:has(#tabbrowser-tabs[orient="vertical"]) :is(#sidebar-button, #alltabs-button) {
+  visibility: visible !important;
+}
 /* The native collapse/expand panel button is moved (visually) into the
    empty area. Its painted background is offset 6px inside its box
    (measured): the position compensates for this inset so that the
@@ -571,6 +595,21 @@
        (native) minimum made them overlap (tested). */
     min-width: clamp(60px, 100cqw - 360px, var(--urlbar-container-min-width)) !important;
     overflow: hidden !important;
+  }
+  /* Only when a header button (§6) lives in the navigation bar: cap the
+     address bar's minimum lower (150px instead of the native minimum).
+     Scope and rationale: Firefox's native overflow moves trailing
+     buttons into the hidden "»" panel as soon as the bar cannot keep
+     the native minimum; the header buttons are such trailing buttons,
+     and with the panel taking width the native minimum triggered the
+     move on common window widths (~900-1150px) as soon as a few
+     extension buttons are present. The lower cap leaves enough room to
+     keep the bar from overflowing there. It is a mitigation, not a
+     guarantee: an overstuffed bar can still overflow and Firefox still
+     takes trailing buttons (see README "Known limitations"). Bars
+     without a header button keep the native minimum. */
+  #main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#nav-bar :is(#sidebar-button, #alltabs-button)) #urlbar-container {
+    min-width: clamp(60px, 100cqw - 360px, 150px) !important;
   }
   /* Suggestions: natively as wide as the bar, unreadable when it is
      narrow. Own width, centered under the bar and kept within the
