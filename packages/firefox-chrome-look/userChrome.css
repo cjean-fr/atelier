@@ -246,6 +246,40 @@
   border-radius: var(--fxc-tab-radius) !important;
   overflow: hidden;
 }
+/* Tab groups: one continuous line, distinct from the tabs (native
+   geometry, kept). In expanded vertical mode Firefox indents the tabs of
+   a group (--space-medium, 8px) and draws the 2px group line at the left
+   edge of the tab, overflowing it by 3px above and 2px below so that the
+   segments of consecutive tabs join into a single unbroken line; the
+   painted tab background starts to the right of the line, which keeps
+   them visually separate. Three rules of this sheet broke that:
+   - the margin above overrode the native indent of grouped tabs;
+   - overflow: hidden + border-radius clipped the line (which escapes the
+     tab box by design) down to a small tick facing the favicon;
+   - .tab-background margin: 0 painted the background under the line.
+   Restore the structure with our spacing: grouped tabs keep an 8px extra
+   indent, overflow returns to visible so the line can escape the rounded
+   box (the background keeps its own radius, nothing else paints outside),
+   and the line is moved into that indent, clear of the background. The
+   native vertical overhang (-3px/-2px, last tab flush with a rounded
+   end) is untouched, so the segments still join across the tab gap. */
+#tabbrowser-tabs[orient="vertical"] tab-group > .tabbrowser-tab {
+  /* !important: the native sheet clips the tab box (overflow: clip),
+     which would cut the line now placed in the indent. */
+  overflow: visible !important;
+}
+#tabbrowser-tabs[orient="vertical"][expanded] tab-group > .tabbrowser-tab {
+  margin-inline-start: calc(var(--fxc-tab-mx) + 8px) !important;
+}
+#tabbrowser-tabs[orient="vertical"][expanded] tab-group > .tabbrowser-tab .tab-group-line {
+  inset-inline-start: -8px !important;
+}
+/* The group label follows the same indent: natively the chip sits 2px
+   to the right of the line, which is what the native 8px margin did
+   before our tab margin overrode it. */
+#tabbrowser-tabs[orient="vertical"][expanded] tab-group > .tab-group-label-container {
+  margin-inline-start: var(--fxc-tab-mx) !important;
+}
 /* Small gap between favicon and title, like Chrome (~8px measured on the
    reference screenshot): icon container margin set to zero, margin on
    the icon itself. */
