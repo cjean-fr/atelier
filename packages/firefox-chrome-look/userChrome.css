@@ -588,17 +588,28 @@
     flex: 400 1 0% !important;
     /* Minimum width = room left by the items Firefox never moves into
        the "»" menu (back, forward, reload, extensions, "»", menu, window
-       controls, spacers: ~360px), clamped between 60px and 150px. The
-       cap is lower than the native minimum: with the panel taking
-       width, the native minimum made the bar overflow - and Firefox
-       moved the trailing header buttons (§6) into the "»" panel - on
-       common window widths (~900-1150px) as soon as a few extension
-       buttons are present. Firefox moves the other buttons (VPN,
+       controls, spacers: ~360px), clamped between 60px and the native
+       minimum. Firefox therefore moves the other buttons (VPN,
        account…) as soon as the bar would drop below this minimum,
        without ever overlapping it with the non-movable buttons: a fixed
        (native) minimum made them overlap (tested). */
-    min-width: clamp(60px, 100cqw - 360px, 150px) !important;
+    min-width: clamp(60px, 100cqw - 360px, var(--urlbar-container-min-width)) !important;
     overflow: hidden !important;
+  }
+  /* Only when a header button (§6) lives in the navigation bar: cap the
+     address bar's minimum lower (150px instead of the native minimum).
+     Scope and rationale: Firefox's native overflow moves trailing
+     buttons into the hidden "»" panel as soon as the bar cannot keep
+     the native minimum; the header buttons are such trailing buttons,
+     and with the panel taking width the native minimum triggered the
+     move on common window widths (~900-1150px) as soon as a few
+     extension buttons are present. The lower cap leaves enough room to
+     keep the bar from overflowing there. It is a mitigation, not a
+     guarantee: an overstuffed bar can still overflow and Firefox still
+     takes trailing buttons (see README "Known limitations"). Bars
+     without a header button keep the native minimum. */
+  #main-window:has(#tabbrowser-tabs[orient="vertical"]):has(#nav-bar :is(#sidebar-button, #alltabs-button)) #urlbar-container {
+    min-width: clamp(60px, 100cqw - 360px, 150px) !important;
   }
   /* Suggestions: natively as wide as the bar, unreadable when it is
      narrow. Own width, centered under the bar and kept within the
