@@ -95,8 +95,9 @@ the toolbar density changes).
 - The window grip uses the native `-moz-window-dragging` mechanism; it
   behaves like the empty area of a Firefox toolbar.
 - The "collapse sidebar" and "list / search tabs" buttons only appear in
-  the empty area if they are present in the navigation bar (native
-  buttons moved, not duplicates). In a very narrow window, the "list /
+  the empty area if they are present in the navigation bar or the
+  collapsed tabs bar (native buttons moved, not duplicates). In a very
+  narrow window, the "list /
   search tabs" button may be moved by Firefox into the navigation bar's
   "»" overflow menu; it remains accessible there.
 - Back, forward, reload, extensions and the main menu never go into the
