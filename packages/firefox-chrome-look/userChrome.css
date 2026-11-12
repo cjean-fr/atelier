@@ -282,8 +282,8 @@
 }
 /* Container tabs: a light tint of the container color over the (native,
    theme-following) background. Two codes stay unambiguous: the vertical
-   line marks the group, the tinted background + the native horizontal
-   stroke mark the container. The active tab keeps a clearly stronger
+   line marks the group, the tinted background marks the container (the
+   native horizontal stroke is hidden: the tint replaces it). The active tab keeps a clearly stronger
    tint so the selection stays obvious; hover sits in between. The base
    of each mix is the native variable of the same state, so themes keep
    their say. */
@@ -295,6 +295,9 @@
 }
 #tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[usercontextid]:is([visuallyselected], [multiselected]) > .tab-stack > .tab-background {
   background-color: color-mix(in srgb, var(--identity-icon-color) 32%, var(--tab-background-color-selected)) !important;
+}
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[usercontextid] > .tab-stack > .tab-background > .tab-context-line {
+  display: none !important;
 }
 /* Small gap between favicon and title, like Chrome (~8px measured on the
    reference screenshot): icon container margin set to zero, margin on
